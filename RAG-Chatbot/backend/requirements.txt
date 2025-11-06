@@ -1,0 +1,11 @@
+fastapi
+uvicorn[standard]
+openai
+pinecone-client
+python-multipart
+python-dotenv
+pypdf2
+python-docx
+docx2txt
+aiofiles
+pydantic
