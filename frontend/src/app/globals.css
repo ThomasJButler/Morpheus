@@ -1,0 +1,157 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap');
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* Matrix Theme Colors */
+  --matrix-black: #0a0a0a;
+  --matrix-green: #00ff00;
+  --matrix-green-dim: #00cc00;
+  --matrix-cyan: #00ffff;
+  --matrix-white: #e0e0e0;
+  --glass-bg: rgba(0, 255, 0, 0.03);
+  --glass-border: rgba(0, 255, 0, 0.2);
+}
+
+@layer base {
+  body {
+    @apply bg-matrix-black text-matrix-white font-sans;
+    background-image:
+      radial-gradient(ellipse at top, rgba(0, 255, 0, 0.03), transparent),
+      radial-gradient(ellipse at bottom, rgba(0, 255, 255, 0.02), transparent);
+    min-height: 100vh;
+  }
+
+  /* Custom Scrollbar */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-matrix-black;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-matrix-green-dim rounded-full;
+    border: 2px solid #0a0a0a;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-matrix-green;
+  }
+
+  /* Text Selection */
+  ::selection {
+    @apply bg-matrix-green text-matrix-black;
+  }
+
+  ::-moz-selection {
+    @apply bg-matrix-green text-matrix-black;
+  }
+}
+
+@layer components {
+  /* Glass Panel Component */
+  .glass-panel {
+    @apply bg-glass-bg backdrop-blur-md border border-glass-border rounded-lg;
+    box-shadow:
+      inset 0 1px 0 0 rgba(0, 255, 0, 0.1),
+      0 4px 12px rgba(0, 0, 0, 0.5);
+  }
+
+  /* Matrix Glow Effect */
+  .matrix-glow {
+    text-shadow:
+      0 0 10px rgba(0, 255, 0, 0.8),
+      0 0 20px rgba(0, 255, 0, 0.6),
+      0 0 30px rgba(0, 255, 0, 0.4);
+  }
+
+  /* Terminal Cursor */
+  .terminal-cursor {
+    @apply inline-block w-2 h-5 bg-matrix-green ml-1;
+    animation: blink 1s infinite;
+  }
+
+  @keyframes blink {
+    0%, 50% { opacity: 1; }
+    51%, 100% { opacity: 0; }
+  }
+
+  /* Matrix Button */
+  .matrix-button {
+    @apply px-4 py-2 rounded-md font-mono text-sm transition-all duration-200;
+    @apply bg-glass-bg border border-glass-border text-matrix-green;
+    @apply hover:bg-matrix-green hover:text-matrix-black hover:shadow-lg;
+    @apply hover:shadow-matrix-green/30 active:scale-95;
+  }
+
+  /* Input Field */
+  .matrix-input {
+    @apply w-full px-4 py-2 rounded-md font-mono text-sm;
+    @apply bg-glass-bg border border-glass-border text-matrix-white;
+    @apply focus:outline-none focus:border-matrix-green focus:ring-1 focus:ring-matrix-green;
+    @apply placeholder:text-matrix-white/50;
+  }
+
+  /* Message Animation */
+  .message-appear {
+    animation: slideUp 0.3s ease-out;
+  }
+
+  @keyframes slideUp {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  /* Loading Pulse */
+  .loading-pulse {
+    @apply inline-block w-2 h-2 bg-matrix-green rounded-full mx-1;
+    animation: pulse 1.4s infinite;
+  }
+
+  .loading-pulse:nth-child(2) {
+    animation-delay: 0.2s;
+  }
+
+  .loading-pulse:nth-child(3) {
+    animation-delay: 0.4s;
+  }
+
+  @keyframes pulse {
+    0%, 60%, 100% {
+      opacity: 0.3;
+      transform: scale(0.8);
+    }
+    30% {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+}
+
+@layer utilities {
+  /* Matrix Text Gradient */
+  .matrix-gradient {
+    @apply bg-gradient-to-r from-matrix-green to-matrix-cyan bg-clip-text text-transparent;
+  }
+
+  /* Glass Blur */
+  .glass-blur {
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+  }
+
+  /* Matrix Shadow */
+  .matrix-shadow {
+    box-shadow: 0 0 30px rgba(0, 255, 0, 0.3);
+  }
+}
