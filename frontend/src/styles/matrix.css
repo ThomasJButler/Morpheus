@@ -1,0 +1,445 @@
+/* Matrix Theme Styles */
+
+/* Color Palette */
+:root {
+  --matrix-black: #0a0a0a;
+  --matrix-dark: #000000;
+  --matrix-green: #00ff00;
+  --matrix-green-bright: #00ff41;
+  --matrix-green-dim: #00cc00;
+  --matrix-green-dark: #008800;
+  --matrix-cyan: #00ffff;
+  --matrix-white: #e0e0e0;
+  --matrix-gray: #1a1a1a;
+
+  /* Glass morphism */
+  --glass-bg: rgba(0, 255, 0, 0.03);
+  --glass-border: rgba(0, 255, 0, 0.2);
+  --glass-shadow: rgba(0, 255, 0, 0.1);
+
+  /* Animation speeds */
+  --transition-fast: 0.2s;
+  --transition-normal: 0.3s;
+  --transition-slow: 0.5s;
+}
+
+/* Typography */
+@import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap');
+
+.matrix-font {
+  font-family: 'Share Tech Mono', 'Courier New', monospace;
+  letter-spacing: 0.05em;
+}
+
+/* Glass Panel Effect */
+.glass-panel {
+  background: var(--glass-bg);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid var(--glass-border);
+  border-radius: 8px;
+  box-shadow: 0 4px 24px var(--glass-shadow);
+}
+
+/* Matrix Glow Effect */
+.matrix-glow {
+  text-shadow: 0 0 5px var(--matrix-green),
+               0 0 10px var(--matrix-green),
+               0 0 15px var(--matrix-green-dark);
+}
+
+.matrix-glow-strong {
+  text-shadow: 0 0 10px var(--matrix-green),
+               0 0 20px var(--matrix-green),
+               0 0 30px var(--matrix-green),
+               0 0 40px var(--matrix-green-dark);
+}
+
+/* Pill Selector Styles */
+.pill-container {
+  display: flex;
+  gap: 2rem;
+  justify-content: center;
+  align-items: center;
+  padding: 2rem;
+}
+
+.pill-option {
+  position: relative;
+  width: 80px;
+  height: 30px;
+  cursor: pointer;
+  transition: all var(--transition-normal) ease;
+}
+
+.pill {
+  width: 100%;
+  height: 100%;
+  border-radius: 50px;
+  position: relative;
+  overflow: hidden;
+  transition: all var(--transition-normal) ease;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+}
+
+.pill.blue {
+  background: linear-gradient(135deg, #0066cc, #0099ff);
+  border: 2px solid rgba(0, 153, 255, 0.5);
+}
+
+.pill.red {
+  background: linear-gradient(135deg, #cc0000, #ff3333);
+  border: 2px solid rgba(255, 51, 51, 0.5);
+}
+
+.pill-option:hover .pill {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.5);
+}
+
+.pill-option:hover .pill.blue {
+  box-shadow: 0 8px 25px rgba(0, 153, 255, 0.4);
+  border-color: rgba(0, 153, 255, 0.8);
+}
+
+.pill-option:hover .pill.red {
+  box-shadow: 0 8px 25px rgba(255, 51, 51, 0.4);
+  border-color: rgba(255, 51, 51, 0.8);
+}
+
+.pill-option.selected .pill {
+  transform: scale(1.1);
+}
+
+.pill-option.selected .pill.blue {
+  box-shadow: 0 0 30px rgba(0, 153, 255, 0.8);
+  animation: pulse-blue 2s infinite;
+}
+
+.pill-option.selected .pill.red {
+  box-shadow: 0 0 30px rgba(255, 51, 51, 0.8);
+  animation: pulse-red 2s infinite;
+}
+
+/* Pulse Animations */
+@keyframes pulse-blue {
+  0%, 100% {
+    box-shadow: 0 0 20px rgba(0, 153, 255, 0.8);
+  }
+  50% {
+    box-shadow: 0 0 40px rgba(0, 153, 255, 1);
+  }
+}
+
+@keyframes pulse-red {
+  0%, 100% {
+    box-shadow: 0 0 20px rgba(255, 51, 51, 0.8);
+  }
+  50% {
+    box-shadow: 0 0 40px rgba(255, 51, 51, 1);
+  }
+}
+
+/* Matrix Rain Effect */
+.matrix-rain {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  overflow: hidden;
+  z-index: -1;
+  opacity: 0.1;
+}
+
+.matrix-column {
+  position: absolute;
+  top: -100%;
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 14px;
+  color: var(--matrix-green);
+  animation: matrix-fall linear infinite;
+  text-shadow: 0 0 5px var(--matrix-green);
+}
+
+@keyframes matrix-fall {
+  to {
+    transform: translateY(calc(100vh + 100%));
+  }
+}
+
+/* Typing Animation */
+.typing-text {
+  overflow: hidden;
+  border-right: 2px solid var(--matrix-green);
+  white-space: nowrap;
+  animation: typing 3.5s steps(40, end), blink-caret 0.75s step-end infinite;
+}
+
+@keyframes typing {
+  from { width: 0 }
+  to { width: 100% }
+}
+
+@keyframes blink-caret {
+  from, to { border-color: transparent }
+  50% { border-color: var(--matrix-green) }
+}
+
+/* Welcome Screen */
+.welcome-screen {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: var(--matrix-black);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  animation: fadeIn 0.5s ease;
+}
+
+.welcome-text {
+  color: var(--matrix-green);
+  font-size: 2.5rem;
+  margin-bottom: 2rem;
+  text-align: center;
+}
+
+.morpheus-greeting {
+  max-width: 800px;
+  color: var(--matrix-white);
+  font-size: 1.1rem;
+  line-height: 1.6;
+  text-align: center;
+  padding: 2rem;
+  animation: fadeInUp 1s ease 0.5s both;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Mode Selector */
+.mode-selector {
+  display: flex;
+  gap: 1rem;
+  padding: 1rem;
+  background: var(--glass-bg);
+  border-radius: 8px;
+  border: 1px solid var(--glass-border);
+}
+
+.mode-button {
+  padding: 0.5rem 1rem;
+  background: transparent;
+  border: 1px solid var(--matrix-green-dark);
+  color: var(--matrix-green);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all var(--transition-normal) ease;
+  font-family: 'Share Tech Mono', monospace;
+}
+
+.mode-button:hover {
+  background: var(--glass-bg);
+  border-color: var(--matrix-green);
+  text-shadow: 0 0 5px var(--matrix-green);
+}
+
+.mode-button.active {
+  background: var(--matrix-green-dark);
+  color: var(--matrix-black);
+  border-color: var(--matrix-green);
+  font-weight: bold;
+}
+
+/* Modal Styles */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.8);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 999;
+  animation: fadeIn 0.3s ease;
+}
+
+.modal-content {
+  background: var(--matrix-black);
+  border: 2px solid var(--matrix-green-dark);
+  border-radius: 12px;
+  padding: 2rem;
+  max-width: 600px;
+  width: 90%;
+  max-height: 80vh;
+  overflow-y: auto;
+  box-shadow: 0 0 40px var(--matrix-green-dark);
+  animation: slideIn 0.3s ease;
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateY(-50px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* Message Styles */
+.message-morpheus {
+  padding: 1.5rem;
+  margin: 1rem 0;
+  background: var(--glass-bg);
+  border-left: 3px solid var(--matrix-green);
+  border-radius: 8px;
+  color: var(--matrix-white);
+  font-family: 'Share Tech Mono', monospace;
+  line-height: 1.6;
+}
+
+.message-morpheus.red-pill {
+  background: linear-gradient(90deg,
+    rgba(255, 0, 0, 0.05) 0%,
+    rgba(0, 0, 0, 0) 100%);
+  border-left-color: #ff3333;
+}
+
+.message-morpheus.blue-pill {
+  background: linear-gradient(90deg,
+    rgba(0, 102, 204, 0.05) 0%,
+    rgba(0, 0, 0, 0) 100%);
+  border-left-color: #0099ff;
+}
+
+/* Loading Animation */
+.matrix-loader {
+  display: inline-block;
+  position: relative;
+  width: 80px;
+  height: 80px;
+}
+
+.matrix-loader div {
+  position: absolute;
+  top: 33px;
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  background: var(--matrix-green);
+  animation-timing-function: cubic-bezier(0, 1, 1, 0);
+}
+
+.matrix-loader div:nth-child(1) {
+  left: 8px;
+  animation: matrix-loader1 0.6s infinite;
+}
+
+.matrix-loader div:nth-child(2) {
+  left: 8px;
+  animation: matrix-loader2 0.6s infinite;
+}
+
+.matrix-loader div:nth-child(3) {
+  left: 32px;
+  animation: matrix-loader2 0.6s infinite;
+}
+
+.matrix-loader div:nth-child(4) {
+  left: 56px;
+  animation: matrix-loader3 0.6s infinite;
+}
+
+@keyframes matrix-loader1 {
+  0% {
+    transform: scale(0);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes matrix-loader3 {
+  0% {
+    transform: scale(1);
+  }
+  100% {
+    transform: scale(0);
+  }
+}
+
+@keyframes matrix-loader2 {
+  0% {
+    transform: translate(0, 0);
+  }
+  100% {
+    transform: translate(24px, 0);
+  }
+}
+
+/* Scrollbar Styling */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--matrix-black);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--matrix-green-dark);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--matrix-green);
+}
+
+/* Message Animations (from pinecone-vercel-starter demo) */
+@keyframes slideInFromBottom {
+  0% {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+  100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.slide-in-bottom {
+  animation: slideInFromBottom 0.3s ease-out;
+}
+
+/* Message Glow Effects */
+.message-glow {
+  box-shadow: 0 0 3px rgba(0, 255, 0, 0.2), 0 0 5px rgba(0, 255, 0, 0.1);
+}
+
+.message-glow:hover {
+  box-shadow: 0 0 5px rgba(0, 255, 255, 0.3), 0 0 10px rgba(0, 255, 0, 0.2);
+}
