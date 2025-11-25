@@ -91,3 +91,4 @@ coverage.xml
 .pytest_cache/
 /frontend/node_modules
 /backend/.venv
+*.md
