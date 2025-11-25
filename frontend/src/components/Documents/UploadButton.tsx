@@ -21,12 +21,12 @@ export default function UploadButton({ onUploadComplete }: UploadButtonProps) {
     <>
       <button
         onClick={() => setIsOpen(true)}
-        className="text-matrix-green hover:text-matrix-cyan transition-colors text-sm font-mono flex items-center space-x-2 group"
+        className="toolbar-button"
         title="Upload documents"
       >
-        <span className="text-lg group-hover:scale-110 transition-transform">
-          📄
-        </span>
+        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+        </svg>
         <span>Upload</span>
       </button>
 

@@ -40,6 +40,7 @@ export default function DocumentUploader({
 }: DocumentUploaderProps) {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [isIndexing, setIsIndexing] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<DocumentUploadResponse | null>(null);
@@ -104,6 +105,11 @@ export default function DocumentUploader({
       setUploadProgress(100);
       setSuccess(response);
 
+      // Show indexing state while Pinecone propagates vectors
+      setIsIndexing(true);
+      await new Promise(resolve => setTimeout(resolve, 2000)); // 2 second delay for Pinecone propagation
+      setIsIndexing(false);
+
       if (onUploadComplete) {
         onUploadComplete(response);
       }
@@ -111,7 +117,7 @@ export default function DocumentUploader({
       // Auto-close after success
       setTimeout(() => {
         onClose();
-      }, 2000);
+      }, 1000);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Upload failed');
       setUploadProgress(0);
@@ -225,13 +231,19 @@ export default function DocumentUploader({
         {success && (
           <div className="mt-4 p-4 bg-matrix-green/10 border border-matrix-green/50 rounded-md">
             <div className="flex items-center space-x-2 text-matrix-green mb-2">
-              <span className="text-xl">✓</span>
-              <span className="font-mono">Upload Successful!</span>
+              <span className="text-xl">{isIndexing ? '⏳' : '✓'}</span>
+              <span className="font-mono">
+                {isIndexing ? 'Indexing document...' : 'Upload Successful!'}
+              </span>
             </div>
             <div className="text-sm text-matrix-white/80 space-y-1">
               <p>Document ID: {success.document_id}</p>
               <p>Chunks created: {success.chunks_created}</p>
-              <p className="text-matrix-green">Ready to use in chat!</p>
+              {isIndexing ? (
+                <p className="text-matrix-cyan animate-pulse">Making document searchable...</p>
+              ) : (
+                <p className="text-matrix-green">Ready to use in chat!</p>
+              )}
             </div>
           </div>
         )}
