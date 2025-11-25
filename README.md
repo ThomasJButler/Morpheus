@@ -10,6 +10,12 @@
 [![Next.js](https://img.shields.io/badge/Next.js-15-black.svg)](https://nextjs.org/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.115+-green.svg)](https://fastapi.tiangolo.com/)
 
+[![Backend CI](https://github.com/yourusername/morpheus/workflows/Backend%20CI/badge.svg)](https://github.com/yourusername/morpheus/actions)
+[![Frontend CI](https://github.com/yourusername/morpheus/workflows/Frontend%20CI/badge.svg)](https://github.com/yourusername/morpheus/actions)
+[![codecov](https://codecov.io/gh/yourusername/morpheus/branch/main/graph/badge.svg)](https://codecov.io/gh/yourusername/morpheus)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
+[![Code of Conduct](https://img.shields.io/badge/code%20of%20conduct-contributor%20covenant-green.svg)](CODE_OF_CONDUCT.md)
+
 ---
 
 ## 🎯 What Makes Morpheus Different
@@ -359,20 +365,75 @@ npm run test:e2e  # Playwright E2E tests
 
 ## 🚀 Deployment
 
-### Vercel (Frontend)
+**Full deployment guide:** [DEPLOYMENT.md](DEPLOYMENT.md)
+
+### Quick Deployment Options
+
+#### Local Development with Docker Compose (Recommended)
 
 ```bash
-# Deploy to Vercel
-vercel --prod
+# Start entire stack (backend + frontend)
+docker-compose up
 
-# Set environment variables in Vercel dashboard
+# Access:
+# - Frontend: http://localhost:3000
+# - Backend API: http://localhost:8000
+# - API Docs: http://localhost:8000/docs
 ```
 
-### Railway/Render (Backend)
+#### Production Deployment
 
-1. Connect your GitHub repository
-2. Set environment variables
-3. Deploy with automatic builds
+##### Frontend (Vercel)
+
+```bash
+# Deploy to Vercel (optimized for Next.js)
+cd frontend
+vercel --prod
+
+# Or connect GitHub repo in Vercel dashboard for auto-deploy
+```
+
+##### Backend Options
+
+1. **Railway** (Recommended - $5/month)
+
+   ```bash
+   railway login
+   cd backend
+   railway up
+   ```
+
+   - Auto-HTTPS, monitoring included
+   - See [railway.toml](backend/railway.toml) for configuration
+
+2. **Render** (Starter: $7/month, Free tier available)
+   - Connect GitHub repository
+   - Uses [render.yaml](backend/render.yaml) blueprint
+   - Auto-deploys on push to main
+
+3. **Docker Self-Hosted**
+
+   ```bash
+   cd backend
+   docker build -t morpheus-backend .
+   docker run -p 8000:8000 --env-file .env morpheus-backend
+   ```
+
+### Environment Configuration
+
+See comprehensive environment templates:
+
+- Backend: [backend/.env.example](backend/.env.example)
+- Frontend: [frontend/.env.example](frontend/.env.example)
+
+### Post-Deployment
+
+1. Create Pinecone index (512 dimensions for text-embedding-3-small)
+2. Update backend `CORS_ORIGINS` with frontend URL
+3. Set all API keys in platform dashboards
+4. Test health check: `curl https://your-backend-url/api/health`
+
+**Deployment Guide:** Detailed step-by-step instructions in [DEPLOYMENT.md](DEPLOYMENT.md)
 
 ---
 

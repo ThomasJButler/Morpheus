@@ -6,9 +6,9 @@ A stunning Matrix-inspired frontend for the Morpheus Agentic RAG System, built w
 
 ✅ **4 RAG Modes**
 - Simple Semantic Search
-- Hybrid Cascading Retrieval
+- Hybrid Search
+- Cascading Retrieval (Advanced hybrid with reranking)
 - Agentic AI-Powered Search
-- Query Rewriting
 
 ✅ **Matrix Theme**
 - Glass morphism UI components
@@ -83,6 +83,7 @@ frontend/
 │   │   │   └── ModeSelector.tsx
 │   │   ├── Context/            # Context components
 │   │   │   ├── CitationHighlight.tsx
+│   │   │   ├── DocumentViewer.tsx
 │   │   │   └── RetrievalMetrics.tsx
 │   │   └── UI/                 # Reusable UI components
 │   │       ├── MatrixRain.tsx
@@ -101,9 +102,9 @@ frontend/
 ### RAG Modes
 
 1. **Simple Mode**: Basic semantic search using embeddings
-2. **Hybrid Mode**: Combines dense and sparse retrieval with reranking
-3. **Agentic Mode**: Claude AI decides search strategy autonomously
-4. **Query Rewrite Mode**: Enhances queries before searching
+2. **Hybrid Mode**: Combines dense and sparse retrieval
+3. **Cascading Mode**: Advanced hybrid retrieval with cross-encoder reranking (48% performance improvement)
+4. **Agentic Mode**: Claude AI decides search strategy autonomously
 
 ### Matrix Theme
 
