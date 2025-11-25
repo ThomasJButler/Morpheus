@@ -16,7 +16,6 @@ export default function MessageList({
   isLoading = false,
   className = '',
 }: MessageListProps) {
-  const scrollContainerRef = useRef<HTMLDivElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Auto-scroll to bottom when new messages arrive
@@ -24,32 +23,33 @@ export default function MessageList({
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isLoading]);
 
-  if (messages.length === 0 && !isLoading) {
-    return (
-      <div className={`flex items-center justify-center text-matrix-white/50 ${className}`}>
-        <div className="text-center">
-          <p className="text-lg mb-2">No messages yet</p>
-          <p className="text-sm">Ask a question to get started</p>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div
-      ref={scrollContainerRef}
-      className={`overflow-y-auto space-y-4 pr-2 ${className}`}
-    >
+    <div className={`
+      border-2 border-matrix-green/30 p-4 rounded-lg overflow-y-auto
+      flex-grow flex flex-col justify-end bg-matrix-black/20
+      ${className}
+    `}>
+      {/* Empty state */}
+      {messages.length === 0 && !isLoading && (
+        <div className="text-center py-8 text-matrix-green/60">
+          <p className="text-lg mb-2 font-mono">The Matrix has you...</p>
+          <p className="text-sm opacity-70">Ask a question to begin</p>
+        </div>
+      )}
+
+      {/* Messages */}
       {messages.map((message) => (
         <ChatMessage key={message.id} message={message} />
       ))}
 
+      {/* Loading indicator */}
       {isLoading && (
-        <div className="flex justify-start pl-4">
-          <LoadingPulse text="Thinking" />
+        <div className="flex justify-start my-2">
+          <LoadingPulse text="Morpheus is thinking" />
         </div>
       )}
 
+      {/* Scroll anchor */}
       <div ref={messagesEndRef} />
     </div>
   );

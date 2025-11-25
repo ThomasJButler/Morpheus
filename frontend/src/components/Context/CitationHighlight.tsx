@@ -34,9 +34,7 @@ export default function CitationHighlight({ citation, index }: CitationHighlight
       </div>
 
       <div className="text-xs text-matrix-white/80 leading-relaxed">
-        {citation.text.length > 200
-          ? `${citation.text.substring(0, 200)}...`
-          : citation.text}
+        {citation.text_preview}
       </div>
 
       {citation.metadata && Object.keys(citation.metadata).length > 0 && (

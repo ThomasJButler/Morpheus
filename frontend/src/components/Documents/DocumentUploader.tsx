@@ -12,6 +12,28 @@ interface DocumentUploaderProps {
   onClose: () => void;
 }
 
+// Supported file types and validation (moved outside component)
+const SUPPORTED_TYPES = [
+  'application/pdf',
+  'text/plain',
+  'text/markdown',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+];
+
+const SUPPORTED_EXTENSIONS = ['.pdf', '.txt', '.md', '.docx'];
+const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+
+const validateFile = (file: File): string | null => {
+  if (!SUPPORTED_TYPES.includes(file.type) &&
+      !SUPPORTED_EXTENSIONS.some(ext => file.name.toLowerCase().endsWith(ext))) {
+    return 'Unsupported file type. Please upload PDF, TXT, MD, or DOCX files.';
+  }
+  if (file.size > MAX_FILE_SIZE) {
+    return 'File is too large. Maximum size is 10MB.';
+  }
+  return null;
+};
+
 export default function DocumentUploader({
   onUploadComplete,
   onClose,
@@ -24,29 +46,7 @@ export default function DocumentUploader({
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Supported file types
-  const SUPPORTED_TYPES = [
-    'application/pdf',
-    'text/plain',
-    'text/markdown',
-    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-  ];
-
-  const SUPPORTED_EXTENSIONS = ['.pdf', '.txt', '.md', '.docx'];
-  const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
-
-  const validateFile = (file: File): string | null => {
-    if (!SUPPORTED_TYPES.includes(file.type) &&
-        !SUPPORTED_EXTENSIONS.some(ext => file.name.toLowerCase().endsWith(ext))) {
-      return 'Unsupported file type. Please upload PDF, TXT, MD, or DOCX files.';
-    }
-    if (file.size > MAX_FILE_SIZE) {
-      return 'File is too large. Maximum size is 10MB.';
-    }
-    return null;
-  };
-
-  const handleFileSelect = (file: File) => {
+  const handleFileSelect = useCallback((file: File) => {
     const validationError = validateFile(file);
     if (validationError) {
       setError(validationError);
@@ -56,7 +56,7 @@ export default function DocumentUploader({
     setError(null);
     setSuccess(null);
     setSelectedFile(file);
-  };
+  }, []);
 
   const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -83,7 +83,7 @@ export default function DocumentUploader({
     if (file) {
       handleFileSelect(file);
     }
-  }, []);
+  }, [handleFileSelect]);
 
   const handleUpload = async () => {
     if (!selectedFile) return;

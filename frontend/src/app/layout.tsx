@@ -1,6 +1,8 @@
 import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import './globals.css'
+import '@/styles/matrix.css'
+import { WithErrorBoundary } from '@/components/ErrorBoundary'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -39,10 +41,12 @@ export default function RootLayout({
             />
           </div>
 
-          {/* Main content */}
-          <main className="relative z-10">
-            {children}
-          </main>
+          {/* Main content wrapped in error boundary */}
+          <WithErrorBoundary>
+            <main className="relative z-10">
+              {children}
+            </main>
+          </WithErrorBoundary>
         </div>
       </body>
     </html>
