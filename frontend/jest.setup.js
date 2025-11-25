@@ -1,6 +1,17 @@
 // Learn more: https://github.com/testing-library/jest-dom
 import '@testing-library/jest-dom'
 
+// Polyfills for streaming APIs (needed for api-client tests)
+import { TextEncoder, TextDecoder } from 'util'
+global.TextEncoder = TextEncoder
+global.TextDecoder = TextDecoder
+
+// ReadableStream polyfill for streaming tests
+if (typeof global.ReadableStream === 'undefined') {
+  const { ReadableStream } = require('stream/web')
+  global.ReadableStream = ReadableStream
+}
+
 // Mock Next.js router
 jest.mock('next/navigation', () => ({
   useRouter() {
