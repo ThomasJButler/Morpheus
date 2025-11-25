@@ -1,0 +1,181 @@
+# ==============================================================================
+# MORPHEUS RAG CHATBOT - RENDER DEPLOYMENT CONFIGURATION
+# ==============================================================================
+# Deploy backend to Render: https://render.com/
+# Documentation: https://render.com/docs/blueprint-spec
+
+services:
+  - type: web
+    name: morpheus-backend
+    env: docker
+    # Use Dockerfile for deployment
+    dockerfilePath: ./Dockerfile
+    dockerContext: ./
+
+    # Instance configuration
+    plan: starter  # Options: starter, standard, pro
+    region: oregon  # Options: oregon, frankfurt, singapore
+
+    # Build configuration
+    buildFilter:
+      paths:
+        - app/**
+        - requirements.txt
+        - Dockerfile
+
+    # Health check
+    healthCheckPath: /api/health
+
+    # Auto-deploy
+    autoDeploy: true
+    branch: main
+
+    # Environment variables
+    # Note: Set these in Render dashboard for security
+    envVars:
+      - key: ANTHROPIC_API_KEY
+        sync: false  # Manually set in dashboard
+
+      - key: OPENAI_API_KEY
+        sync: false
+
+      - key: PINECONE_API_KEY
+        sync: false
+
+      - key: PINECONE_INDEX_NAME
+        value: morpheus
+
+      - key: PINECONE_ENVIRONMENT
+        value: us-east-1
+
+      - key: ANTHROPIC_MODEL
+        value: claude-3-haiku-20240307
+
+      - key: EMBEDDING_MODEL
+        value: text-embedding-3-small
+
+      - key: RERANKER_MODEL
+        value: bge-reranker-v2-m3
+
+      - key: TOP_K_RESULTS
+        value: 10
+
+      - key: RERANK_TOP_K
+        value: 5
+
+      - key: MIN_RELEVANCE_SCORE
+        value: 0.7
+
+      - key: DENSE_WEIGHT
+        value: 0.7
+
+      - key: SPARSE_WEIGHT
+        value: 0.3
+
+      - key: USE_RERANKER
+        value: true
+
+      - key: USE_HYBRID_SEARCH
+        value: true
+
+      - key: MAX_CHUNK_SIZE
+        value: 1000
+
+      - key: CHUNK_OVERLAP
+        value: 200
+
+      - key: API_HOST
+        value: 0.0.0.0
+
+      - key: API_PORT
+        value: 8000
+
+      - key: CORS_ORIGINS
+        value: https://your-frontend.vercel.app,https://morpheus.vercel.app
+
+      - key: LOG_LEVEL
+        value: INFO
+
+      - key: DEBUG
+        value: false
+
+      - key: RELOAD
+        value: false
+
+# ==============================================================================
+# DEPLOYMENT INSTRUCTIONS
+# ==============================================================================
+#
+# Option 1: Deploy via Dashboard
+# --------------------------------
+# 1. Go to https://dashboard.render.com/
+# 2. Click "New +" → "Blueprint"
+# 3. Connect your GitHub repository
+# 4. Render will detect this render.yaml file
+# 5. Set secret environment variables:
+#    - ANTHROPIC_API_KEY
+#    - OPENAI_API_KEY
+#    - PINECONE_API_KEY
+# 6. Update CORS_ORIGINS with your frontend URL
+# 7. Click "Apply"
+#
+# Option 2: Deploy via CLI
+# -------------------------
+# 1. Install Render CLI:
+#    brew tap render-oss/render
+#    brew install render
+#
+# 2. Login:
+#    render login
+#
+# 3. Deploy:
+#    render blueprint launch
+#
+# Option 3: Connect GitHub (Recommended)
+# ----------------------------------------
+# 1. Push this file to your GitHub repository
+# 2. Connect repository to Render
+# 3. Render auto-deploys on every push to main
+#
+# ==============================================================================
+# POST-DEPLOYMENT
+# ==============================================================================
+#
+# 1. Get your backend URL from Render dashboard
+#    Example: https://morpheus-backend.onrender.com
+#
+# 2. Update frontend .env.local:
+#    NEXT_PUBLIC_API_URL=https://morpheus-backend.onrender.com
+#
+# 3. Update CORS_ORIGINS in Render dashboard to include frontend URL
+#
+# 4. Test health check:
+#    curl https://morpheus-backend.onrender.com/api/health
+#
+# 5. Monitor logs in Render dashboard
+#
+# ==============================================================================
+# SCALING & PERFORMANCE
+# ==============================================================================
+#
+# Starter Plan (Free Tier):
+# - 512MB RAM
+# - 0.1 CPU
+# - Spins down after 15 min of inactivity
+# - Good for: Demo, development, low traffic
+#
+# Standard Plan ($7/month):
+# - 2GB RAM
+# - 0.5 CPU
+# - Always on
+# - Good for: Production, moderate traffic
+#
+# Pro Plan ($25/month):
+# - 4GB RAM
+# - 1 CPU
+# - Always on
+# - Good for: High traffic, enterprise
+#
+# To upgrade: Change `plan:` value in this file
+#
+# ==============================================================================

@@ -1,0 +1,136 @@
+# ==============================================================================
+# MORPHEUS RAG CHATBOT - DOCKER COMPOSE CONFIGURATION
+# ==============================================================================
+# Local development stack with backend and frontend
+# Run with: docker-compose up
+
+version: '3.8'
+
+services:
+  # ==========================================================================
+  # BACKEND SERVICE
+  # ==========================================================================
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: morpheus-backend
+    ports:
+      - "8000:8000"
+    env_file:
+      - ./backend/.env
+    environment:
+      - API_HOST=0.0.0.0
+      - API_PORT=8000
+      - CORS_ORIGINS=http://localhost:3000,http://127.0.0.1:3000
+    volumes:
+      # Mount code for development with hot-reload
+      - ./backend/app:/app/app:ro
+      # Mount logs directory
+      - ./backend/logs:/app/logs
+    networks:
+      - morpheus-network
+    healthcheck:
+      test: ["CMD", "python", "-c", "import requests; requests.get('http://localhost:8000/api/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    restart: unless-stopped
+    # Override CMD for development with auto-reload
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+
+  # ==========================================================================
+  # FRONTEND SERVICE
+  # ==========================================================================
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+    container_name: morpheus-frontend
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:8000
+      - NEXT_PUBLIC_ENABLE_MATRIX_RAIN=true
+      - NEXT_PUBLIC_ENABLE_METRICS=true
+      - NEXT_PUBLIC_DEBUG=true
+    volumes:
+      # Mount source code for hot-reload
+      - ./frontend/src:/app/src:ro
+      - ./frontend/public:/app/public:ro
+      # Node modules volume (don't overwrite with host)
+      - frontend-node-modules:/app/node_modules
+    networks:
+      - morpheus-network
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+networks:
+  morpheus-network:
+    driver: bridge
+
+volumes:
+  frontend-node-modules:
+
+# ==============================================================================
+# USAGE INSTRUCTIONS
+# ==============================================================================
+#
+# Start all services:
+#   docker-compose up
+#
+# Start in background:
+#   docker-compose up -d
+#
+# Stop all services:
+#   docker-compose down
+#
+# Rebuild and start:
+#   docker-compose up --build
+#
+# View logs:
+#   docker-compose logs -f
+#   docker-compose logs -f backend
+#   docker-compose logs -f frontend
+#
+# Execute command in container:
+#   docker-compose exec backend bash
+#   docker-compose exec frontend sh
+#
+# ==============================================================================
+# DEVELOPMENT WORKFLOW
+# ==============================================================================
+#
+# 1. Ensure .env files exist:
+#    - backend/.env (copy from backend/.env.example)
+#    - frontend/.env.local (copy from frontend/.env.example)
+#
+# 2. Start services:
+#    docker-compose up
+#
+# 3. Access applications:
+#    - Frontend: http://localhost:3000
+#    - Backend API: http://localhost:8000
+#    - API Docs: http://localhost:8000/docs
+#
+# 4. Code changes auto-reload (hot-reload enabled)
+#
+# 5. To reset everything:
+#    docker-compose down -v
+#    docker-compose up --build
+#
+# ==============================================================================
+# PRODUCTION DEPLOYMENT
+# ==============================================================================
+#
+# This docker-compose.yml is for LOCAL DEVELOPMENT only.
+# For production deployment:
+#
+# - Backend: Use Railway (railway.toml) or Render (render.yaml)
+# - Frontend: Use Vercel (vercel.json)
+#
+# See DEPLOYMENT.md for detailed production deployment instructions.
+#
+# ==============================================================================

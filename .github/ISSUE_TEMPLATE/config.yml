@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 💬 GitHub Discussions
+    url: https://github.com/yourusername/morpheus/discussions
+    about: Ask questions, share ideas, and discuss with the community
+  - name: 📚 Documentation
+    url: https://github.com/yourusername/morpheus#readme
+    about: Check the README and guides before opening an issue
+  - name: 🔒 Security Vulnerability
+    url: mailto:security@example.com
+    about: Report security vulnerabilities privately via email
