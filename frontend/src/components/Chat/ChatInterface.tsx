@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useState, useCallback } from 'react';
 import { useChat } from 'ai/react';
 import MessageList from './MessageList';
 import RetrievalMetrics from '../Context/RetrievalMetrics';
@@ -17,11 +17,10 @@ export default function ChatInterface() {
   const [uploadSuccess, setUploadSuccess] = useState<string | null>(null);
   const [showSettings, setShowSettings] = useState(false);
   const [currentMetrics, setCurrentMetrics] = useState<MetricResult | null>(null);
-  const prevMessagesLengthRef = useRef(0);
 
-  const { hasApiKey } = useSettings();
+  const { settings, hasApiKey, hasAnthropicApiKey } = useSettings();
 
-  // Use Vercel AI SDK's useChat hook
+  // Use Vercel AI SDK's useChat hook - now points to Next.js BFF route
   const {
     messages,
     input,
@@ -31,48 +30,22 @@ export default function ChatInterface() {
     error,
     setMessages,
   } = useChat({
-    api: `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/chat`,
+    api: '/api/chat', // Next.js BFF route (fetches context from FastAPI, streams from provider)
+    body: {
+      // Pass provider selection and API keys from settings
+      provider: settings.provider,
+      anthropicApiKey: settings.anthropicApiKey,
+      anthropicModel: settings.anthropicModel,
+      openaiApiKey: settings.openaiApiKey,
+      openaiModel: settings.openaiModel,
+    },
     onFinish: async (message) => {
       console.log('✅ Stream finished:', message.content.substring(0, 50));
-      // Citations will be fetched by useEffect below
     },
     onError: (error) => {
       console.error('❌ Stream error:', error);
     },
   });
-
-  // Fetch citations when new assistant messages arrive
-  useEffect(() => {
-    const fetchCitations = async () => {
-      if (messages.length <= prevMessagesLengthRef.current) return;
-
-      const lastMessage = messages[messages.length - 1];
-      if (lastMessage.role !== 'assistant') return;
-
-      console.log('📚 Fetching citations for:', lastMessage.content.substring(0, 50));
-
-      try {
-        const userMessage = messages[messages.length - 2]?.content || '';
-        const response = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/context`,
-          {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ query: userMessage }),
-          }
-        );
-
-        const data = await response.json();
-        console.log('✅ Citations fetched:', data.count);
-        // Citations will be used later when we integrate them into messages
-      } catch (error) {
-        console.error('Failed to fetch citations:', error);
-      }
-    };
-
-    fetchCitations();
-    prevMessagesLengthRef.current = messages.length;
-  }, [messages]);
 
   const clearMessages = useCallback(() => {
     setMessages([]);
@@ -90,53 +63,86 @@ export default function ChatInterface() {
   }, []);
 
   return (
-    <div className="flex flex-col h-[90vh] max-h-[900px] space-y-4">
-      {/* Matrix Header */}
-      <div className="text-center py-2">
-        <h1 className="matrix-font text-matrix-green text-2xl matrix-glow">
-          The Matrix has you...
-        </h1>
-        <p className="matrix-font text-matrix-green-dim text-sm mt-1 opacity-80">
-          Follow the white rabbit. Knock, knock, Neo.
-        </p>
-      </div>
+    <div className="flex flex-col h-[calc(100vh-100px)] space-y-2">
+      {/* Toolbar */}
+      <div className="flex items-center justify-between px-1">
+        {/* Provider Badge */}
+        <div className="flex items-center space-x-2">
+          <span className={`
+            inline-flex items-center px-3 py-1 rounded-full text-xs font-mono
+            border transition-all duration-200
+            ${settings.provider === 'anthropic'
+              ? 'border-matrix-green/50 text-matrix-green bg-matrix-green/10'
+              : 'border-matrix-cyan/50 text-matrix-cyan bg-matrix-cyan/10'}
+          `}>
+            <span className={`w-1.5 h-1.5 rounded-full mr-2 animate-pulse ${
+              settings.provider === 'anthropic' ? 'bg-matrix-green' : 'bg-matrix-cyan'
+            }`} />
+            {settings.provider === 'anthropic' ? 'Claude' : 'GPT'}
+          </span>
+        </div>
 
-      {/* Top Controls */}
-      <div className="flex items-center justify-end space-x-4">
-        <UploadButton onUploadComplete={handleUploadComplete} />
+        {/* Controls */}
+        <div className="flex items-center space-x-1">
+          <UploadButton onUploadComplete={handleUploadComplete} />
 
           <button
             onClick={() => setShowDocStats(!showDocStats)}
-            className="text-matrix-green hover:text-matrix-cyan transition-colors text-sm font-mono"
+            className="toolbar-button"
           >
-            {showDocStats ? 'Hide' : 'Show'} Docs
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            <span>Docs</span>
           </button>
 
           <button
             onClick={() => setShowMetrics(!showMetrics)}
-            className="text-matrix-green hover:text-matrix-cyan transition-colors text-sm font-mono"
+            className="toolbar-button"
           >
-            {showMetrics ? 'Hide' : 'Show'} Metrics
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+            </svg>
+            <span>Metrics</span>
           </button>
 
-        <button
-          onClick={clearMessages}
-          disabled={messages.length === 0 || isLoading}
-          className="text-matrix-green hover:text-matrix-cyan transition-colors text-sm font-mono disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          Clear Chat
-        </button>
+          <button
+            onClick={clearMessages}
+            disabled={messages.length === 0 || isLoading}
+            className="toolbar-button disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+            </svg>
+            <span>Clear</span>
+          </button>
 
-        <button
-          onClick={() => setShowSettings(true)}
-          className="text-matrix-green hover:text-matrix-cyan transition-colors text-sm font-mono flex items-center space-x-1"
-        >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-          </svg>
-          <span>Settings</span>
-        </button>
+          <div className="w-px h-5 bg-matrix-green/20 mx-1" />
+
+          <button
+            onClick={() => setShowSettings(true)}
+            className="toolbar-button icon-spin-hover"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+            <span>Settings</span>
+          </button>
+
+          <a
+            href="https://github.com/tombutler/RAG-Chatbot"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="toolbar-button"
+            title="View on GitHub"
+          >
+            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+              <path fillRule="evenodd" clipRule="evenodd" d="M12 2C6.477 2 2 6.477 2 12c0 4.42 2.865 8.17 6.839 9.49.5.092.682-.217.682-.482 0-.237-.008-.866-.013-1.7-2.782.604-3.369-1.34-3.369-1.34-.454-1.156-1.11-1.464-1.11-1.464-.908-.62.069-.608.069-.608 1.003.07 1.531 1.03 1.531 1.03.892 1.529 2.341 1.087 2.91.831.092-.646.35-1.086.636-1.336-2.22-.253-4.555-1.11-4.555-4.943 0-1.091.39-1.984 1.029-2.683-.103-.253-.446-1.27.098-2.647 0 0 .84-.269 2.75 1.025A9.578 9.578 0 0112 6.836c.85.004 1.705.114 2.504.336 1.909-1.294 2.747-1.025 2.747-1.025.546 1.377.203 2.394.1 2.647.64.699 1.028 1.592 1.028 2.683 0 3.842-2.339 4.687-4.566 4.935.359.309.678.919.678 1.852 0 1.336-.012 2.415-.012 2.743 0 .267.18.578.688.48C19.138 20.167 22 16.418 22 12c0-5.523-4.477-10-10-10z" />
+            </svg>
+            <span>GitHub</span>
+          </a>
+        </div>
       </div>
 
       {/* Upload Success Message */}
@@ -150,7 +156,7 @@ export default function ChatInterface() {
       <div className="flex flex-1 gap-4 min-h-0">
         {/* Chat Messages */}
         <div className={showMetrics || showDocStats ? 'flex-1' : 'w-full'}>
-          <GlassPanel className="h-full flex flex-col p-4">
+          <GlassPanel className="h-full flex flex-col p-5" noPadding>
             {error && (
               <div className="mb-4 p-3 bg-red-500/10 border border-red-500/50 rounded-md text-red-400 text-sm matrix-font">
                 {error instanceof Error ? error.message : String(error)}
@@ -159,11 +165,11 @@ export default function ChatInterface() {
 
             {/* Morpheus Guidance */}
             {messages.length === 0 && (
-              <div className="text-center py-8 text-matrix-green/60 matrix-font">
-                <p className="text-lg mb-2">
+              <div className="text-center py-12 text-matrix-green/70">
+                <p className="matrix-quote text-lg mb-4 inline-block text-left max-w-md mx-auto">
                   &quot;I can only show you the door. You&apos;re the one that has to walk through it.&quot;
                 </p>
-                <p className="text-sm opacity-70">
+                <p className="text-sm opacity-60 mt-4 font-mono">
                   Upload documents and ask me anything...
                 </p>
               </div>
@@ -175,9 +181,9 @@ export default function ChatInterface() {
               className="flex-1"
             />
 
-            <div className="mt-4">
+            <div className="mt-2 pt-2 border-t border-matrix-green/20">
               {/* Use Vercel AI SDK's form submission */}
-              <form onSubmit={handleSubmit} className="flex items-end space-x-2">
+              <form onSubmit={handleSubmit} className="flex items-end space-x-3">
                 <div className="flex-1 relative">
                   <textarea
                     value={input}
@@ -189,7 +195,7 @@ export default function ChatInterface() {
                     onKeyDown={(e) => {
                       if (e.key === 'Enter' && !e.shiftKey) {
                         e.preventDefault();
-                        handleSubmit(e as React.FormEvent<HTMLFormElement>);
+                        handleSubmit();
                       }
                     }}
                   />
@@ -211,38 +217,34 @@ export default function ChatInterface() {
 
         {/* Metrics Panel */}
         {showMetrics && currentMetrics && (
-          <div className="w-96">
+          <div className="w-96 slide-in-right">
             <RetrievalMetrics metrics={currentMetrics} />
           </div>
         )}
 
         {/* Document Stats Panel */}
         {showDocStats && (
-          <div className="w-96">
+          <div className="w-96 slide-in-right">
             <DocumentStats />
           </div>
         )}
       </div>
 
-      {/* API Key Warning */}
-      {!hasApiKey() && (
-        <div className="mt-4 p-3 bg-matrix-green/10 border border-matrix-green/50 rounded-md text-matrix-green text-sm matrix-font">
-          <div className="flex items-center justify-between">
-            <span>⚠️ No OpenAI API key configured. Please add your API key in Settings to enable chat functionality.</span>
-            <button
-              onClick={() => setShowSettings(true)}
-              className="ml-4 px-3 py-1 bg-matrix-green text-matrix-black rounded-md hover:bg-matrix-cyan transition-colors font-mono text-xs"
-            >
-              Open Settings
-            </button>
-          </div>
+      {/* API Key Warning - shows if the selected provider's API key is missing */}
+      {((settings.provider === 'anthropic' && !hasAnthropicApiKey()) ||
+        (settings.provider === 'openai' && !hasApiKey())) && (
+        <div className="p-2 bg-yellow-500/10 border border-yellow-500/30 rounded-md text-yellow-400 text-xs font-mono flex items-center justify-between">
+          <span>
+            No API key for {settings.provider === 'anthropic' ? 'Claude' : 'GPT'}.
+          </span>
+          <button
+            onClick={() => setShowSettings(true)}
+            className="px-2 py-0.5 bg-yellow-500/20 border border-yellow-500/40 rounded text-yellow-400 hover:bg-yellow-500/30 transition-colors text-xs"
+          >
+            Add Key
+          </button>
         </div>
       )}
-
-      {/* Matrix Footer */}
-      <div className="text-center py-2 text-matrix-green/40 text-xs matrix-font">
-        <p>There is no spoon.</p>
-      </div>
 
       {/* Settings Modal */}
       <Settings isOpen={showSettings} onClose={() => setShowSettings(false)} />

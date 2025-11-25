@@ -6,13 +6,20 @@ import MatrixRain from '@/components/UI/MatrixRain';
 
 export default function Home() {
   const [mounted, setMounted] = useState(false);
-  const [showMatrixRain, setShowMatrixRain] = useState(true);
+  const [showMatrixRain, setShowMatrixRain] = useState(false); // Default to false to avoid canvas issues during init
 
   useEffect(() => {
+    // Force mount after timeout as fallback (prevents infinite loading)
+    const timeout = setTimeout(() => {
+      setMounted(true);
+    }, 3000);
+
     setMounted(true);
     // Check if Matrix rain should be enabled
     const enableRain = process.env.NEXT_PUBLIC_ENABLE_MATRIX_RAIN === 'true';
     setShowMatrixRain(enableRain);
+
+    return () => clearTimeout(timeout);
   }, []);
 
   if (!mounted) {
@@ -64,17 +71,14 @@ export default function Home() {
       {showMatrixRain && <MatrixRain />}
 
       {/* Main Content */}
-      <div className="relative z-10 container mx-auto px-4 py-8">
+      <div className="relative z-10 container mx-auto px-4 py-2">
         {/* Header */}
-        <header className="mb-8 text-center">
-          <h1 className="text-5xl font-bold mb-2 matrix-gradient font-mono">
+        <header className="mb-2 text-center">
+          <h1 className="text-3xl font-bold matrix-gradient font-mono">
             MORPHEUS
           </h1>
-          <p className="text-matrix-green-dim text-lg">
-            RAG System that Reveals Knowledge
-          </p>
-          <p className="text-matrix-white/60 text-sm mt-2 italic">
-            &quot;Welcome to the real world...&quot;
+          <p className="text-matrix-green-dim/70 text-xs font-mono">
+            AI-Powered Document Intelligence
           </p>
         </header>
 
@@ -84,8 +88,8 @@ export default function Home() {
         </div>
 
         {/* Footer */}
-        <footer className="mt-12 text-center text-matrix-white/40 text-sm">
-          <p>Powered by Claude, Pinecone, and the Matrix</p>
+        <footer className="mt-2 text-center text-matrix-white/30 text-xs font-mono">
+          <p>Powered by Claude &amp; Pinecone</p>
         </footer>
       </div>
     </div>

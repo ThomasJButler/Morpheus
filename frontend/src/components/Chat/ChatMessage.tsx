@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { ChatMessage as ChatMessageType } from '@/lib/types';
 import CitationHighlight from '../Context/CitationHighlight';
 
@@ -10,16 +10,42 @@ interface ChatMessageProps {
 
 export default function ChatMessage({ message }: ChatMessageProps) {
   const [showCitations, setShowCitations] = useState(false);
+  const [copied, setCopied] = useState(false);
   const isUser = message.role === 'user';
+
+  const handleCopy = useCallback(async () => {
+    if (message.content) {
+      await navigator.clipboard.writeText(message.content);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  }, [message.content]);
 
   return (
     <div className={`
-      my-2 p-3 rounded-lg shadow-md hover:shadow-lg transition-shadow duration-200
-      flex slide-in-bottom message-glow border
+      group relative my-3 p-4 rounded-lg transition-all duration-300
+      flex message-appear border-l-4
       ${isUser
-        ? 'bg-matrix-black/40 border-matrix-cyan/50 ml-8'
-        : 'bg-matrix-black/60 border-matrix-green/50 mr-8'}
+        ? 'bg-matrix-black/40 border-l-matrix-cyan ml-8 hover:bg-matrix-black/50'
+        : 'bg-matrix-black/60 border-l-matrix-green mr-8 hover:bg-matrix-black/70 hover:shadow-[0_0_15px_rgba(0,255,0,0.2)]'}
     `}>
+      {/* Copy Button - shows on hover */}
+      <button
+        onClick={handleCopy}
+        className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 p-1.5 rounded bg-matrix-black/50 hover:bg-matrix-green/20 text-matrix-green/60 hover:text-matrix-green"
+        title="Copy message"
+      >
+        {copied ? (
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+          </svg>
+        ) : (
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+          </svg>
+        )}
+      </button>
+
       {/* Role Icon */}
       <div className={`
         flex-shrink-0 rounded-lg p-2 border-r flex items-center
@@ -42,9 +68,11 @@ export default function ChatMessage({ message }: ChatMessageProps) {
               {Math.round(message.confidence * 100)}% confident
             </span>
           )}
-          <span className="ml-auto text-xs text-matrix-white/30">
-            {new Date(message.timestamp).toLocaleTimeString()}
-          </span>
+          {message.timestamp && (
+            <span className="ml-auto text-xs text-matrix-white/30">
+              {new Date(message.timestamp).toLocaleTimeString()}
+            </span>
+          )}
         </div>
 
         {/* Content */}

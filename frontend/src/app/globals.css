@@ -12,6 +12,23 @@
   --matrix-white: #e0e0e0;
   --glass-bg: rgba(0, 255, 0, 0.03);
   --glass-border: rgba(0, 255, 0, 0.2);
+
+  /* Animation speeds */
+  --transition-fast: 150ms;
+  --transition-normal: 300ms;
+  --transition-slow: 500ms;
+
+  /* Spacing scale */
+  --space-xs: 0.25rem;
+  --space-sm: 0.5rem;
+  --space-md: 1rem;
+  --space-lg: 1.5rem;
+  --space-xl: 2rem;
+
+  /* Glow effects */
+  --glow-green: 0 0 10px rgba(0, 255, 0, 0.5);
+  --glow-cyan: 0 0 10px rgba(0, 255, 255, 0.5);
+  --glow-intense: 0 0 20px rgba(0, 255, 0, 0.8);
 }
 
 @layer base {
@@ -21,6 +38,20 @@
       radial-gradient(ellipse at top, rgba(0, 255, 0, 0.03), transparent),
       radial-gradient(ellipse at bottom, rgba(0, 255, 255, 0.02), transparent);
     min-height: 100vh;
+    font-size: 16px;
+    line-height: 1.6;
+  }
+
+  /* Improved Typography */
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-mono;
+    text-shadow: 0 0 20px rgba(0, 255, 0, 0.3);
+  }
+
+  /* Quote styling for empty state */
+  .matrix-quote {
+    @apply italic pl-4 border-l-2 border-matrix-green/50;
+    text-shadow: 0 0 10px rgba(0, 255, 0, 0.2);
   }
 
   /* Custom Scrollbar */
@@ -80,20 +111,99 @@
     51%, 100% { opacity: 0; }
   }
 
-  /* Matrix Button */
+  /* Matrix Button - Enhanced with micro-interactions */
   .matrix-button {
-    @apply px-4 py-2 rounded-md font-mono text-sm transition-all duration-200;
+    @apply px-4 py-2 rounded-md font-mono text-sm font-medium;
     @apply bg-glass-bg border border-glass-border text-matrix-green;
-    @apply hover:bg-matrix-green hover:text-matrix-black hover:shadow-lg;
-    @apply hover:shadow-matrix-green/30 active:scale-95;
+    transition: all var(--transition-normal) ease;
+    transform-origin: center;
   }
 
-  /* Input Field */
+  .matrix-button:hover:not(:disabled) {
+    @apply bg-matrix-green text-matrix-black;
+    transform: scale(1.03);
+    box-shadow: var(--glow-green);
+  }
+
+  .matrix-button:active:not(:disabled) {
+    transform: scale(0.97);
+  }
+
+  .matrix-button:disabled {
+    @apply opacity-50 cursor-not-allowed;
+  }
+
+  /* Text button variant */
+  .matrix-text-button {
+    @apply font-mono text-sm text-matrix-green;
+    transition: all var(--transition-fast) ease;
+  }
+
+  .matrix-text-button:hover:not(:disabled) {
+    @apply text-matrix-cyan;
+    transform: scale(1.02);
+    text-shadow: var(--glow-cyan);
+  }
+
+  /* Toolbar button - compact with icon */
+  .toolbar-button {
+    @apply inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-md;
+    @apply font-mono text-xs text-matrix-white/70;
+    @apply border border-transparent;
+    @apply hover:text-matrix-green hover:bg-matrix-green/10 hover:border-matrix-green/30;
+    transition: all var(--transition-fast) ease;
+  }
+
+  .toolbar-button:hover:not(:disabled) svg {
+    @apply text-matrix-green;
+  }
+
+  .toolbar-button:active:not(:disabled) {
+    transform: scale(0.97);
+  }
+
+  /* Icon spin animation for settings gear */
+  .icon-spin-hover:hover svg {
+    animation: spin-gentle 0.5s ease-in-out;
+  }
+
+  @keyframes spin-gentle {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(90deg); }
+  }
+
+  /* Input Field - Enhanced */
   .matrix-input {
-    @apply w-full px-4 py-2 rounded-md font-mono text-sm;
+    @apply w-full px-4 py-3 rounded-md font-mono text-base;
     @apply bg-glass-bg border border-glass-border text-matrix-white;
-    @apply focus:outline-none focus:border-matrix-green focus:ring-1 focus:ring-matrix-green;
-    @apply placeholder:text-matrix-white/50;
+    @apply focus:outline-none focus:border-matrix-green;
+    @apply placeholder:text-matrix-white/60;
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3);
+    transition: all var(--transition-normal) ease;
+    min-height: 48px;
+  }
+
+  .matrix-input:focus {
+    box-shadow:
+      inset 0 2px 4px rgba(0, 0, 0, 0.3),
+      0 0 0 2px rgba(0, 255, 0, 0.3),
+      var(--glow-green);
+    animation: input-glow-pulse 2s ease-in-out infinite;
+  }
+
+  @keyframes input-glow-pulse {
+    0%, 100% {
+      box-shadow:
+        inset 0 2px 4px rgba(0, 0, 0, 0.3),
+        0 0 0 2px rgba(0, 255, 0, 0.3),
+        0 0 10px rgba(0, 255, 0, 0.4);
+    }
+    50% {
+      box-shadow:
+        inset 0 2px 4px rgba(0, 0, 0, 0.3),
+        0 0 0 2px rgba(0, 255, 0, 0.5),
+        0 0 20px rgba(0, 255, 0, 0.6);
+    }
   }
 
   /* Message Animation */
@@ -153,5 +263,131 @@
   /* Matrix Shadow */
   .matrix-shadow {
     box-shadow: 0 0 30px rgba(0, 255, 0, 0.3);
+  }
+
+  /* Typing indicator - "Morpheus is thinking..." */
+  .typing-indicator {
+    @apply flex items-center space-x-1 text-matrix-green font-mono text-sm;
+  }
+
+  .typing-indicator span {
+    @apply inline-block w-2 h-2 bg-matrix-green rounded-full;
+    animation: typing-bounce 1.4s ease-in-out infinite;
+  }
+
+  .typing-indicator span:nth-child(1) {
+    animation-delay: 0s;
+  }
+
+  .typing-indicator span:nth-child(2) {
+    animation-delay: 0.2s;
+  }
+
+  .typing-indicator span:nth-child(3) {
+    animation-delay: 0.4s;
+  }
+
+  @keyframes typing-bounce {
+    0%, 60%, 100% {
+      transform: translateY(0);
+      opacity: 0.4;
+    }
+    30% {
+      transform: translateY(-4px);
+      opacity: 1;
+    }
+  }
+
+  /* Panel slide animation */
+  .slide-in-right {
+    animation: slide-in-right 0.3s ease-out;
+  }
+
+  @keyframes slide-in-right {
+    from {
+      opacity: 0;
+      transform: translateX(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+
+  /* Focus ring for accessibility */
+  .focus-ring {
+    @apply focus:outline-none focus:ring-2 focus:ring-matrix-green focus:ring-offset-2 focus:ring-offset-matrix-black;
+  }
+
+  /* Smooth transitions */
+  .transition-smooth {
+    transition: all var(--transition-normal) ease;
+  }
+
+  /* Better disabled state */
+  .disabled-matrix {
+    @apply opacity-50 cursor-not-allowed pointer-events-none;
+  }
+
+  /* ==================== */
+  /* Mobile Responsive    */
+  /* ==================== */
+
+  /* Hide text labels on small screens, show only icons */
+  @media (max-width: 640px) {
+    .toolbar-button span {
+      @apply hidden;
+    }
+
+    .toolbar-button {
+      @apply px-2.5 py-2.5; /* Larger touch targets (44x44px min) */
+    }
+
+    .toolbar-button svg {
+      @apply w-5 h-5;
+    }
+
+    /* Provider badge - compact on mobile */
+    .provider-badge span:last-child {
+      @apply hidden;
+    }
+
+    /* Side panels - full width on mobile */
+    .side-panel-mobile {
+      @apply w-full;
+    }
+
+    /* Quote text smaller on mobile */
+    .matrix-quote {
+      @apply text-base;
+    }
+
+    /* Input area adjustments */
+    .matrix-input {
+      @apply text-base; /* Prevent iOS zoom on focus */
+    }
+  }
+
+  /* Medium screens - show abbreviated labels */
+  @media (min-width: 641px) and (max-width: 768px) {
+    .toolbar-button {
+      @apply px-2 py-1.5;
+    }
+  }
+
+  /* Touch-friendly on all mobile devices */
+  @media (hover: none) and (pointer: coarse) {
+    .toolbar-button {
+      @apply min-h-[44px] min-w-[44px];
+    }
+
+    /* Remove hover effects that don't work on touch */
+    .toolbar-button:hover {
+      @apply bg-transparent border-transparent;
+    }
+
+    .toolbar-button:active {
+      @apply bg-matrix-green/10 border-matrix-green/30;
+    }
   }
 }

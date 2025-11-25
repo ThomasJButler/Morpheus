@@ -26,7 +26,7 @@ export default function MessageList({
   return (
     <div className={`
       border-2 border-matrix-green/30 p-4 rounded-lg overflow-y-auto
-      flex-grow flex flex-col justify-end bg-matrix-black/20
+      flex-grow flex flex-col bg-matrix-black/20
       ${className}
     `}>
       {/* Empty state */}

@@ -6,6 +6,7 @@ interface GlassPanelProps {
   className?: string;
   variant?: 'default' | 'subtle' | 'bordered';
   glow?: boolean;
+  noPadding?: boolean;
 }
 
 export default function GlassPanel({
@@ -13,17 +14,19 @@ export default function GlassPanel({
   className = '',
   variant = 'default',
   glow = false,
+  noPadding = false,
 }: GlassPanelProps) {
   return (
     <div
       className={clsx(
         'glass-panel transition-all duration-300',
         {
-          'hover:border-matrix-green hover:shadow-lg hover:shadow-matrix-green/20':
+          'hover:border-matrix-green/60 hover:shadow-lg hover:shadow-matrix-green/15':
             variant === 'default',
           'bg-glass-bg/50': variant === 'subtle',
           'border-2': variant === 'bordered',
-          'matrix-shadow': glow,
+          'matrix-shadow animate-glow-pulse': glow,
+          'p-6': !noPadding,
         },
         className
       )}
