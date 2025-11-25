@@ -4,7 +4,7 @@ Loads environment variables and provides typed configuration access.
 """
 
 from functools import lru_cache
-from typing import List
+from typing import List, Optional
 
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -16,9 +16,9 @@ class Settings(BaseSettings):
     Uses Pydantic for validation and type safety.
     """
 
-    # API Keys
-    anthropic_api_key: str = Field(..., description="Anthropic API key for Claude")
-    openai_api_key: str = Field(..., description="OpenAI API key for embeddings")
+    # API Keys - Anthropic/OpenAI are optional since users provide via frontend
+    anthropic_api_key: Optional[str] = Field(default=None, description="Anthropic API key for Claude (optional - users provide via frontend)")
+    openai_api_key: Optional[str] = Field(default=None, description="OpenAI API key for embeddings")
     pinecone_api_key: str = Field(..., description="Pinecone API key")
 
     # Pinecone Configuration

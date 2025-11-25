@@ -124,14 +124,15 @@ async def chat(request: ChatRequest):
 @router.post("/context")
 async def get_context(request: dict):
     """
-    Get citations/context for a query (used after streaming completes).
-    Similar to pinecone-vercel-starter pattern.
+    Get RAG context and citations for a query.
+    Used by Next.js BFF to inject context into Claude prompts.
+    Returns both formatted context string AND citations.
 
     Args:
-        request: Dict containing 'query' string
+        request: Dict containing 'query' string or 'messages' array
 
     Returns:
-        dict: Citations for the query
+        dict: Formatted context, citations, and metrics
     """
     try:
         query = request.get("query", "")
@@ -142,16 +143,27 @@ async def get_context(request: dict):
                 query = messages[-1].get("content", "")
 
         if not query:
-            return {"citations": [], "message": "No query provided"}
+            return {"context": "", "citations": [], "count": 0}
 
         logger.info(f"Context request for query: {query[:50]}...")
 
-        # Retrieve context using RAG pipeline
-        _, citations, _ = await rag_pipeline.process_query(query)
+        # 1. Embed query
+        query_embedding = await rag_pipeline.embed_query(query)
+
+        # 2. Retrieve context from Pinecone
+        contexts, metrics = await rag_pipeline.retrieve_context(query_embedding)
+
+        # 3. Format context for prompt injection
+        formatted_context = rag_pipeline.format_context_for_prompt(contexts)
+
+        # 4. Create citations
+        citations = rag_pipeline.create_citations(contexts)
 
         return {
+            "context": formatted_context,
             "citations": [c.dict() for c in citations],
-            "count": len(citations)
+            "count": len(citations),
+            "metrics": metrics.dict() if metrics else None
         }
 
     except Exception as e:
