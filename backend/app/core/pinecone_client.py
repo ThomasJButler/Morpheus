@@ -89,98 +89,63 @@ class PineconeClient:
 
     def get_sparse_index(self):
         """
-        Get or create Pinecone sparse index for hybrid search.
+        Get sparse index (not used in simplified version).
 
         Returns:
-            Index: Pinecone sparse index instance
-
-        Raises:
-            RuntimeError: If index cannot be accessed or created
+            None: Sparse index not available in simplified semantic search mode
         """
-        if not settings.use_hybrid_search:
-            logger.warning("Hybrid search is disabled in settings")
-            return None
-
-        if self._sparse_index is None:
-            try:
-                # Check if sparse index exists
-                existing_indexes = self._pc.list_indexes()
-                index_names = [idx.name for idx in existing_indexes]
-
-                sparse_index_name = settings.pinecone_sparse_index_name
-
-                if sparse_index_name not in index_names:
-                    logger.info(f"Creating Pinecone sparse index: {sparse_index_name}")
-                    # Sparse indexes typically use lower dimensions
-                    self._pc.create_index(
-                        name=sparse_index_name,
-                        dimension=settings.pinecone_dimension,
-                        metric="dotproduct",  # Better for sparse vectors
-                        spec=ServerlessSpec(
-                            cloud="aws", region=settings.pinecone_environment
-                        ),
-                    )
-                    logger.info("Sparse index created successfully")
-                else:
-                    logger.info(f"Using existing sparse index: {sparse_index_name}")
-
-                self._sparse_index = self._pc.Index(sparse_index_name)
-
-            except Exception as e:
-                logger.error(f"Failed to get/create sparse index: {e}")
-                raise RuntimeError(f"Pinecone sparse index error: {e}")
-
-        return self._sparse_index
+        logger.warning("Sparse index not available - using dense semantic search only")
+        return None
 
     def get_both_indexes(self) -> tuple:
         """
-        Get both dense and sparse indexes for hybrid search.
+        Get dense index (simplified version - no sparse index).
 
         Returns:
-            tuple: (dense_index, sparse_index)
+            tuple: (dense_index, None)
         """
         dense = self.get_index()
-        sparse = self.get_sparse_index() if settings.use_hybrid_search else None
+        sparse = None  # Sparse index not used in simplified version
         return dense, sparse
 
-    def index_stats(self, include_sparse: bool = False) -> dict:
+    def index_stats(self) -> dict:
         """
         Get current index statistics.
-
-        Args:
-            include_sparse: Include sparse index stats if available
 
         Returns:
             dict: Index statistics including vector count, dimension, etc.
         """
         try:
-            stats = {}
-
             # Dense index stats
             dense_index = self.get_index()
-            stats["dense"] = dense_index.describe_index_stats()
+            dense_stats = dense_index.describe_index_stats()
 
-            # Sparse index stats if requested and available
-            if include_sparse and settings.use_hybrid_search:
-                try:
-                    sparse_index = self.get_sparse_index()
-                    if sparse_index:
-                        stats["sparse"] = sparse_index.describe_index_stats()
-                except Exception as e:
-                    logger.warning(f"Could not get sparse index stats: {e}")
+            # Manually serialize namespaces to avoid RLock serialization issues
+            namespaces_dict = {}
+            if dense_stats.namespaces:
+                for namespace_name, namespace_obj in dense_stats.namespaces.items():
+                    # Extract only primitive values from namespace objects
+                    namespaces_dict[namespace_name] = {
+                        "vector_count": getattr(namespace_obj, "vector_count", 0)
+                    }
+
+            stats = {
+                "dense": {
+                    "total_vector_count": dense_stats.total_vector_count,
+                    "dimension": dense_stats.dimension,
+                    "namespaces": namespaces_dict
+                }
+            }
 
             return stats
         except Exception as e:
-            logger.error(f"Failed to get index stats: {e}")
+            logger.error(f"Failed to get index stats: {e}", exc_info=True)
             return {}
 
-    def delete_all_vectors(self, include_sparse: bool = True) -> bool:
+    def delete_all_vectors(self) -> bool:
         """
-        Delete all vectors from the index.
+        Delete all vectors from the dense index.
         USE WITH CAUTION - This is irreversible.
-
-        Args:
-            include_sparse: Also delete from sparse index if available
 
         Returns:
             bool: True if successful, False otherwise
@@ -190,17 +155,6 @@ class PineconeClient:
             dense_index = self.get_index()
             dense_index.delete(delete_all=True)
             logger.warning("All vectors deleted from dense index")
-
-            # Delete from sparse index if requested
-            if include_sparse and settings.use_hybrid_search:
-                try:
-                    sparse_index = self.get_sparse_index()
-                    if sparse_index:
-                        sparse_index.delete(delete_all=True)
-                        logger.warning("All vectors deleted from sparse index")
-                except Exception as e:
-                    logger.error(f"Failed to delete from sparse index: {e}")
-                    return False
 
             return True
         except Exception as e:

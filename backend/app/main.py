@@ -101,6 +101,29 @@ async def global_exception_handler(request, exc):
     )
 
 
+# Explicit OPTIONS handler for preflight requests
+@app.options("/{rest_of_path:path}")
+async def preflight_handler(rest_of_path: str):
+    """
+    Handle OPTIONS preflight requests explicitly.
+
+    Args:
+        rest_of_path: The path being requested
+
+    Returns:
+        JSONResponse: Empty response with CORS headers
+    """
+    return JSONResponse(
+        content={},
+        headers={
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+            "Access-Control-Allow-Headers": "*",
+            "Access-Control-Max-Age": "86400",  # Cache preflight for 24 hours
+        }
+    )
+
+
 # Include routers
 app.include_router(chat_router)
 app.include_router(documents_router)

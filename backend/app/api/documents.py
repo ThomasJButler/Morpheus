@@ -230,7 +230,7 @@ async def get_document_stats():
     """
     try:
         pinecone_client = get_pinecone_client()
-        stats = pinecone_client.index_stats(include_sparse=True)
+        stats = pinecone_client.index_stats()
 
         return {
             "success": True,
@@ -238,8 +238,22 @@ async def get_document_stats():
         }
 
     except Exception as e:
-        logger.error(f"Error getting stats: {e}")
-        raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
+        logger.error(f"Error getting stats: {e}", exc_info=True)
+        # Return JSONResponse with explicit CORS headers on error
+        from fastapi.responses import JSONResponse
+        return JSONResponse(
+            status_code=500,
+            content={
+                "success": False,
+                "error": str(e),
+                "detail": f"Failed to fetch document statistics: {str(e)}"
+            },
+            headers={
+                "Access-Control-Allow-Origin": "*",
+                "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+                "Access-Control-Allow-Headers": "*",
+            }
+        )
 
 
 @router.delete("/all")
@@ -254,7 +268,7 @@ async def delete_all_documents():
     """
     try:
         pinecone_client = get_pinecone_client()
-        success = pinecone_client.delete_all_vectors(include_sparse=True)
+        success = pinecone_client.delete_all_vectors()
 
         if success:
             return {

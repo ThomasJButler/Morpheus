@@ -29,12 +29,6 @@ class Settings(BaseSettings):
         default="morpheus", description="Pinecone index name"
     )
     pinecone_dimension: int = Field(default=1536, description="Embedding dimension")
-    pinecone_sparse_index_name: str = Field(
-        default="morpheus-sparse", description="Pinecone sparse index name (for hybrid search)"
-    )
-    use_hybrid_search: bool = Field(
-        default=True, description="Enable hybrid (dense + sparse) search"
-    )
 
     # Model Configuration
     anthropic_model: str = Field(
@@ -43,28 +37,13 @@ class Settings(BaseSettings):
     embedding_model: str = Field(
         default="text-embedding-3-large", description="OpenAI embedding model"
     )
-    reranker_model: str = Field(
-        default="bge-reranker-v2-m3", description="Reranker model"
-    )
 
     # RAG Configuration
     max_chunk_size: int = Field(default=1000, description="Maximum chunk size")
     chunk_overlap: int = Field(default=200, description="Chunk overlap")
     top_k_results: int = Field(default=10, description="Top K results to retrieve")
-    rerank_top_k: int = Field(default=5, description="Top K after reranking")
     min_relevance_score: float = Field(
-        default=0.7, description="Minimum relevance score"
-    )
-
-    # Hybrid Search Configuration
-    dense_weight: float = Field(
-        default=0.5, description="Weight for dense retrieval in hybrid search (0-1)"
-    )
-    sparse_weight: float = Field(
-        default=0.5, description="Weight for sparse retrieval in hybrid search (0-1)"
-    )
-    use_reranker: bool = Field(
-        default=True, description="Enable reranking after retrieval"
+        default=0.3, description="Minimum relevance score"
     )
 
     # Document Processing
@@ -82,7 +61,6 @@ class Settings(BaseSettings):
         default="http://localhost:3000,http://127.0.0.1:3000",
         description="Allowed CORS origins",
     )
-    rate_limit: str = Field(default="10/minute", description="Rate limit")
 
     # Logging
     log_level: str = Field(default="INFO", description="Logging level")

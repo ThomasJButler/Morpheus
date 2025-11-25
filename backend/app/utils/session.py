@@ -10,7 +10,7 @@ import uuid
 from datetime import datetime, timedelta
 from typing import Dict, Optional
 
-from app.models.chat import ChatMessage, Citation, RAGMode, Session
+from app.models.chat import ChatMessage, Citation, Session
 
 logger = logging.getLogger(__name__)
 
@@ -36,14 +36,12 @@ class SessionManager:
 
     def create_session(
         self,
-        mode: RAGMode = RAGMode.SIMPLE,
         metadata: Optional[dict] = None,
     ) -> Session:
         """
         Create a new conversation session.
 
         Args:
-            mode: Default RAG mode for the session
             metadata: Optional metadata to attach
 
         Returns:
@@ -53,7 +51,6 @@ class SessionManager:
 
         session = Session(
             session_id=session_id,
-            mode=mode,
             metadata=metadata or {},
         )
 
@@ -139,14 +136,12 @@ class SessionManager:
     def get_or_create_session(
         self,
         session_id: Optional[str] = None,
-        mode: RAGMode = RAGMode.SIMPLE,
     ) -> Session:
         """
         Get existing session or create new one.
 
         Args:
             session_id: Optional session ID to retrieve
-            mode: RAG mode for new sessions
 
         Returns:
             Existing or new session
@@ -157,7 +152,7 @@ class SessionManager:
                 return session
 
         # Create new session
-        return self.create_session(mode=mode)
+        return self.create_session()
 
     def cleanup_expired_sessions(self):
         """
@@ -243,18 +238,15 @@ def get_session_manager(ttl_minutes: int = 60) -> SessionManager:
 
 
 # Convenience functions
-def create_session(mode: RAGMode = RAGMode.SIMPLE) -> Session:
+def create_session() -> Session:
     """
     Quick session creation.
-
-    Args:
-        mode: RAG mode for session
 
     Returns:
         New session
     """
     manager = get_session_manager()
-    return manager.create_session(mode=mode)
+    return manager.create_session()
 
 
 def get_session(session_id: str) -> Optional[Session]:

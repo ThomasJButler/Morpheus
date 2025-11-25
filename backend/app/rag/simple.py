@@ -11,8 +11,9 @@ from anthropic import AsyncAnthropic
 from openai import AsyncOpenAI
 
 from app.core.config import settings
+from app.core.morpheus_prompts import get_system_prompt, get_user_prompt_template
 from app.core.pinecone_client import get_pinecone_client
-from app.models.chat import Citation, RAGMode, RetrievalMetrics, StreamChunk
+from app.models.chat import Citation, RetrievalMetrics, StreamChunk
 
 logger = logging.getLogger(__name__)
 
@@ -42,12 +43,19 @@ class SimpleRAG:
             query: User input text
 
         Returns:
-            List[float]: Embedding vector (1536 dimensions)
+            List[float]: Embedding vector (512 dimensions for small model, 1536 for large)
         """
         try:
-            response = await self.openai_client.embeddings.create(
-                model=settings.embedding_model, input=query
-            )
+            # For text-embedding-3-small, explicitly set dimensions to 512
+            dimensions = 512 if "small" in settings.embedding_model else None
+            embedding_params = {
+                "model": settings.embedding_model,
+                "input": query
+            }
+            if dimensions:
+                embedding_params["dimensions"] = dimensions
+
+            response = await self.openai_client.embeddings.create(**embedding_params)
             return response.data[0].embedding
         except Exception as e:
             logger.error(f"Embedding generation failed: {e}")
@@ -171,7 +179,7 @@ class SimpleRAG:
         self, query: str, contexts: List[dict]
     ) -> AsyncGenerator[str, None]:
         """
-        Generate streaming response using Claude.
+        Generate streaming response using Claude with Morpheus personality.
 
         Args:
             query: User query
@@ -183,17 +191,15 @@ class SimpleRAG:
         # Format context
         context_str = self.format_context_for_prompt(contexts)
 
-        # Create prompt
-        system_prompt = """You are a helpful AI assistant with access to a knowledge base.
-Answer questions based on the provided context. If the context doesn't contain relevant information,
-say so clearly. Always cite sources when using information from the context."""
+        # Use Morpheus personality system
+        system_prompt = get_system_prompt()
 
-        user_prompt = f"""Context from knowledge base:
-{context_str}
-
-User question: {query}
-
-Please provide a comprehensive answer based on the context above. Include source citations."""
+        # Get user prompt template
+        user_prompt_template = get_user_prompt_template()
+        user_prompt = user_prompt_template.format(
+            context=context_str,
+            query=query
+        )
 
         try:
             # Stream response from Claude

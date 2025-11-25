@@ -10,13 +10,7 @@ from typing import List, Optional
 from pydantic import BaseModel, Field
 
 
-class RAGMode(str, Enum):
-    """Available RAG processing modes."""
-
-    SIMPLE = "simple"
-    HYBRID = "hybrid"
-    CASCADING = "cascading"
-    AGENTIC = "agentic"
+# Simplified - no modes, just one semantic search approach
 
 
 class Citation(BaseModel):
@@ -67,7 +61,6 @@ class Session(BaseModel):
     messages: List[ChatMessage] = Field(default=[], description="Conversation history")
     created_at: datetime = Field(default_factory=datetime.now, description="Session creation time")
     updated_at: datetime = Field(default_factory=datetime.now, description="Last update time")
-    mode: RAGMode = Field(default=RAGMode.SIMPLE, description="Default RAG mode for session")
     metadata: dict = Field(default={}, description="Additional session metadata")
 
     def add_message(self, role: str, content: str, citations: Optional[List[Citation]] = None):
@@ -100,10 +93,15 @@ class Session(BaseModel):
 class ChatRequest(BaseModel):
     """
     Request payload for chat endpoint.
+    Supports both single message format and Vercel AI SDK messages array format.
     """
 
-    message: str = Field(..., description="User's message", min_length=1, max_length=2000)
-    mode: RAGMode = Field(default=RAGMode.SIMPLE, description="RAG processing mode")
+    # Single message format (legacy)
+    message: Optional[str] = Field(None, description="User's message (legacy format)")
+
+    # Vercel AI SDK format (messages array)
+    messages: Optional[List[dict]] = Field(None, description="Array of message objects with 'role' and 'content'")
+
     session_id: Optional[str] = Field(None, description="Session identifier for context")
     stream: bool = Field(default=True, description="Whether to stream the response")
     history: Optional[List[ChatMessage]] = Field(
@@ -111,11 +109,11 @@ class ChatRequest(BaseModel):
     )
 
     class Config:
+        # Allow extra fields from Vercel AI SDK (like 'id', 'data', etc.)
+        extra = "allow"
         json_schema_extra = {
             "example": {
-                "message": "What is RAG?",
-                "mode": "simple",
-                "session_id": "abc123",
+                "messages": [{"role": "user", "content": "What is RAG?"}],
                 "stream": True,
             }
         }
@@ -129,7 +127,6 @@ class ChatResponse(BaseModel):
 
     message: str = Field(..., description="Assistant's response")
     citations: List[Citation] = Field(default=[], description="Source citations")
-    mode: RAGMode = Field(..., description="RAG mode used")
     metrics: Optional[RetrievalMetrics] = Field(None, description="Retrieval metrics")
     confidence: Optional[float] = Field(
         None, description="Confidence score (0-1)", ge=0, le=1
@@ -151,7 +148,6 @@ class ChatResponse(BaseModel):
                         "text_preview": "RAG combines retrieval and generation...",
                     }
                 ],
-                "mode": "simple",
                 "confidence": 0.92,
             }
         }
@@ -163,12 +159,13 @@ class StreamChunk(BaseModel):
     Sent via Server-Sent Events (SSE).
     """
 
-    type: str = Field(..., description="Chunk type: 'token', 'citation', 'done'")
+    type: str = Field(..., description="Chunk type: 'token', 'citation', 'done', 'error'")
     content: Optional[str] = Field(None, description="Text content if type=token")
     citation: Optional[Citation] = Field(None, description="Citation if type=citation")
     metrics: Optional[RetrievalMetrics] = Field(
         None, description="Metrics if type=done"
     )
+    error: Optional[str] = Field(None, description="Error message if type=error")
 
 
 class HealthResponse(BaseModel):
