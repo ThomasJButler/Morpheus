@@ -25,7 +25,7 @@ services:
       - CORS_ORIGINS=http://localhost:3000,http://127.0.0.1:3000
     volumes:
       # Mount code for development with hot-reload
-      - ./backend/app:/app/app:ro
+      - ./backend/app:/app/app
       # Mount logs directory
       - ./backend/logs:/app/logs
     networks:
@@ -57,8 +57,8 @@ services:
       - NEXT_PUBLIC_DEBUG=true
     volumes:
       # Mount source code for hot-reload
-      - ./frontend/src:/app/src:ro
-      - ./frontend/public:/app/public:ro
+      - ./frontend/src:/app/src
+      - ./frontend/public:/app/public
       # Node modules volume (don't overwrite with host)
       - frontend-node-modules:/app/node_modules
     networks:

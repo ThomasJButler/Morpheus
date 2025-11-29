@@ -1,6 +1,6 @@
 """
 FastAPI application entry point.
-RAG Chatbot backend with streaming support and multiple retrieval modes.
+Morpheus backend with streaming support and multiple retrieval modes.
 """
 
 import logging
@@ -39,7 +39,7 @@ async def lifespan(app: FastAPI):
         app: FastAPI application instance
     """
     # Startup
-    logger.info("Starting RAG Chatbot backend...")
+    logger.info("Starting Morpheus backend...")
 
     try:
         # Initialize Pinecone connection
@@ -55,12 +55,12 @@ async def lifespan(app: FastAPI):
     yield
 
     # Shutdown
-    logger.info("Shutting down RAG Chatbot backend...")
+    logger.info("Shutting down Morpheus backend...")
 
 
 # Create FastAPI app
 app = FastAPI(
-    title="RAG Chatbot API",
+    title="Morpheus API",
     description="Advanced RAG chatbot with multiple retrieval modes and streaming support",
     version="1.0.0",
     docs_url="/docs",
@@ -140,7 +140,7 @@ async def root():
         dict: API info
     """
     return {
-        "name": "RAG Chatbot API",
+        "name": "Morpheus API",
         "version": "1.0.0",
         "status": "operational",
         "docs": "/docs",
