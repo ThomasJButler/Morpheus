@@ -129,7 +129,7 @@ class TestOpenAPIDocumentation:
         assert "openapi" in schema
         assert "paths" in schema
         assert "info" in schema
-        assert schema["info"]["title"] == "RAG Chatbot API"
+        assert schema["info"]["title"] == "Morpheus API"
 
 
 class TestAppLifecycle:

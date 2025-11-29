@@ -72,8 +72,8 @@
 
 ```bash
 # 1. Clone repository
-git clone https://github.com/yourusername/morpheus-rag.git
-cd morpheus-rag
+git clone https://github.com/ThomasJButler/Morpheus.git
+cd Morpheus
 
 # 2. Set up environment files
 cp backend/.env.example backend/.env
@@ -424,7 +424,7 @@ vercel --prod
 
 # Dense Index (Required):
 Name: morpheus
-Dimensions: 512  # For text-embedding-3-small
+Dimensions: 1536  # For text-embedding-3-large
 Metric: cosine
 Cloud: AWS
 Region: us-east-1
@@ -761,8 +761,7 @@ npm install @sentry/nextjs
 ## Support
 
 - **Documentation:** [CLAUDE.md](./CLAUDE.md)
-- **Issues:** [GitHub Issues](https://github.com/yourusername/morpheus-rag/issues)
-- **Email:** your.email@example.com
+- **Issues:** [GitHub Issues](https://github.com/ThomasJButler/Morpheus/issues)
 
 ---
 

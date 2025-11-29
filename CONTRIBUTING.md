@@ -30,8 +30,8 @@ This project adheres to a [Code of Conduct](CODE_OF_CONDUCT.md). By participatin
 
 1. **Fork and Clone**
    ```bash
-   git clone https://github.com/yourusername/morpheus.git
-   cd morpheus
+   git clone https://github.com/ThomasJButler/Morpheus.git
+   cd Morpheus
    ```
 
 2. **Backend Setup**
@@ -515,4 +515,4 @@ Thank you for contributing to Morpheus! 🎉
 
 ---
 
-**Questions?** Open a [discussion](https://github.com/yourusername/morpheus/discussions) or reach out to maintainers.
+**Questions?** Open a [discussion](https://github.com/ThomasJButler/Morpheus/discussions) or reach out to maintainers.

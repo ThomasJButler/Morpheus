@@ -83,7 +83,7 @@ export default function Home() {
             </p>
           </div>
           <a
-            href="https://github.com/tombutler/RAG-Chatbot"
+            href="https://github.com/ThomasJButler/Morpheus"
             target="_blank"
             rel="noopener noreferrer"
             className="p-2 rounded-full border border-matrix-green/30 text-matrix-green/70 hover:text-matrix-green hover:bg-matrix-green/10 hover:border-matrix-green/50 transition-all"

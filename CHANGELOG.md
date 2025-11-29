@@ -49,10 +49,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **DEPLOYMENT**: Step-by-step deployment guide
 - **IMPLEMENTATION_SUMMARY**: Backend architecture details
 - **TESTING**: Complete testing documentation
-- **BLOG_POST**: Technical deep-dive article
-- **CASE_STUDY**: Portfolio-quality case study
-- **ACCESSIBILITY**: WCAG compliance checklist
-- **DEMO_VIDEO_GUIDE**: Recording script
 - **CONTRIBUTING**: Contribution guidelines
 - **CODE_OF_CONDUCT**: Community standards
 
@@ -120,7 +116,7 @@ Given a version number MAJOR.MINOR.PATCH:
 
 ---
 
-[Unreleased]: https://github.com/yourusername/morpheus/compare/v1.0.0...HEAD
-[1.0.0]: https://github.com/yourusername/morpheus/releases/tag/v1.0.0
-[0.2.0]: https://github.com/yourusername/morpheus/releases/tag/v0.2.0
-[0.1.0]: https://github.com/yourusername/morpheus/releases/tag/v0.1.0
+[Unreleased]: https://github.com/ThomasJButler/Morpheus/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/ThomasJButler/Morpheus/releases/tag/v1.0.0
+[0.2.0]: https://github.com/ThomasJButler/Morpheus/releases/tag/v0.2.0
+[0.1.0]: https://github.com/ThomasJButler/Morpheus/releases/tag/v0.1.0

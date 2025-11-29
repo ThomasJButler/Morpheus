@@ -10,15 +10,15 @@
 [![Next.js](https://img.shields.io/badge/Next.js-15-black.svg)](https://nextjs.org/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.115+-green.svg)](https://fastapi.tiangolo.com/)
 
-[![Backend CI](https://github.com/yourusername/morpheus/workflows/Backend%20CI/badge.svg)](https://github.com/yourusername/morpheus/actions)
-[![Frontend CI](https://github.com/yourusername/morpheus/workflows/Frontend%20CI/badge.svg)](https://github.com/yourusername/morpheus/actions)
-[![codecov](https://codecov.io/gh/yourusername/morpheus/branch/main/graph/badge.svg)](https://codecov.io/gh/yourusername/morpheus)
+[![Backend CI](https://github.com/ThomasJButler/Morpheus/workflows/Backend%20CI/badge.svg)](https://github.com/ThomasJButler/Morpheus/actions)
+[![Frontend CI](https://github.com/ThomasJButler/Morpheus/workflows/Frontend%20CI/badge.svg)](https://github.com/ThomasJButler/Morpheus/actions)
+[![codecov](https://codecov.io/gh/ThomasJButler/Morpheus/branch/main/graph/badge.svg)](https://codecov.io/gh/ThomasJButler/Morpheus)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
 [![Code of Conduct](https://img.shields.io/badge/code%20of%20conduct-contributor%20covenant-green.svg)](CODE_OF_CONDUCT.md)
 
 ---
 
-## 🎯 What Makes Morpheus Different
+## What Makes Morpheus Different
 
 Unlike basic RAG implementations that just match queries to documents, **Morpheus thinks before it searches**.
 
@@ -34,14 +34,14 @@ Unlike basic RAG implementations that just match queries to documents, **Morpheu
 
 **Morpheus** isn't just another RAG chatbot—it's an intelligent document reasoning system that demonstrates production-ready AI engineering.
 
-#### 🧠 **Agentic Intelligence**
+#### Agentic Intelligence
 Claude doesn't just answer—it **reasons about how to find the answer**:
 - Analyzes query intent and complexity
 - Decides whether to search, what terms to use
 - Can perform multiple targeted searches
 - Synthesizes findings with full context awareness
 
-#### ⚡ **Cascading Retrieval Pipeline**
+#### Cascading Retrieval Pipeline
 Hybrid approach combining multiple retrieval methods:
 ```
 Dense Retrieval (semantic) → Sparse Retrieval (BM25) →
@@ -49,19 +49,19 @@ Cross-Encoder Reranking → Context Fusion
 ```
 **Result:** 48% better retrieval performance vs. single-method baseline
 
-#### 🔄 **Intelligent Query Enhancement**
+#### Intelligent Query Enhancement
 - Automatic query rewriting for ambiguous inputs
 - Term expansion and clarification
 - Multi-step reasoning for complex questions
 
-#### 💎 **Production Polish**
+#### Production Polish
 - Full TypeScript strict mode
 - Streaming responses with Server-Sent Events
 - Built-in metrics and performance monitoring
 - Comprehensive test coverage
 - Docker containerization
 
-#### 🎨 **Matrix-Themed Interface**
+#### Matrix-Themed Interface
 A stunning visual experience matching technical sophistication:
 - Terminal-style interactions with animated typing
 - Glass morphism panels with subtle backdrop blur
@@ -71,7 +71,7 @@ A stunning visual experience matching technical sophistication:
 
 ---
 
-## 📊 Performance Benchmarks
+## Performance Benchmarks
 
 | Metric | Simple Search | Morpheus (Cascading) | Improvement |
 |--------|---------------|---------------------|-------------|
@@ -81,7 +81,7 @@ A stunning visual experience matching technical sophistication:
 
 ---
 
-## 🏗️ Architecture
+## Architecture
 
 ### System Design
 ```
@@ -140,7 +140,7 @@ Claude autonomously orchestrates the search:
 
 ---
 
-## 🛠️ Tech Stack
+## Tech Stack
 
 ### Backend (Python)
 - **Framework**: FastAPI (async, high-performance)
@@ -169,7 +169,7 @@ Claude autonomously orchestrates the search:
 
 ---
 
-## 🚀 Quick Start
+## Quick Start
 
 ### Prerequisites
 - Python 3.11+
@@ -220,7 +220,7 @@ Open [http://localhost:3000](http://localhost:3000) to see Morpheus in action!
 
 ---
 
-## 📁 Project Structure
+## Project Structure
 
 ```
 Morpheus/
@@ -257,7 +257,7 @@ Morpheus/
 
 ---
 
-## 🔧 Configuration
+## Configuration
 
 ### Environment Variables
 
@@ -296,7 +296,7 @@ NEXT_PUBLIC_STREAM_TIMEOUT=30000
 
 ---
 
-## 📚 API Documentation
+## API Documentation
 
 ### Core Endpoints
 
@@ -348,7 +348,7 @@ Compare performance of different RAG modes.
 
 ---
 
-## 🧪 Testing
+## Testing
 
 ```bash
 # Backend tests
@@ -363,7 +363,7 @@ npm run test:e2e  # Playwright E2E tests
 
 ---
 
-## 🚀 Deployment
+## Deployment
 
 **Full deployment guide:** [DEPLOYMENT.md](DEPLOYMENT.md)
 
@@ -428,7 +428,7 @@ See comprehensive environment templates:
 
 ### Post-Deployment
 
-1. Create Pinecone index (512 dimensions for text-embedding-3-small)
+1. Create Pinecone index (1536 dimensions for text-embedding-3-large)
 2. Update backend `CORS_ORIGINS` with frontend URL
 3. Set all API keys in platform dashboards
 4. Test health check: `curl https://your-backend-url/api/health`
@@ -437,7 +437,7 @@ See comprehensive environment templates:
 
 ---
 
-## 🎨 Design System
+## Design System
 
 ### Matrix Theme Colors
 ```css
@@ -456,7 +456,7 @@ See comprehensive environment templates:
 
 ---
 
-## 🚀 Why This Showcases Engineering Excellence
+## Why This Showcases Engineering Excellence
 
 1. **Advanced AI/ML**: Goes beyond basic RAG to agentic reasoning
 2. **Performance Engineering**: Benchmarked and optimized (48% improvement)
@@ -467,7 +467,7 @@ See comprehensive environment templates:
 
 ---
 
-## 📖 Documentation
+## Documentation
 
 - [CLAUDE.md](CLAUDE.md) - Comprehensive project instructions
 - [Backend Implementation](backend/IMPLEMENTATION_SUMMARY.md) - Backend details
@@ -475,7 +475,7 @@ See comprehensive environment templates:
 
 ---
 
-## 🤝 Contributing
+## Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.
 
@@ -490,13 +490,13 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 
 ---
 
-## 📝 License
+## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ---
 
-## 🙏 Acknowledgments
+## Acknowledgments
 
 - Built with [Anthropic Claude](https://www.anthropic.com/claude) for agentic reasoning
 - Powered by [OpenAI Embeddings](https://platform.openai.com/) and [Pinecone](https://www.pinecone.io/)
@@ -504,12 +504,11 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ---
 
-## 📞 Contact & Links
+## Contact & Links
 
-- **GitHub**: [Your GitHub Profile](https://github.com/yourusername)
-- **Portfolio**: [Your Portfolio](https://yourportfolio.com)
-- **LinkedIn**: [Your LinkedIn](https://linkedin.com/in/yourprofile)
+- **GitHub**: [ThomasJButler](https://github.com/ThomasJButler)
+- **Repository**: [Morpheus](https://github.com/ThomasJButler/Morpheus)
 
 ---
 
-**Built with ❤️ and ☕ | Morpheus - Revealing knowledge, one query at a time**
+**Morpheus - Revealing knowledge, one query at a time**
