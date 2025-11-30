@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useChat } from 'ai/react';
 import MessageList from './MessageList';
 import RetrievalMetrics from '../Context/RetrievalMetrics';
@@ -9,6 +9,8 @@ import UploadButton from '../Documents/UploadButton';
 import GlassPanel from '../UI/GlassPanel';
 import Settings from '../Settings/Settings';
 import { useSettings } from '@/lib/hooks/useSettings';
+import { useSession } from '@/lib/hooks/useSession';
+import { apiClient } from '@/lib/api-client';
 import { DocumentUploadResponse, MetricResult } from '@/lib/types';
 
 export default function ChatInterface() {
@@ -17,8 +19,18 @@ export default function ChatInterface() {
   const [uploadSuccess, setUploadSuccess] = useState<string | null>(null);
   const [showSettings, setShowSettings] = useState(false);
   const [currentMetrics, setCurrentMetrics] = useState<MetricResult | null>(null);
+  const [documentList, setDocumentList] = useState<string[]>([]);
+  const [statsRefreshKey, setStatsRefreshKey] = useState(0);
 
   const { settings, hasApiKey, hasAnthropicApiKey } = useSettings();
+  const { sessionId, isInitialized, isCleaningUp } = useSession();
+  
+  // Set session ID on API client when it changes
+  useEffect(() => {
+    if (sessionId) {
+      apiClient.setSessionId(sessionId);
+    }
+  }, [sessionId]);
 
   // Use Vercel AI SDK's useChat hook - now points to Next.js BFF route
   const {
@@ -31,6 +43,7 @@ export default function ChatInterface() {
     setMessages,
   } = useChat({
     api: '/api/chat', // Next.js BFF route (fetches context from FastAPI, streams from provider)
+    headers: sessionId ? { 'X-Session-ID': sessionId } : {},
     body: {
       // Pass provider selection and API keys from settings
       provider: settings.provider,
@@ -52,9 +65,20 @@ export default function ChatInterface() {
     setCurrentMetrics(null);
   }, [setMessages]);
 
-  const handleUploadComplete = useCallback((response: DocumentUploadResponse) => {
+  const handleUploadComplete = useCallback(async (response: DocumentUploadResponse) => {
     setUploadSuccess(`✓ Uploaded "${response.document_id}" - ${response.chunks_created} chunks created`);
     setShowDocStats(true);
+    
+    // Trigger stats refresh
+    setStatsRefreshKey(prev => prev + 1);
+    
+    // Fetch updated document list
+    try {
+      const listResponse = await apiClient.listDocuments();
+      setDocumentList(listResponse.documents || []);
+    } catch (error) {
+      console.error('Failed to fetch document list:', error);
+    }
 
     // Clear success message after 5 seconds
     setTimeout(() => {
@@ -211,11 +235,47 @@ export default function ChatInterface() {
 
         {/* Document Stats Panel */}
         {showDocStats && (
-          <div className="w-96 slide-in-right">
-            <DocumentStats />
+          <div className="w-96 slide-in-right space-y-4">
+            <DocumentStats key={statsRefreshKey} />
+            
+            {/* Document List */}
+            {documentList.length > 0 && (
+              <GlassPanel className="p-4">
+                <h3 className="text-sm font-mono text-matrix-green mb-3">
+                  Uploaded Documents
+                </h3>
+                <ul className="space-y-2">
+                  {documentList.map((doc, index) => (
+                    <li 
+                      key={index}
+                      className="text-sm text-matrix-white/80 font-mono flex items-center"
+                    >
+                      <span className="text-matrix-green mr-2">📄</span>
+                      {doc}
+                    </li>
+                  ))}
+                </ul>
+              </GlassPanel>
+            )}
           </div>
         )}
       </div>
+
+      {/* Session initialization indicator */}
+      {!isInitialized && (
+        <div className="p-2 bg-matrix-green/10 border border-matrix-green/30 rounded-md text-matrix-green text-xs font-mono flex items-center">
+          <span className="animate-pulse mr-2">●</span>
+          <span>Initializing session...</span>
+        </div>
+      )}
+      
+      {/* Cleanup indicator */}
+      {isCleaningUp && (
+        <div className="p-2 bg-matrix-cyan/10 border border-matrix-cyan/30 rounded-md text-matrix-cyan text-xs font-mono flex items-center">
+          <span className="animate-spin mr-2">⟳</span>
+          <span>Preparing workspace...</span>
+        </div>
+      )}
 
       {/* API Key Warning - shows if the selected provider's API key is missing */}
       {((settings.provider === 'anthropic' && !hasAnthropicApiKey()) ||

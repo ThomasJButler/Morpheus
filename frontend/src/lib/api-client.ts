@@ -10,14 +10,31 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
 class APIClient {
   private baseURL: string;
+  private sessionId: string | null = null;
 
   constructor() {
     this.baseURL = API_URL;
   }
 
+  // Set session ID for all subsequent requests
+  setSessionId(sessionId: string) {
+    this.sessionId = sessionId;
+    console.log('🔑 API client session set:', sessionId);
+  }
+
+  // Get session headers
+  private getSessionHeaders(): Record<string, string> {
+    if (this.sessionId) {
+      return { 'X-Session-ID': this.sessionId };
+    }
+    return {};
+  }
+
   // Health check
   async health(): Promise<{ status: string }> {
-    const response = await fetch(`${this.baseURL}/api/health`);
+    const response = await fetch(`${this.baseURL}/api/health`, {
+      headers: this.getSessionHeaders(),
+    });
     if (!response.ok) throw new Error('Health check failed');
     return response.json();
   }
@@ -28,6 +45,7 @@ class APIClient {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        ...this.getSessionHeaders(),
       },
       body: JSON.stringify({ ...request, stream: false }),
     });
@@ -58,6 +76,7 @@ class APIClient {
           headers: {
             'Content-Type': 'application/json',
             'Accept': 'text/event-stream',
+            ...this.getSessionHeaders(),
           },
           body: JSON.stringify({ ...request, stream: true }),
           signal: abortController.signal,
@@ -175,6 +194,7 @@ class APIClient {
 
     const response = await fetch(`${this.baseURL}/api/documents/upload`, {
       method: 'POST',
+      headers: this.getSessionHeaders(),
       body: formData,
     });
 
@@ -188,14 +208,47 @@ class APIClient {
 
   // Get document statistics
   async getDocumentStats(): Promise<DocumentStats> {
-    const response = await fetch(`${this.baseURL}/api/documents/stats`);
+    const response = await fetch(`${this.baseURL}/api/documents/stats`, {
+      headers: this.getSessionHeaders(),
+    });
     if (!response.ok) throw new Error('Failed to fetch document stats');
+    return response.json();
+  }
+
+  // List documents in session
+  async listDocuments(): Promise<{ documents: string[]; count: number; total_chunks: number }> {
+    const response = await fetch(`${this.baseURL}/api/documents/list`, {
+      headers: this.getSessionHeaders(),
+    });
+    if (!response.ok) throw new Error('Failed to fetch document list');
+    return response.json();
+  }
+
+  // Cleanup session (delete all documents)
+  async cleanupSession(): Promise<{ success: boolean; vectors_deleted: number }> {
+    const response = await fetch(`${this.baseURL}/api/documents/cleanup`, {
+      method: 'POST',
+      headers: this.getSessionHeaders(),
+    });
+    if (!response.ok) throw new Error('Failed to cleanup session');
+    return response.json();
+  }
+
+  // Delete all documents in session
+  async deleteAllDocuments(): Promise<{ success: boolean }> {
+    const response = await fetch(`${this.baseURL}/api/documents/all`, {
+      method: 'DELETE',
+      headers: this.getSessionHeaders(),
+    });
+    if (!response.ok) throw new Error('Failed to delete documents');
     return response.json();
   }
 
   // Get performance metrics
   async getPerformance(): Promise<Record<string, unknown>> {
-    const response = await fetch(`${this.baseURL}/api/metrics/performance`);
+    const response = await fetch(`${this.baseURL}/api/metrics/performance`, {
+      headers: this.getSessionHeaders(),
+    });
     if (!response.ok) throw new Error('Failed to fetch performance');
     return response.json();
   }

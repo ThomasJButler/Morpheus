@@ -51,6 +51,9 @@ Provide a clear, direct answer with source citations. Use Matrix metaphors natur
 
 export async function POST(req: Request) {
   try {
+    // Get session ID from header
+    const sessionId = req.headers.get('X-Session-ID') || '';
+    
     const body = await req.json();
     const {
       messages,
@@ -106,11 +109,17 @@ export async function POST(req: Request) {
     let citations = [];
 
     try {
-      console.log(`[BFF] Fetching context from ${BACKEND_URL}/api/context`);
+      console.log(`[BFF] Fetching context from ${BACKEND_URL}/api/context (session: ${sessionId || 'none'})`);
+
+      // Build headers with session ID if available
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (sessionId) {
+        headers['X-Session-ID'] = sessionId;
+      }
 
       const contextResponse = await fetch(`${BACKEND_URL}/api/context`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({ query: lastUserMessage.content }),
       });
 
