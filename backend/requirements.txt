@@ -13,6 +13,9 @@ langchain-community==0.3.2
 langchain-openai==0.2.2
 langchain-anthropic==0.2.3
 
+# NumPy (required for sparse embeddings)
+numpy>=2.0.0,<3.0.0
+
 # Vector Database
 pinecone-client==5.0.1
 pinecone-text==0.9.0
