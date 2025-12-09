@@ -178,9 +178,9 @@ export default function ChatInterface() {
       )}
 
       {/* Main Chat Area */}
-      <div className="flex flex-1 gap-4 min-h-0">
+      <div className="flex flex-col md:flex-row flex-1 gap-4 min-h-0">
         {/* Chat Messages */}
-        <div className={showDocStats ? 'flex-1' : 'w-full'}>
+        <div className={showDocStats ? 'flex-1 min-h-[400px]' : 'w-full'}>
           <GlassPanel className="h-full flex flex-col p-5" noPadding>
             {error && (
               <div className="mb-4 p-3 bg-red-500/10 border border-red-500/50 rounded-md text-red-400 text-sm matrix-font">
@@ -266,9 +266,9 @@ export default function ChatInterface() {
 
         {/* Document Stats Panel */}
         {showDocStats && (
-          <div className="w-96 slide-in-right space-y-4">
+          <div className="w-full md:w-96 slide-in-right space-y-4">
             <DocumentStats refreshTrigger={statsRefreshKey} />
-            
+
             {/* Document List */}
             {documentList.length > 0 && (
               <GlassPanel className="p-4">
@@ -277,7 +277,7 @@ export default function ChatInterface() {
                 </h3>
                 <ul className="space-y-2">
                   {documentList.map((doc, index) => (
-                    <li 
+                    <li
                       key={index}
                       className="text-sm text-matrix-white/80 font-mono flex items-center"
                     >
@@ -327,11 +327,11 @@ export default function ChatInterface() {
       {/* Guide Modal */}
       {showGuide && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm animate-fade-in"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm animate-fade-in p-2 sm:p-4"
           onClick={() => setShowGuide(false)}
         >
           <div
-            className="max-w-4xl w-full mx-4"
+            className="max-w-4xl w-full max-h-[95vh] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
             <QuickStartGuide
