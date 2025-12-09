@@ -14,7 +14,8 @@ langchain-openai==0.2.2
 langchain-anthropic==0.2.3
 
 # NumPy (required for sparse embeddings)
-numpy>=2.0.0,<3.0.0
+# Note: numpy<2 required by langchain for Python < 3.12
+numpy>=1.24.0,<2.0.0
 
 # Vector Database
 pinecone-client==5.0.1

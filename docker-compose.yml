@@ -4,8 +4,6 @@
 # Local development stack with backend and frontend
 # Run with: docker-compose up
 
-version: '3.8'
-
 services:
   # ==========================================================================
   # BACKEND SERVICE
