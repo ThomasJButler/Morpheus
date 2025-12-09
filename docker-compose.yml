@@ -49,6 +49,7 @@ services:
     ports:
       - "3000:3000"
     environment:
+      - BACKEND_URL=http://backend:8000
       - NEXT_PUBLIC_API_URL=http://localhost:8000
       - NEXT_PUBLIC_ENABLE_MATRIX_RAIN=true
       - NEXT_PUBLIC_ENABLE_METRICS=true
