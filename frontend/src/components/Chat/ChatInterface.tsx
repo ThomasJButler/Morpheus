@@ -7,6 +7,7 @@ import DocumentStats from '../Documents/DocumentStats';
 import UploadButton from '../Documents/UploadButton';
 import GlassPanel from '../UI/GlassPanel';
 import Settings from '../Settings/Settings';
+import QuickStartGuide from '../Onboarding/QuickStartGuide';
 import { useSettings } from '@/lib/hooks/useSettings';
 import { useSession } from '@/lib/hooks/useSession';
 import { apiClient } from '@/lib/api-client';
@@ -18,16 +19,24 @@ export default function ChatInterface() {
   const [showSettings, setShowSettings] = useState(false);
   const [documentList, setDocumentList] = useState<string[]>([]);
   const [statsRefreshKey, setStatsRefreshKey] = useState(0);
+  const [showGuide, setShowGuide] = useState(false);
+  const [guideDismissed, setGuideDismissed] = useState(false);
 
   const { settings, hasApiKey, hasAnthropicApiKey } = useSettings();
   const { sessionId, isInitialized, isCleaningUp } = useSession();
-  
+
   // Set session ID on API client when it changes
   useEffect(() => {
     if (sessionId) {
       apiClient.setSessionId(sessionId);
     }
   }, [sessionId]);
+
+  // Load guide dismissed state from localStorage
+  useEffect(() => {
+    const dismissed = localStorage.getItem('quickStartGuideDismissed') === 'true';
+    setGuideDismissed(dismissed);
+  }, []);
 
   // Use Vercel AI SDK's useChat hook - now points to Next.js BFF route
   const {
@@ -60,6 +69,12 @@ export default function ChatInterface() {
   const clearMessages = useCallback(() => {
     setMessages([]);
   }, [setMessages]);
+
+  const handleDismissGuide = useCallback(() => {
+    localStorage.setItem('quickStartGuideDismissed', 'true');
+    setGuideDismissed(true);
+    setShowGuide(false);
+  }, []);
 
   const handleUploadComplete = useCallback(async (response: DocumentUploadResponse) => {
     setUploadSuccess(`✓ Uploaded "${response.document_id}" - ${response.chunks_created} chunks created`);
@@ -132,6 +147,17 @@ export default function ChatInterface() {
           <div className="w-px h-5 bg-matrix-green/20 mx-1" />
 
           <button
+            onClick={() => setShowGuide(true)}
+            className="toolbar-button"
+            title="Quick start guide"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span>Guide</span>
+          </button>
+
+          <button
             onClick={() => setShowSettings(true)}
             className="toolbar-button icon-spin-hover"
           >
@@ -162,8 +188,15 @@ export default function ChatInterface() {
               </div>
             )}
 
-            {/* Morpheus Guidance */}
-            {messages.length === 0 && (
+            {/* Quick Start Guide or Morpheus Quote */}
+            {messages.length === 0 && !guideDismissed && (
+              <QuickStartGuide
+                onDismiss={handleDismissGuide}
+                onOpenSettings={() => setShowSettings(true)}
+              />
+            )}
+
+            {messages.length === 0 && guideDismissed && (
               <div className="text-center py-12 text-matrix-green/70">
                 <p className="matrix-quote text-lg mb-4 inline-block text-left max-w-md mx-auto">
                   &quot;I can only show you the door. You&apos;re the one that has to walk through it.&quot;
@@ -288,6 +321,27 @@ export default function ChatInterface() {
           >
             Add Key
           </button>
+        </div>
+      )}
+
+      {/* Guide Modal */}
+      {showGuide && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm animate-fade-in"
+          onClick={() => setShowGuide(false)}
+        >
+          <div
+            className="max-w-4xl w-full mx-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <QuickStartGuide
+              onDismiss={() => setShowGuide(false)}
+              onOpenSettings={() => {
+                setShowGuide(false);
+                setShowSettings(true);
+              }}
+            />
+          </div>
         </div>
       )}
 
