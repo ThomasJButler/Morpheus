@@ -242,18 +242,58 @@ async def get_document_stats(
         x_session_id: Session ID for namespace filtering
 
     Returns:
-        dict: Index statistics for the session's namespace
+        dict: Document statistics matching frontend DocumentStats type
     """
     namespace = x_session_id or DEFAULT_NAMESPACE
-    
+
     try:
         pinecone_client = get_pinecone_client()
         stats = pinecone_client.index_stats(namespace=namespace)
 
+        # Extract vector count from Pinecone stats
+        total_chunks = stats.get("dense", {}).get("total_vector_count", 0)
+        dimension = stats.get("dense", {}).get("dimension", 1536)
+
+        # Count unique documents by querying for unique sources
+        total_documents = 0
+        if total_chunks > 0:
+            try:
+                index = pinecone_client.get_index()
+                # Use a dummy vector to query
+                dummy_vector = [0.0] * dimension
+
+                # Query to get metadata
+                results = index.query(
+                    vector=dummy_vector,
+                    top_k=min(10000, total_chunks),  # Get as many as possible
+                    include_metadata=True,
+                    namespace=namespace,
+                )
+
+                # Extract unique sources
+                sources = set()
+                for match in results.get("matches", []):
+                    source = match.get("metadata", {}).get("source")
+                    if source:
+                        sources.add(source)
+                total_documents = len(sources)
+            except Exception as e:
+                logger.warning(f"Could not count documents: {e}")
+                total_documents = 0
+
+        # Calculate approximate index size
+        # 4 bytes per float * dimension * number of vectors / 1024^2 for MB
+        size_mb = (total_chunks * dimension * 4) / (1024 * 1024)
+        index_size = f"{size_mb:.2f} MB" if size_mb > 0 else "0 MB"
+
+        # Return structure matching frontend DocumentStats type
+        from datetime import datetime
         return {
-            "success": True,
-            "stats": stats,
-            "namespace": namespace,
+            "total_documents": total_documents,
+            "total_chunks": total_chunks,
+            "total_embeddings": total_chunks,  # Each chunk has one embedding
+            "index_size": index_size,
+            "last_updated": datetime.now().isoformat(),
         }
 
     except Exception as e:

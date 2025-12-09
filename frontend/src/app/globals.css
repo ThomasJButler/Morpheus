@@ -390,4 +390,169 @@
       @apply bg-matrix-green/10 border-matrix-green/30;
     }
   }
+
+  /* ==================== */
+  /* New Utility Classes  */
+  /* ==================== */
+
+  /* Glass Card - Reusable glass panel for cards */
+  .glass-card {
+    @apply relative rounded-lg overflow-hidden;
+    @apply bg-matrix-black/40 backdrop-blur-sm;
+    @apply border border-matrix-green/20;
+    @apply transition-all duration-300;
+  }
+
+  .glass-card:hover {
+    @apply border-matrix-green/40 bg-matrix-black/50;
+    box-shadow: 0 0 15px rgba(0, 255, 0, 0.1);
+  }
+
+  .glass-card-glow {
+    @apply absolute inset-0 bg-gradient-to-br from-matrix-green/0 to-matrix-green/5;
+    @apply opacity-0 transition-opacity duration-300 pointer-events-none;
+  }
+
+  .glass-card:hover .glass-card-glow {
+    @apply opacity-100;
+  }
+
+  /* Stat Card - Animated stat display */
+  /* Note: Add 'group' class directly to the element when using stat-card */
+  .stat-card {
+    @apply relative p-4 rounded-lg bg-matrix-black/40;
+    @apply border border-matrix-green/20;
+    @apply hover:border-matrix-green/40 hover:bg-matrix-black/50;
+    @apply transition-all duration-300 overflow-hidden;
+  }
+
+  .stat-card::before {
+    content: '';
+    @apply absolute inset-0 bg-gradient-to-br from-matrix-green/0 to-matrix-green/5;
+    @apply opacity-0 transition-opacity duration-300 pointer-events-none;
+  }
+
+  .stat-card:hover::before {
+    @apply opacity-100;
+  }
+
+  .stat-card:hover {
+    box-shadow: 0 0 15px rgba(0, 255, 0, 0.1);
+  }
+
+  .stat-card-value {
+    @apply relative text-2xl font-mono font-bold mb-1;
+    @apply transition-transform duration-300 origin-left;
+  }
+
+  .stat-card:hover .stat-card-value {
+    @apply scale-105;
+  }
+
+  .stat-card-label {
+    @apply relative text-xs uppercase tracking-wider text-matrix-white/50 font-medium;
+  }
+
+  /* Matrix Tab - Tab styling for Settings modal */
+  .matrix-tab {
+    @apply relative flex-1 px-4 py-3 rounded-lg font-mono text-sm font-medium;
+    @apply text-matrix-white/60 transition-all duration-300;
+    @apply border-2 border-transparent;
+  }
+
+  .matrix-tab:hover:not([data-state="active"]) {
+    @apply text-matrix-green/80 bg-matrix-green/5;
+  }
+
+  .matrix-tab[data-state="active"] {
+    @apply text-matrix-green bg-matrix-green/10;
+    @apply border-matrix-green;
+    text-shadow: 0 0 10px rgba(0, 255, 0, 0.5);
+    box-shadow: 0 0 15px rgba(0, 255, 0, 0.2);
+  }
+
+  /* Focus Matrix - Consistent focus states */
+  .focus-matrix {
+    @apply focus:outline-none focus-visible:ring-2 focus-visible:ring-matrix-green/50;
+    @apply focus-visible:ring-offset-2 focus-visible:ring-offset-matrix-black;
+  }
+
+  /* Status Badges */
+  .status-badge {
+    @apply inline-flex items-center px-3 py-1 rounded-full text-xs font-mono font-medium;
+    @apply border transition-all duration-200;
+  }
+
+  .status-badge-success {
+    @apply border-matrix-green/50 text-matrix-green bg-matrix-green/10;
+    box-shadow: 0 0 10px rgba(0, 255, 0, 0.2);
+  }
+
+  .status-badge-info {
+    @apply border-matrix-cyan/50 text-matrix-cyan bg-matrix-cyan/10;
+    box-shadow: 0 0 10px rgba(0, 255, 255, 0.2);
+  }
+
+  .status-badge-error {
+    @apply border-red-500/50 text-red-400 bg-red-500/10;
+    box-shadow: 0 0 10px rgba(239, 68, 68, 0.2);
+  }
+
+  /* Matrix Divider - Subtle section divider */
+  .matrix-divider {
+    @apply h-px my-6;
+    background: linear-gradient(90deg, transparent, rgba(0, 255, 0, 0.3), transparent);
+  }
+
+  /* Section Header */
+  .section-header {
+    @apply text-sm font-mono font-semibold tracking-wide text-matrix-green mb-4;
+    @apply flex items-center gap-2;
+  }
+
+  .section-header::before {
+    content: '';
+    @apply w-1 h-4 bg-matrix-green rounded-full;
+    box-shadow: 0 0 8px rgba(0, 255, 0, 0.6);
+  }
+
+  /* Better Select Dropdown */
+  .matrix-select {
+    @apply w-full px-4 py-3 rounded-lg font-mono text-sm;
+    @apply bg-matrix-black/60 border border-glass-border text-matrix-white;
+    @apply focus:outline-none focus:border-matrix-green focus:ring-1 focus:ring-matrix-green/50;
+    @apply transition-all duration-200;
+    @apply cursor-pointer appearance-none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2300ff00'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    background-size: 16px;
+    padding-right: 40px;
+  }
+
+  .matrix-select:hover {
+    @apply border-matrix-green/50;
+  }
+
+  .matrix-select option {
+    @apply bg-matrix-black text-matrix-white py-2;
+  }
+
+  /* Input Group - Input with inline button */
+  .input-group {
+    @apply relative flex items-center;
+  }
+
+  .input-group .matrix-input {
+    @apply pr-24;
+  }
+
+  .input-group-button {
+    @apply absolute right-2 px-3 py-1.5 rounded-md;
+    @apply text-xs font-mono text-matrix-green;
+    @apply border border-matrix-green/30 bg-matrix-black/50;
+    @apply hover:bg-matrix-green/10 hover:border-matrix-green/50;
+    @apply transition-all duration-200;
+    @apply disabled:opacity-40 disabled:cursor-not-allowed;
+  }
 }

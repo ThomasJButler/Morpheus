@@ -3,7 +3,6 @@
 import { useState, useCallback, useEffect } from 'react';
 import { useChat } from 'ai/react';
 import MessageList from './MessageList';
-import RetrievalMetrics from '../Context/RetrievalMetrics';
 import DocumentStats from '../Documents/DocumentStats';
 import UploadButton from '../Documents/UploadButton';
 import GlassPanel from '../UI/GlassPanel';
@@ -11,14 +10,12 @@ import Settings from '../Settings/Settings';
 import { useSettings } from '@/lib/hooks/useSettings';
 import { useSession } from '@/lib/hooks/useSession';
 import { apiClient } from '@/lib/api-client';
-import { DocumentUploadResponse, MetricResult } from '@/lib/types';
+import { DocumentUploadResponse } from '@/lib/types';
 
 export default function ChatInterface() {
-  const [showMetrics, setShowMetrics] = useState(false);
   const [showDocStats, setShowDocStats] = useState(false);
   const [uploadSuccess, setUploadSuccess] = useState<string | null>(null);
   const [showSettings, setShowSettings] = useState(false);
-  const [currentMetrics, setCurrentMetrics] = useState<MetricResult | null>(null);
   const [documentList, setDocumentList] = useState<string[]>([]);
   const [statsRefreshKey, setStatsRefreshKey] = useState(0);
 
@@ -62,16 +59,17 @@ export default function ChatInterface() {
 
   const clearMessages = useCallback(() => {
     setMessages([]);
-    setCurrentMetrics(null);
   }, [setMessages]);
 
   const handleUploadComplete = useCallback(async (response: DocumentUploadResponse) => {
     setUploadSuccess(`✓ Uploaded "${response.document_id}" - ${response.chunks_created} chunks created`);
     setShowDocStats(true);
-    
-    // Trigger stats refresh
-    setStatsRefreshKey(prev => prev + 1);
-    
+
+    // Give backend time to finish indexing, then refresh stats
+    setTimeout(() => {
+      setStatsRefreshKey(prev => prev + 1);
+    }, 500);
+
     // Fetch updated document list
     try {
       const listResponse = await apiClient.listDocuments();
@@ -121,16 +119,6 @@ export default function ChatInterface() {
           </button>
 
           <button
-            onClick={() => setShowMetrics(!showMetrics)}
-            className="toolbar-button"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-            </svg>
-            <span>Metrics</span>
-          </button>
-
-          <button
             onClick={clearMessages}
             disabled={messages.length === 0 || isLoading}
             className="toolbar-button disabled:opacity-40 disabled:cursor-not-allowed"
@@ -166,7 +154,7 @@ export default function ChatInterface() {
       {/* Main Chat Area */}
       <div className="flex flex-1 gap-4 min-h-0">
         {/* Chat Messages */}
-        <div className={showMetrics || showDocStats ? 'flex-1' : 'w-full'}>
+        <div className={showDocStats ? 'flex-1' : 'w-full'}>
           <GlassPanel className="h-full flex flex-col p-5" noPadding>
             {error && (
               <div className="mb-4 p-3 bg-red-500/10 border border-red-500/50 rounded-md text-red-400 text-sm matrix-font">
@@ -192,17 +180,20 @@ export default function ChatInterface() {
               className="flex-1"
             />
 
-            <div className="mt-2 pt-2 border-t border-matrix-green/20">
+            <div className="mt-4 pt-4 border-t border-matrix-green/20">
               {/* Use Vercel AI SDK's form submission */}
-              <form onSubmit={handleSubmit} className="flex items-end space-x-3">
-                <div className="flex-1 relative">
+              <form onSubmit={handleSubmit} className="flex items-end gap-3">
+                <div className="flex-1 relative group">
                   <textarea
                     value={input}
                     onChange={handleInputChange}
                     disabled={isLoading}
                     placeholder="Ask me about your documents..."
                     rows={1}
-                    className="matrix-input resize-none min-h-[40px] max-h-[120px] pr-12 w-full"
+                    className="matrix-input resize-none min-h-[48px] max-h-[120px] pr-16 w-full
+                               focus:ring-2 focus:ring-matrix-green/40 focus:border-matrix-green
+                               focus:shadow-[0_0_20px_rgba(0,255,0,0.15)]
+                               transition-all duration-300"
                     onKeyDown={(e) => {
                       if (e.key === 'Enter' && !e.shiftKey) {
                         e.preventDefault();
@@ -210,33 +201,40 @@ export default function ChatInterface() {
                       }
                     }}
                   />
-                  <span className="absolute bottom-2 right-2 text-xs text-matrix-white/30">
+                  <span className="absolute bottom-3 right-3 text-xs text-matrix-white/30 font-mono
+                                   group-focus-within:text-matrix-green/50 transition-colors">
                     {input.length}/2000
                   </span>
                 </div>
                 <button
                   type="submit"
                   disabled={isLoading || !input.trim()}
-                  className="px-4 py-2 bg-matrix-green text-matrix-black rounded-md hover:bg-matrix-cyan transition-colors font-mono text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-6 py-3 bg-matrix-green text-matrix-black rounded-md
+                             font-mono text-sm font-bold uppercase tracking-wider
+                             hover:bg-matrix-cyan hover:shadow-[0_0_25px_rgba(0,255,255,0.4)]
+                             active:scale-95
+                             transition-all duration-200
+                             disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:shadow-none"
                 >
-                  Send
+                  {isLoading ? (
+                    <span className="flex items-center gap-2">
+                      <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                      </svg>
+                      Sending
+                    </span>
+                  ) : 'Send'}
                 </button>
               </form>
             </div>
           </GlassPanel>
         </div>
 
-        {/* Metrics Panel */}
-        {showMetrics && currentMetrics && (
-          <div className="w-96 slide-in-right">
-            <RetrievalMetrics metrics={currentMetrics} />
-          </div>
-        )}
-
         {/* Document Stats Panel */}
         {showDocStats && (
           <div className="w-96 slide-in-right space-y-4">
-            <DocumentStats key={statsRefreshKey} />
+            <DocumentStats refreshTrigger={statsRefreshKey} />
             
             {/* Document List */}
             {documentList.length > 0 && (

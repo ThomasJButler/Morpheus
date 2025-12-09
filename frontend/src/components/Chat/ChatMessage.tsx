@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useCallback } from 'react';
+import ReactMarkdown from 'react-markdown';
 import { ChatMessage as ChatMessageType } from '@/lib/types';
 import CitationHighlight from '../Context/CitationHighlight';
 
@@ -23,16 +24,16 @@ export default function ChatMessage({ message }: ChatMessageProps) {
 
   return (
     <div className={`
-      group relative my-3 p-4 rounded-lg transition-all duration-300
-      flex message-appear border-l-4
+      group relative my-4 p-5 rounded-lg transition-all duration-300
+      flex message-appear border-l-2
       ${isUser
-        ? 'bg-matrix-black/40 border-l-matrix-cyan ml-8 hover:bg-matrix-black/50'
-        : 'bg-matrix-black/60 border-l-matrix-green mr-8 hover:bg-matrix-black/70 hover:shadow-[0_0_15px_rgba(0,255,0,0.2)]'}
+        ? 'bg-matrix-black/40 border-l-matrix-cyan ml-12 hover:bg-matrix-black/50'
+        : 'bg-matrix-black/60 border-l-matrix-green mr-12 hover:bg-matrix-black/70 hover:shadow-[0_0_15px_rgba(0,255,0,0.2)]'}
     `}>
       {/* Copy Button - shows on hover */}
       <button
         onClick={handleCopy}
-        className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 p-1.5 rounded bg-matrix-black/50 hover:bg-matrix-green/20 text-matrix-green/60 hover:text-matrix-green"
+        className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity duration-200 p-2 rounded-md bg-matrix-black/50 hover:bg-matrix-green/20 text-matrix-green/60 hover:text-matrix-green"
         title="Copy message"
       >
         {copied ? (
@@ -48,16 +49,16 @@ export default function ChatMessage({ message }: ChatMessageProps) {
 
       {/* Role Icon */}
       <div className={`
-        flex-shrink-0 rounded-lg p-2 border-r flex items-center
+        flex-shrink-0 rounded-lg p-3 border-r flex items-center
         ${isUser ? 'border-matrix-cyan/30' : 'border-matrix-green/30'}
       `}>
-        <span className="text-2xl">
+        <span className="text-3xl">
           {isUser ? '🧑‍💻' : '🤖'}
         </span>
       </div>
 
       {/* Message Content */}
-      <div className="ml-3 flex-1">
+      <div className="ml-4 flex-1">
         {/* Header */}
         <div className="flex items-center mb-2">
           <span className={`text-xs font-mono font-bold ${isUser ? 'text-matrix-cyan' : 'text-matrix-green'}`}>
@@ -76,8 +77,51 @@ export default function ChatMessage({ message }: ChatMessageProps) {
         </div>
 
         {/* Content */}
-        <div className={`text-sm whitespace-pre-wrap break-words ${isUser ? 'text-matrix-white' : 'text-matrix-green-dim'}`}>
-          {message.content || <span className="italic opacity-50">Thinking...</span>}
+        <div className={`text-base leading-relaxed break-words prose-matrix ${isUser ? 'text-matrix-white' : 'text-matrix-green-dim'}`}>
+          {message.content ? (
+            <ReactMarkdown
+              components={{
+                p: ({ children }) => <p className="mb-3 last:mb-0">{children}</p>,
+                strong: ({ children }) => <strong className="font-bold text-matrix-green">{children}</strong>,
+                em: ({ children }) => <em className="italic text-matrix-cyan">{children}</em>,
+                code: ({ children, className }) => {
+                  const isInline = !className;
+                  return isInline ? (
+                    <code className="px-1.5 py-0.5 bg-matrix-black/60 border border-matrix-green/30 rounded text-matrix-cyan font-mono text-sm">
+                      {children}
+                    </code>
+                  ) : (
+                    <code className={className}>{children}</code>
+                  );
+                },
+                pre: ({ children }) => (
+                  <pre className="my-3 p-4 bg-matrix-black/80 border border-matrix-green/30 rounded-lg overflow-x-auto font-mono text-sm">
+                    {children}
+                  </pre>
+                ),
+                ul: ({ children }) => <ul className="my-2 ml-4 list-disc list-inside space-y-1">{children}</ul>,
+                ol: ({ children }) => <ol className="my-2 ml-4 list-decimal list-inside space-y-1">{children}</ol>,
+                li: ({ children }) => <li className="text-matrix-white/90">{children}</li>,
+                h1: ({ children }) => <h1 className="text-xl font-bold text-matrix-green mt-4 mb-2">{children}</h1>,
+                h2: ({ children }) => <h2 className="text-lg font-bold text-matrix-green mt-3 mb-2">{children}</h2>,
+                h3: ({ children }) => <h3 className="text-base font-bold text-matrix-green mt-2 mb-1">{children}</h3>,
+                a: ({ href, children }) => (
+                  <a href={href} target="_blank" rel="noopener noreferrer" className="text-matrix-cyan underline hover:text-matrix-green transition-colors">
+                    {children}
+                  </a>
+                ),
+                blockquote: ({ children }) => (
+                  <blockquote className="my-3 pl-4 border-l-2 border-matrix-cyan/50 text-matrix-white/70 italic">
+                    {children}
+                  </blockquote>
+                ),
+              }}
+            >
+              {message.content}
+            </ReactMarkdown>
+          ) : (
+            <span className="italic opacity-50">Thinking...</span>
+          )}
         </div>
 
         {/* Citations */}
