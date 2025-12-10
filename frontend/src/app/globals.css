@@ -333,6 +333,14 @@
   /* Mobile Responsive    */
   /* ==================== */
 
+  /* Overflow word wrap utility */
+  .overflow-wrap-anywhere {
+    overflow-wrap: anywhere;
+    word-wrap: anywhere;
+    word-break: break-word;
+    hyphens: auto;
+  }
+
   /* Hide text labels on small screens, show only icons */
   @media (max-width: 640px) {
     .toolbar-button span {
@@ -365,6 +373,25 @@
     /* Input area adjustments */
     .matrix-input {
       @apply text-base; /* Prevent iOS zoom on focus */
+    }
+
+    /* Message container adjustments for mobile */
+    .message-appear {
+      @apply max-w-full;
+    }
+
+    /* Better code block handling on mobile */
+    pre {
+      @apply text-xs;
+      max-width: calc(100vw - 6rem) !important;
+      overflow-x: auto;
+      overflow-y: hidden;
+    }
+
+    /* Force wrap on code elements */
+    code {
+      word-wrap: break-word;
+      overflow-wrap: anywhere;
     }
   }
 

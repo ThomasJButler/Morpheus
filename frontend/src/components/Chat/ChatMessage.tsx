@@ -25,10 +25,10 @@ export default function ChatMessage({ message }: ChatMessageProps) {
   return (
     <div className={`
       group relative my-4 p-5 rounded-lg transition-all duration-300
-      flex message-appear border-l-2
+      flex message-appear border-l-2 max-w-full
       ${isUser
-        ? 'bg-matrix-black/40 border-l-matrix-cyan ml-12 hover:bg-matrix-black/50'
-        : 'bg-matrix-black/60 border-l-matrix-green mr-12 hover:bg-matrix-black/70 hover:shadow-[0_0_15px_rgba(0,255,0,0.2)]'}
+        ? 'bg-matrix-black/40 border-l-matrix-cyan ml-4 sm:ml-12 hover:bg-matrix-black/50'
+        : 'bg-matrix-black/60 border-l-matrix-green mr-4 sm:mr-12 hover:bg-matrix-black/70 hover:shadow-[0_0_15px_rgba(0,255,0,0.2)]'}
     `}>
       {/* Copy Button - shows on hover */}
       <button
@@ -58,7 +58,7 @@ export default function ChatMessage({ message }: ChatMessageProps) {
       </div>
 
       {/* Message Content */}
-      <div className="ml-4 flex-1">
+      <div className="ml-4 flex-1 min-w-0 overflow-hidden">
         {/* Header */}
         <div className="flex items-center mb-2">
           <span className={`text-xs font-mono font-bold ${isUser ? 'text-matrix-cyan' : 'text-matrix-green'}`}>
@@ -77,7 +77,7 @@ export default function ChatMessage({ message }: ChatMessageProps) {
         </div>
 
         {/* Content */}
-        <div className={`text-base leading-relaxed break-words prose-matrix ${isUser ? 'text-matrix-white' : 'text-matrix-green-dim'}`}>
+        <div className={`text-base leading-relaxed break-words overflow-wrap-anywhere prose-matrix ${isUser ? 'text-matrix-white' : 'text-matrix-green-dim'}`}>
           {message.content ? (
             <ReactMarkdown
               components={{
@@ -87,26 +87,26 @@ export default function ChatMessage({ message }: ChatMessageProps) {
                 code: ({ children, className }) => {
                   const isInline = !className;
                   return isInline ? (
-                    <code className="px-1.5 py-0.5 bg-matrix-black/60 border border-matrix-green/30 rounded text-matrix-cyan font-mono text-sm">
+                    <code className="px-1.5 py-0.5 bg-matrix-black/60 border border-matrix-green/30 rounded text-matrix-cyan font-mono text-sm break-all">
                       {children}
                     </code>
                   ) : (
-                    <code className={className}>{children}</code>
+                    <code className={`${className} break-all whitespace-pre-wrap`}>{children}</code>
                   );
                 },
                 pre: ({ children }) => (
-                  <pre className="my-3 p-4 bg-matrix-black/80 border border-matrix-green/30 rounded-lg overflow-x-auto font-mono text-sm">
+                  <pre className="my-3 p-4 bg-matrix-black/80 border border-matrix-green/30 rounded-lg overflow-x-auto font-mono text-xs sm:text-sm max-w-full">
                     {children}
                   </pre>
                 ),
-                ul: ({ children }) => <ul className="my-2 ml-4 list-disc list-inside space-y-1">{children}</ul>,
-                ol: ({ children }) => <ol className="my-2 ml-4 list-decimal list-inside space-y-1">{children}</ol>,
-                li: ({ children }) => <li className="text-matrix-white/90">{children}</li>,
-                h1: ({ children }) => <h1 className="text-xl font-bold text-matrix-green mt-4 mb-2">{children}</h1>,
-                h2: ({ children }) => <h2 className="text-lg font-bold text-matrix-green mt-3 mb-2">{children}</h2>,
-                h3: ({ children }) => <h3 className="text-base font-bold text-matrix-green mt-2 mb-1">{children}</h3>,
+                ul: ({ children }) => <ul className="my-2 ml-4 list-disc list-inside space-y-1 break-words">{children}</ul>,
+                ol: ({ children }) => <ol className="my-2 ml-4 list-decimal list-inside space-y-1 break-words">{children}</ol>,
+                li: ({ children }) => <li className="text-matrix-white/90 break-words">{children}</li>,
+                h1: ({ children }) => <h1 className="text-xl font-bold text-matrix-green mt-4 mb-2 break-words">{children}</h1>,
+                h2: ({ children }) => <h2 className="text-lg font-bold text-matrix-green mt-3 mb-2 break-words">{children}</h2>,
+                h3: ({ children }) => <h3 className="text-base font-bold text-matrix-green mt-2 mb-1 break-words">{children}</h3>,
                 a: ({ href, children }) => (
-                  <a href={href} target="_blank" rel="noopener noreferrer" className="text-matrix-cyan underline hover:text-matrix-green transition-colors">
+                  <a href={href} target="_blank" rel="noopener noreferrer" className="text-matrix-cyan underline hover:text-matrix-green transition-colors break-all">
                     {children}
                   </a>
                 ),

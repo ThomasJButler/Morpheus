@@ -25,7 +25,7 @@ export default function MessageList({
 
   return (
     <div className={`
-      p-4 rounded-lg overflow-y-auto
+      p-2 sm:p-4 rounded-lg overflow-y-auto overflow-x-hidden
       flex-grow flex flex-col
       ${className}
     `}>

@@ -181,7 +181,7 @@ export default function ChatInterface() {
       <div className="flex flex-col md:flex-row flex-1 gap-4 min-h-0">
         {/* Chat Messages */}
         <div className={showDocStats ? 'flex-1 min-h-[400px]' : 'w-full'}>
-          <GlassPanel className="h-full flex flex-col p-5" noPadding>
+          <GlassPanel className="h-full flex flex-col p-2 sm:p-5" noPadding>
             {error && (
               <div className="mb-4 p-3 bg-red-500/10 border border-red-500/50 rounded-md text-red-400 text-sm matrix-font">
                 {error instanceof Error ? error.message : String(error)}
