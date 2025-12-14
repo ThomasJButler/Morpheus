@@ -95,3 +95,5 @@ coverage.xml
 
 # Starter templates (unused)
 pinecone-vercel-starter/
+DEPLOYMENT.md
+kotsd.txt

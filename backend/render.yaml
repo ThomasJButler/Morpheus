@@ -20,12 +20,12 @@ services:
     buildFilter:
       paths:
         - app/**
-        - requirements.txt
+        - requirements.txt`
         - Dockerfile
 
     # Health check
     healthCheckPath: /api/health
-
+`
     # Auto-deploy
     autoDeploy: true
     branch: main
