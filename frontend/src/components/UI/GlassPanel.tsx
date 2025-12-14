@@ -26,7 +26,7 @@ export default function GlassPanel({
           'bg-glass-bg/50': variant === 'subtle',
           'border-2': variant === 'bordered',
           'matrix-shadow animate-glow-pulse': glow,
-          'p-6': !noPadding,
+          'p-3 sm:p-6': !noPadding,
         },
         className
       )}

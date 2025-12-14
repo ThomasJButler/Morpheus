@@ -87,76 +87,41 @@ export default function Settings({ isOpen, onClose }: SettingsProps) {
     if (saveKey) {
       localStorage.setItem('userSettings', JSON.stringify(settings));
     } else {
-      // Store in session storage if not saving permanently
       sessionStorage.setItem('userSettings', JSON.stringify(settings));
       localStorage.removeItem('userSettings');
     }
 
-    // Trigger a custom event to notify other components
     window.dispatchEvent(new CustomEvent('settingsUpdated', { detail: settings }));
-
     onClose();
   };
 
-  const testConnection = async () => {
-    if (!apiKey) {
-      setTestResult('error');
+  const testConnection = async (providerType: Provider) => {
+    const key = providerType === 'openai' ? apiKey : anthropicApiKey;
+    const setTesting = providerType === 'openai' ? setTestingConnection : setTestingAnthropicConnection;
+    const setResult = providerType === 'openai' ? setTestResult : setAnthropicTestResult;
+
+    if (!key) {
+      setResult('error');
       return;
     }
 
-    setTestingConnection(true);
-    setTestResult(null);
+    setTesting(true);
+    setResult(null);
 
     try {
-      // Test the API key through BFF to avoid CORS issues
       const response = await fetch('/api/test-connection', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ provider: 'openai', apiKey }),
+        body: JSON.stringify({ provider: providerType, apiKey: key }),
       });
 
       const data = await response.json();
-      if (data.success) {
-        setTestResult('success');
-      } else {
-        setTestResult('error');
-      }
+      setResult(data.success ? 'success' : 'error');
     } catch (error) {
       console.error('Connection test failed:', error);
-      setTestResult('error');
+      setResult('error');
     } finally {
-      setTestingConnection(false);
-    }
-  };
-
-  const testAnthropicConnection = async () => {
-    if (!anthropicApiKey) {
-      setAnthropicTestResult('error');
-      return;
-    }
-
-    setTestingAnthropicConnection(true);
-    setAnthropicTestResult(null);
-
-    try {
-      // Test the Anthropic API key through BFF to avoid CORS issues
-      const response = await fetch('/api/test-connection', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ provider: 'anthropic', apiKey: anthropicApiKey }),
-      });
-
-      const data = await response.json();
-      if (data.success) {
-        setAnthropicTestResult('success');
-      } else {
-        setAnthropicTestResult('error');
-      }
-    } catch (error) {
-      console.error('Anthropic connection test failed:', error);
-      setAnthropicTestResult('error');
-    } finally {
-      setTestingAnthropicConnection(false);
+      setTesting(false);
     }
   };
 
@@ -173,99 +138,115 @@ export default function Settings({ isOpen, onClose }: SettingsProps) {
     setAnthropicTestResult(null);
   };
 
+  // Get current provider's settings
+  const currentApiKey = provider === 'anthropic' ? anthropicApiKey : apiKey;
+  const setCurrentApiKey = provider === 'anthropic' ? setAnthropicApiKey : setApiKey;
+  const currentModel = provider === 'anthropic' ? anthropicModel : model;
+  const setCurrentModel = provider === 'anthropic' ? setAnthropicModel : setModel;
+  const currentShowKey = provider === 'anthropic' ? showAnthropicKey : showKey;
+  const setCurrentShowKey = provider === 'anthropic' ? setShowAnthropicKey : setShowKey;
+  const currentTesting = provider === 'anthropic' ? testingAnthropicConnection : testingConnection;
+  const currentTestResult = provider === 'anthropic' ? anthropicTestResult : testResult;
+  const currentModels = provider === 'anthropic' ? ANTHROPIC_MODELS : OPENAI_MODELS;
+  const keyPlaceholder = provider === 'anthropic' ? 'sk-ant-...' : 'sk-...';
+
   if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
-      <GlassPanel className="w-full max-w-2xl max-h-[90vh] overflow-y-auto animate-slide-up" noPadding>
+      <GlassPanel className="w-full max-w-lg max-h-[90vh] overflow-y-auto animate-slide-up" noPadding>
         <div className="p-6">
           {/* Header */}
-          <div className="flex items-center justify-between mb-6 pb-4 border-b border-matrix-green/20">
-            <h2 className="text-xl font-mono text-matrix-green matrix-glow">⚙️ Settings</h2>
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-xl font-mono text-matrix-green matrix-glow flex items-center gap-2">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+              Settings
+            </h2>
             <button
               onClick={onClose}
               className="p-2 rounded-lg text-matrix-white/60 hover:text-matrix-green hover:bg-matrix-green/10 transition-all duration-200"
               aria-label="Close settings"
             >
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
               </svg>
             </button>
           </div>
 
-          {/* Provider Toggle */}
+          {/* Provider Tabs */}
           <div className="mb-6">
-            <label className="block text-sm font-mono text-matrix-green mb-3">
-              Active Provider
+            <label className="block text-xs font-mono text-matrix-white/50 uppercase tracking-wider mb-3">
+              AI Provider
             </label>
-            <div className="flex gap-4">
+            <div className="flex gap-2">
               <button
                 onClick={() => setProvider('anthropic')}
-                className={clsx(
-                  'flex-1 px-4 py-4 rounded-lg font-mono text-sm transition-all duration-300 border-2 relative overflow-hidden',
-                  provider === 'anthropic'
-                    ? 'bg-matrix-green/15 border-matrix-green text-matrix-green shadow-[0_0_15px_rgba(0,255,0,0.3)]'
-                    : 'bg-black/30 border-glass-border text-matrix-white/60 hover:border-matrix-green/50 hover:bg-black/40'
-                )}
+                className={clsx('matrix-tab text-center', provider === 'anthropic' && 'border-matrix-green')}
+                data-state={provider === 'anthropic' ? 'active' : 'inactive'}
               >
-                {provider === 'anthropic' && (
-                  <div className="absolute top-2 right-2 w-2 h-2 bg-matrix-green rounded-full animate-pulse" />
-                )}
-                <div className="font-semibold text-base">🤖 Claude</div>
-                <div className="text-xs mt-1 opacity-70">Anthropic • Recommended</div>
+                <div className="flex items-center justify-center gap-2">
+                  {provider === 'anthropic' && (
+                    <span className="w-2 h-2 bg-matrix-green rounded-full animate-pulse" />
+                  )}
+                  <span>Claude</span>
+                </div>
+                <div className="text-xs opacity-60 mt-0.5">Anthropic</div>
               </button>
               <button
                 onClick={() => setProvider('openai')}
-                className={clsx(
-                  'flex-1 px-4 py-4 rounded-lg font-mono text-sm transition-all duration-300 border-2 relative overflow-hidden',
-                  provider === 'openai'
-                    ? 'bg-matrix-cyan/15 border-matrix-cyan text-matrix-cyan shadow-[0_0_15px_rgba(0,255,255,0.3)]'
-                    : 'bg-black/30 border-glass-border text-matrix-white/60 hover:border-matrix-cyan/50 hover:bg-black/40'
-                )}
+                className={clsx('matrix-tab text-center', provider === 'openai' && 'border-matrix-cyan')}
+                data-state={provider === 'openai' ? 'active' : 'inactive'}
+                style={provider === 'openai' ? { borderColor: 'var(--matrix-cyan)', color: 'var(--matrix-cyan)' } : {}}
               >
-                {provider === 'openai' && (
-                  <div className="absolute top-2 right-2 w-2 h-2 bg-matrix-cyan rounded-full animate-pulse" />
-                )}
-                <div className="font-semibold text-base">🧠 GPT</div>
-                <div className="text-xs mt-1 opacity-70">OpenAI • Alternative</div>
+                <div className="flex items-center justify-center gap-2">
+                  {provider === 'openai' && (
+                    <span className="w-2 h-2 bg-matrix-cyan rounded-full animate-pulse" />
+                  )}
+                  <span>GPT</span>
+                </div>
+                <div className="text-xs opacity-60 mt-0.5">OpenAI</div>
               </button>
             </div>
-            <p className="mt-3 text-xs text-matrix-white/50 text-center">
-              Select which AI provider powers your chat responses
-            </p>
           </div>
 
-          {/* Divider */}
-          <div className="border-t border-glass-border my-6" />
+          <div className="matrix-divider" />
 
-          {/* API Key Section */}
-          <div className="space-y-4 mb-6">
+          {/* Active Provider Settings */}
+          <div className="space-y-5">
+            <h3 className="section-header">
+              {provider === 'anthropic' ? 'Claude' : 'GPT'} Configuration
+            </h3>
+
+            {/* API Key */}
             <div>
-              <label className="block text-sm font-mono text-matrix-green mb-2">
-                OpenAI API Key
+              <label className="block text-xs font-mono text-matrix-white/50 uppercase tracking-wider mb-2">
+                API Key
               </label>
               <div className="relative">
                 <input
-                  type={showKey ? 'text' : 'password'}
-                  value={apiKey}
-                  onChange={(e) => setApiKey(e.target.value)}
-                  placeholder="sk-..."
+                  type={currentShowKey ? 'text' : 'password'}
+                  value={currentApiKey}
+                  onChange={(e) => setCurrentApiKey(e.target.value)}
+                  placeholder={keyPlaceholder}
                   className={clsx(
-                    'w-full px-3 py-2 bg-black/50 border rounded-md',
+                    'w-full px-4 py-3 bg-matrix-black/60 border rounded-lg',
                     'text-matrix-white placeholder-matrix-white/30',
-                    'focus:outline-none focus:border-matrix-green focus:ring-1 focus:ring-matrix-green',
-                    'font-mono text-sm',
-                    testResult === 'success' ? 'border-matrix-green' :
-                    testResult === 'error' ? 'border-red-500' : 'border-glass-border'
+                    'focus:outline-none focus:border-matrix-green focus:ring-1 focus:ring-matrix-green/50',
+                    'font-mono text-sm transition-all duration-200',
+                    currentTestResult === 'success' ? 'border-matrix-green' :
+                    currentTestResult === 'error' ? 'border-red-500' : 'border-glass-border'
                   )}
                 />
                 <button
                   type="button"
-                  onClick={() => setShowKey(!showKey)}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 text-matrix-white/60 hover:text-matrix-green"
-                  aria-label={showKey ? 'Hide API key' : 'Show API key'}
+                  onClick={() => setCurrentShowKey(!currentShowKey)}
+                  className="absolute right-12 top-1/2 -translate-y-1/2 text-matrix-white/40 hover:text-matrix-green transition-colors"
+                  aria-label={currentShowKey ? 'Hide API key' : 'Show API key'}
                 >
-                  {showKey ? (
+                  {currentShowKey ? (
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
@@ -276,210 +257,88 @@ export default function Settings({ isOpen, onClose }: SettingsProps) {
                     </svg>
                   )}
                 </button>
-              </div>
-              <p className="mt-1 text-xs text-matrix-white/40">
-                Your API key is stored {saveKey ? 'locally in your browser' : 'only for this session'}
-              </p>
-              {testResult === 'success' && (
-                <p className="mt-1 text-xs text-matrix-green">✓ API key validated successfully</p>
-              )}
-              {testResult === 'error' && (
-                <p className="mt-1 text-xs text-red-500">✗ Invalid API key or connection error</p>
-              )}
-            </div>
-
-            {/* Test Connection Button */}
-            <button
-              onClick={testConnection}
-              disabled={!apiKey || testingConnection}
-              className={clsx(
-                'px-4 py-2 text-sm font-mono rounded-md transition-all duration-200 flex items-center space-x-2',
-                'border border-glass-border',
-                apiKey && !testingConnection
-                  ? 'text-matrix-green hover:bg-matrix-green/10 hover:border-matrix-green hover:scale-[1.02]'
-                  : 'text-matrix-white/30 cursor-not-allowed'
-              )}
-            >
-              {testingConnection ? (
-                <>
-                  <div className="typing-indicator">
-                    <span />
-                    <span />
-                    <span />
-                  </div>
-                  <span>Testing...</span>
-                </>
-              ) : (
-                <span>Test Connection</span>
-              )}
-            </button>
-          </div>
-
-          {/* OpenAI Model Selection */}
-          <div className="mb-6">
-            <label className="block text-sm font-mono text-matrix-green mb-2">
-              OpenAI Model
-            </label>
-            <select
-              value={model}
-              onChange={(e) => setModel(e.target.value)}
-              className={clsx(
-                'w-full px-3 py-2 bg-black/50 border border-glass-border rounded-md',
-                'text-matrix-white',
-                'focus:outline-none focus:border-matrix-green focus:ring-1 focus:ring-matrix-green',
-                'font-mono text-sm'
-              )}
-            >
-              {OPENAI_MODELS.map((m) => (
-                <option key={m.value} value={m.value}>
-                  {m.label} - {m.description}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* Divider */}
-          <div className="border-t border-glass-border my-6" />
-
-          {/* Anthropic API Key Section */}
-          <div className="space-y-4 mb-6">
-            <div>
-              <label className="block text-sm font-mono text-matrix-green mb-2">
-                Anthropic API Key
-              </label>
-              <div className="relative">
-                <input
-                  type={showAnthropicKey ? 'text' : 'password'}
-                  value={anthropicApiKey}
-                  onChange={(e) => setAnthropicApiKey(e.target.value)}
-                  placeholder="sk-ant-..."
-                  className={clsx(
-                    'w-full px-3 py-2 bg-black/50 border rounded-md',
-                    'text-matrix-white placeholder-matrix-white/30',
-                    'focus:outline-none focus:border-matrix-green focus:ring-1 focus:ring-matrix-green',
-                    'font-mono text-sm',
-                    anthropicTestResult === 'success' ? 'border-matrix-green' :
-                    anthropicTestResult === 'error' ? 'border-red-500' : 'border-glass-border'
-                  )}
-                />
                 <button
-                  type="button"
-                  onClick={() => setShowAnthropicKey(!showAnthropicKey)}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 text-matrix-white/60 hover:text-matrix-green"
-                  aria-label={showAnthropicKey ? 'Hide API key' : 'Show API key'}
-                >
-                  {showAnthropicKey ? (
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                    </svg>
-                  ) : (
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
-                    </svg>
+                  onClick={() => testConnection(provider)}
+                  disabled={!currentApiKey || currentTesting}
+                  className={clsx(
+                    'absolute right-2 top-1/2 -translate-y-1/2 px-2 py-1 rounded text-xs font-mono',
+                    'transition-all duration-200',
+                    currentApiKey && !currentTesting
+                      ? 'text-matrix-green hover:bg-matrix-green/20'
+                      : 'text-matrix-white/30 cursor-not-allowed'
                   )}
+                >
+                  {currentTesting ? '...' : '⚡'}
                 </button>
               </div>
-              <p className="mt-1 text-xs text-matrix-white/40">
-                Your API key is stored {saveKey ? 'locally in your browser' : 'only for this session'}
-              </p>
-              {anthropicTestResult === 'success' && (
-                <p className="mt-1 text-xs text-matrix-green">✓ API key validated successfully</p>
-              )}
-              {anthropicTestResult === 'error' && (
-                <p className="mt-1 text-xs text-red-500">✗ Invalid API key or connection error</p>
-              )}
+              <div className="mt-2 flex items-center justify-between">
+                <span className="text-xs text-matrix-white/40">
+                  Stored {saveKey ? 'locally in browser' : 'for this session only'}
+                </span>
+                {currentTestResult === 'success' && (
+                  <span className="text-xs text-matrix-green">✓ Valid</span>
+                )}
+                {currentTestResult === 'error' && (
+                  <span className="text-xs text-red-400">✗ Invalid</span>
+                )}
+              </div>
             </div>
 
-            {/* Test Anthropic Connection Button */}
-            <button
-              onClick={testAnthropicConnection}
-              disabled={!anthropicApiKey || testingAnthropicConnection}
-              className={clsx(
-                'px-4 py-2 text-sm font-mono rounded-md transition-all duration-200 flex items-center space-x-2',
-                'border border-glass-border',
-                anthropicApiKey && !testingAnthropicConnection
-                  ? 'text-matrix-green hover:bg-matrix-green/10 hover:border-matrix-green hover:scale-[1.02]'
-                  : 'text-matrix-white/30 cursor-not-allowed'
-              )}
-            >
-              {testingAnthropicConnection ? (
-                <>
-                  <div className="typing-indicator">
-                    <span />
-                    <span />
-                    <span />
-                  </div>
-                  <span>Testing...</span>
-                </>
-              ) : (
-                <span>Test Anthropic Connection</span>
-              )}
-            </button>
+            {/* Model Selection */}
+            <div>
+              <label className="block text-xs font-mono text-matrix-white/50 uppercase tracking-wider mb-2">
+                Model
+              </label>
+              <select
+                value={currentModel}
+                onChange={(e) => setCurrentModel(e.target.value)}
+                className="matrix-select"
+              >
+                {currentModels.map((m) => (
+                  <option key={m.value} value={m.value}>
+                    {m.label} - {m.description}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
 
-          {/* Anthropic Model Selection */}
-          <div className="mb-6">
-            <label className="block text-sm font-mono text-matrix-green mb-2">
-              Anthropic Model
-            </label>
-            <select
-              value={anthropicModel}
-              onChange={(e) => setAnthropicModel(e.target.value)}
-              className={clsx(
-                'w-full px-3 py-2 bg-black/50 border border-glass-border rounded-md',
-                'text-matrix-white',
-                'focus:outline-none focus:border-matrix-green focus:ring-1 focus:ring-matrix-green',
-                'font-mono text-sm'
-              )}
-            >
-              {ANTHROPIC_MODELS.map((m) => (
-                <option key={m.value} value={m.value}>
-                  {m.label} - {m.description}
-                </option>
-              ))}
-            </select>
-          </div>
+          <div className="matrix-divider" />
 
-          {/* Save Preference */}
-          <div className="mb-6">
-            <label className="flex items-center space-x-2 cursor-pointer">
+          {/* General Settings */}
+          <div className="space-y-4">
+            <label className="flex items-center gap-3 cursor-pointer group">
               <input
                 type="checkbox"
                 checked={saveKey}
                 onChange={(e) => setSaveKey(e.target.checked)}
-                className="w-4 h-4 bg-black/50 border-glass-border rounded text-matrix-green focus:ring-matrix-green"
+                className="w-4 h-4 bg-matrix-black/60 border-glass-border rounded text-matrix-green focus:ring-matrix-green/50 focus:ring-offset-0"
               />
-              <span className="text-sm font-mono text-matrix-white/80">
-                Remember settings for next time
+              <span className="text-sm font-mono text-matrix-white/70 group-hover:text-matrix-white transition-colors">
+                Remember settings
               </span>
             </label>
+
+            {/* Security Note */}
+            <div className="p-3 bg-matrix-green/5 border border-matrix-green/20 rounded-lg">
+              <p className="text-xs text-matrix-white/50 leading-relaxed">
+                <span className="text-matrix-green font-medium">Security:</span> API keys are stored locally and only sent directly to {provider === 'anthropic' ? 'Anthropic' : 'OpenAI'}.
+              </p>
+            </div>
           </div>
 
-          {/* Security Warning */}
-          <div className="mb-6 p-3 bg-matrix-green/10 border border-matrix-green/30 rounded-md">
-            <p className="text-xs text-matrix-green/80">
-              <strong>Security Note:</strong> Your API keys are stored locally in your browser and are never sent to our servers.
-              They&apos;re only used to communicate directly with OpenAI and Anthropic APIs.
-            </p>
-          </div>
+          <div className="matrix-divider" />
 
           {/* Action Buttons */}
-          <div className="flex justify-between">
+          <div className="flex items-center justify-between">
             <button
               onClick={handleClearSettings}
-              className={clsx(
-                'px-4 py-2 text-sm font-mono rounded-md transition-all duration-200',
-                'text-red-500 hover:bg-red-500/10 border border-red-500/30'
-              )}
+              className="px-3 py-2 text-xs font-mono text-red-400/70 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-all duration-200"
             >
-              Clear Settings
+              Clear All
             </button>
-            <div className="flex space-x-3">
-              <Button
-                variant="secondary"
-                onClick={onClose}
-              >
+            <div className="flex gap-3">
+              <Button variant="secondary" onClick={onClose}>
                 Cancel
               </Button>
               <Button
@@ -487,7 +346,7 @@ export default function Settings({ isOpen, onClose }: SettingsProps) {
                 onClick={handleSave}
                 disabled={!apiKey && !anthropicApiKey}
               >
-                Save Settings
+                Save
               </Button>
             </div>
           </div>

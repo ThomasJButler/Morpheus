@@ -5,9 +5,9 @@ Handles RAG queries and returns responses with citations.
 
 import json
 import logging
-from typing import AsyncGenerator
+from typing import AsyncGenerator, Optional
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Header
 from fastapi.responses import StreamingResponse
 from sse_starlette.sse import EventSourceResponse
 
@@ -21,22 +21,27 @@ router = APIRouter(prefix="/api", tags=["chat"])
 # Initialize RAG pipeline (simple semantic search only)
 rag_pipeline = SimpleRAG()
 
+# Default namespace for backwards compatibility
+DEFAULT_NAMESPACE = "default"
+
 
 async def stream_response(
     user_message: str,
+    namespace: str = DEFAULT_NAMESPACE,
 ) -> AsyncGenerator[str, None]:
     """
     Generate streaming response in SSE format.
 
     Args:
         user_message: The user's message text
+        namespace: Pinecone namespace for session isolation
 
     Yields:
         str: SSE-formatted events
     """
     try:
-        # Stream chunks from simple RAG
-        async for chunk in rag_pipeline.process_query_streaming(user_message):
+        # Stream chunks from simple RAG (within namespace)
+        async for chunk in rag_pipeline.process_query_streaming(user_message, namespace=namespace):
             # SSE format requires "data: " prefix and double newline separator
             chunk_json = chunk.model_dump_json()
             yield f"data: {chunk_json}\n\n"
@@ -53,17 +58,23 @@ async def stream_response(
 
 
 @router.post("/chat", response_model=ChatResponse)
-async def chat(request: ChatRequest):
+async def chat(
+    request: ChatRequest,
+    x_session_id: Optional[str] = Header(None, alias="X-Session-ID")
+):
     """
     Chat endpoint with optional streaming.
     Supports both single message format and Vercel AI SDK messages array format.
 
     Args:
         request: Chat request containing message or messages array
+        x_session_id: Session ID for namespace isolation
 
     Returns:
         StreamingResponse or ChatResponse depending on stream parameter
     """
+    # Use session ID as namespace, or default
+    namespace = x_session_id or DEFAULT_NAMESPACE
     # Extract user message from either format
     user_message = None
 
@@ -83,22 +94,23 @@ async def chat(request: ChatRequest):
 
     logger.info(
         f"Chat request - Stream: {request.stream}, "
-        f"Message length: {len(user_message)}"
+        f"Message length: {len(user_message)}, "
+        f"Namespace: {namespace}"
     )
 
     try:
         # Streaming response
         if request.stream:
             return EventSourceResponse(
-                stream_response(user_message),
+                stream_response(user_message, namespace=namespace),
                 media_type="text/event-stream",
             )
 
         # Non-streaming response
         else:
-            # Process query
+            # Process query (within namespace)
             response_text, citations, metrics = await rag_pipeline.process_query(
-                user_message
+                user_message, namespace=namespace
             )
 
             # Create response
@@ -122,7 +134,10 @@ async def chat(request: ChatRequest):
 
 
 @router.post("/context")
-async def get_context(request: dict):
+async def get_context(
+    request: dict,
+    x_session_id: Optional[str] = Header(None, alias="X-Session-ID")
+):
     """
     Get RAG context and citations for a query.
     Used by Next.js BFF to inject context into Claude prompts.
@@ -130,10 +145,14 @@ async def get_context(request: dict):
 
     Args:
         request: Dict containing 'query' string or 'messages' array
+        x_session_id: Session ID for namespace isolation
 
     Returns:
         dict: Formatted context, citations, and metrics
     """
+    # Use session ID as namespace, or default
+    namespace = x_session_id or DEFAULT_NAMESPACE
+    
     try:
         query = request.get("query", "")
         if not query:
@@ -145,13 +164,13 @@ async def get_context(request: dict):
         if not query:
             return {"context": "", "citations": [], "count": 0}
 
-        logger.info(f"Context request for query: {query[:50]}...")
+        logger.info(f"Context request for query: {query[:50]}... (namespace: {namespace})")
 
         # 1. Embed query
         query_embedding = await rag_pipeline.embed_query(query)
 
-        # 2. Retrieve context from Pinecone
-        contexts, metrics = await rag_pipeline.retrieve_context(query_embedding)
+        # 2. Retrieve context from Pinecone (within namespace)
+        contexts, metrics = await rag_pipeline.retrieve_context(query_embedding, namespace=namespace)
 
         # 3. Format context for prompt injection
         formatted_context = rag_pipeline.format_context_for_prompt(contexts)

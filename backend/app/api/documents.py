@@ -6,9 +6,9 @@ Handles file uploads, processing, chunking, embedding, and indexing.
 import logging
 import tempfile
 from pathlib import Path
-from typing import List
+from typing import List, Optional
 
-from fastapi import APIRouter, File, HTTPException, UploadFile
+from fastapi import APIRouter, File, HTTPException, UploadFile, Header
 from openai import AsyncOpenAI
 from pinecone_text.sparse import BM25Encoder
 
@@ -27,9 +27,15 @@ chunker = DocumentChunker()
 openai_client = AsyncOpenAI(api_key=settings.openai_api_key)
 bm25_encoder = BM25Encoder()
 
+# Default namespace for backwards compatibility
+DEFAULT_NAMESPACE = "default"
+
 
 @router.post("/upload")
-async def upload_document(file: UploadFile = File(...)):
+async def upload_document(
+    file: UploadFile = File(...),
+    x_session_id: Optional[str] = Header(None, alias="X-Session-ID")
+):
     """
     Upload and process a document.
 
@@ -38,15 +44,18 @@ async def upload_document(file: UploadFile = File(...)):
     2. Extract text from document
     3. Chunk text into smaller pieces
     4. Generate embeddings (dense + sparse)
-    5. Index in Pinecone
+    5. Index in Pinecone (within session namespace)
 
     Args:
         file: Uploaded file
+        x_session_id: Session ID for namespace isolation
 
     Returns:
         dict: Processing results with document ID and stats
     """
-    logger.info(f"Received file upload: {file.filename}")
+    # Use session ID as namespace, or default
+    namespace = x_session_id or DEFAULT_NAMESPACE
+    logger.info(f"Received file upload: {file.filename} (namespace: {namespace})")
 
     # Validate file type
     file_extension = Path(file.filename).suffix.lower().lstrip(".")
@@ -89,8 +98,8 @@ async def upload_document(file: UploadFile = File(...)):
 
         logger.info(f"Chunked document into {len(chunks)} chunks")
 
-        # Generate embeddings and index
-        indexed_count = await index_chunks(chunks)
+        # Generate embeddings and index (within namespace)
+        indexed_count = await index_chunks(chunks, namespace=namespace)
 
         # Clean up temp file
         Path(temp_file_path).unlink()
@@ -102,6 +111,7 @@ async def upload_document(file: UploadFile = File(...)):
             "chunks_created": len(chunks),
             "vectors_indexed": indexed_count,
             "metadata": processed["metadata"],
+            "namespace": namespace,
         }
 
     except HTTPException:
@@ -111,12 +121,13 @@ async def upload_document(file: UploadFile = File(...)):
         raise HTTPException(status_code=500, detail=f"Processing error: {str(e)}")
 
 
-async def index_chunks(chunks: List[dict]) -> int:
+async def index_chunks(chunks: List[dict], namespace: str = DEFAULT_NAMESPACE) -> int:
     """
     Generate embeddings and index chunks in Pinecone.
 
     Args:
         chunks: List of chunk dictionaries
+        namespace: Pinecone namespace for isolation
 
     Returns:
         int: Number of vectors indexed
@@ -206,9 +217,9 @@ async def index_chunks(chunks: List[dict]) -> int:
                     }
                 )
 
-        # Upsert to dense index
-        logger.info(f"Upserting {len(dense_vectors)} vectors to dense index")
-        dense_index.upsert(vectors=dense_vectors)
+        # Upsert to dense index (within namespace)
+        logger.info(f"Upserting {len(dense_vectors)} vectors to dense index (namespace: {namespace})")
+        dense_index.upsert(vectors=dense_vectors, namespace=namespace)
 
         # Note: Sparse index implementation would go here for true hybrid search
         # For now, we're using dense vectors only which still provides excellent results
@@ -221,20 +232,68 @@ async def index_chunks(chunks: List[dict]) -> int:
 
 
 @router.get("/stats")
-async def get_document_stats():
+async def get_document_stats(
+    x_session_id: Optional[str] = Header(None, alias="X-Session-ID")
+):
     """
-    Get statistics about indexed documents.
+    Get statistics about indexed documents for the current session.
+
+    Args:
+        x_session_id: Session ID for namespace filtering
 
     Returns:
-        dict: Index statistics
+        dict: Document statistics matching frontend DocumentStats type
     """
+    namespace = x_session_id or DEFAULT_NAMESPACE
+
     try:
         pinecone_client = get_pinecone_client()
-        stats = pinecone_client.index_stats()
+        stats = pinecone_client.index_stats(namespace=namespace)
 
+        # Extract vector count from Pinecone stats
+        total_chunks = stats.get("dense", {}).get("total_vector_count", 0)
+        dimension = stats.get("dense", {}).get("dimension", 1536)
+
+        # Count unique documents by querying for unique sources
+        total_documents = 0
+        if total_chunks > 0:
+            try:
+                index = pinecone_client.get_index()
+                # Use a dummy vector to query
+                dummy_vector = [0.0] * dimension
+
+                # Query to get metadata
+                results = index.query(
+                    vector=dummy_vector,
+                    top_k=min(10000, total_chunks),  # Get as many as possible
+                    include_metadata=True,
+                    namespace=namespace,
+                )
+
+                # Extract unique sources
+                sources = set()
+                for match in results.get("matches", []):
+                    source = match.get("metadata", {}).get("source")
+                    if source:
+                        sources.add(source)
+                total_documents = len(sources)
+            except Exception as e:
+                logger.warning(f"Could not count documents: {e}")
+                total_documents = 0
+
+        # Calculate approximate index size
+        # 4 bytes per float * dimension * number of vectors / 1024^2 for MB
+        size_mb = (total_chunks * dimension * 4) / (1024 * 1024)
+        index_size = f"{size_mb:.2f} MB" if size_mb > 0 else "0 MB"
+
+        # Return structure matching frontend DocumentStats type
+        from datetime import datetime
         return {
-            "success": True,
-            "stats": stats,
+            "total_documents": total_documents,
+            "total_chunks": total_chunks,
+            "total_embeddings": total_chunks,  # Each chunk has one embedding
+            "index_size": index_size,
+            "last_updated": datetime.now().isoformat(),
         }
 
     except Exception as e:
@@ -257,27 +316,160 @@ async def get_document_stats():
 
 
 @router.delete("/all")
-async def delete_all_documents():
+async def delete_all_documents(
+    x_session_id: Optional[str] = Header(None, alias="X-Session-ID")
+):
     """
-    Delete all documents from indexes.
+    Delete all documents from the session's namespace.
 
-    USE WITH CAUTION - This is irreversible!
+    Args:
+        x_session_id: Session ID for namespace isolation
 
     Returns:
         dict: Deletion status
     """
+    namespace = x_session_id or DEFAULT_NAMESPACE
+    
     try:
         pinecone_client = get_pinecone_client()
-        success = pinecone_client.delete_all_vectors()
+        success = pinecone_client.delete_all_vectors(namespace=namespace)
 
         if success:
             return {
                 "success": True,
-                "message": "All documents deleted from indexes",
+                "message": f"All documents deleted from namespace: {namespace}",
+                "namespace": namespace,
             }
         else:
             raise HTTPException(status_code=500, detail="Deletion failed")
 
     except Exception as e:
         logger.error(f"Error deleting documents: {e}")
+        raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
+
+
+@router.post("/cleanup")
+async def cleanup_session(
+    x_session_id: Optional[str] = Header(None, alias="X-Session-ID")
+):
+    """
+    Clean up (delete all vectors in) the session's namespace.
+    Called at session start to ensure fresh state.
+
+    Args:
+        x_session_id: Session ID for namespace isolation
+
+    Returns:
+        dict: Cleanup status
+    """
+    namespace = x_session_id or DEFAULT_NAMESPACE
+    
+    try:
+        pinecone_client = get_pinecone_client()
+        
+        # Check if namespace has any vectors first
+        stats = pinecone_client.index_stats(namespace=namespace)
+        vector_count = stats.get("dense", {}).get("total_vector_count", 0)
+        
+        if vector_count > 0:
+            success = pinecone_client.delete_namespace(namespace)
+            if success:
+                logger.info(f"Cleaned up namespace: {namespace} ({vector_count} vectors deleted)")
+                return {
+                    "success": True,
+                    "message": f"Namespace cleaned up: {vector_count} vectors deleted",
+                    "namespace": namespace,
+                    "vectors_deleted": vector_count,
+                }
+            else:
+                raise HTTPException(status_code=500, detail="Cleanup failed")
+        else:
+            return {
+                "success": True,
+                "message": "Namespace already empty",
+                "namespace": namespace,
+                "vectors_deleted": 0,
+            }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error cleaning up namespace: {e}")
+        raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
+
+
+@router.get("/list")
+async def list_documents(
+    x_session_id: Optional[str] = Header(None, alias="X-Session-ID")
+):
+    """
+    List all documents in the session's namespace.
+    Returns unique source names from indexed vectors.
+
+    Args:
+        x_session_id: Session ID for namespace filtering
+
+    Returns:
+        dict: List of document sources
+    """
+    namespace = x_session_id or DEFAULT_NAMESPACE
+    
+    try:
+        pinecone_client = get_pinecone_client()
+        index = pinecone_client.get_index()
+        
+        # Query with a dummy vector to get all metadata
+        # Using a zero vector with top_k to fetch samples
+        stats = pinecone_client.index_stats(namespace=namespace)
+        vector_count = stats.get("dense", {}).get("total_vector_count", 0)
+        
+        if vector_count == 0:
+            return {
+                "success": True,
+                "documents": [],
+                "namespace": namespace,
+            }
+        
+        # Use list operation if available, otherwise query with metadata
+        # Pinecone doesn't have a direct list-unique-sources, so we query
+        # and extract unique sources from metadata
+        try:
+            # Try to fetch vectors with metadata to extract sources
+            # Using a large top_k to get representative sample
+            dimension = stats.get("dense", {}).get("dimension", 1536)
+            dummy_vector = [0.0] * dimension
+            
+            results = index.query(
+                vector=dummy_vector,
+                top_k=min(100, vector_count),  # Get up to 100 vectors
+                include_metadata=True,
+                namespace=namespace,
+            )
+            
+            # Extract unique sources
+            sources = set()
+            for match in results.get("matches", []):
+                source = match.get("metadata", {}).get("source")
+                if source:
+                    sources.add(source)
+            
+            return {
+                "success": True,
+                "documents": list(sources),
+                "count": len(sources),
+                "namespace": namespace,
+                "total_chunks": vector_count,
+            }
+        except Exception as e:
+            logger.warning(f"Could not list documents: {e}")
+            return {
+                "success": True,
+                "documents": [],
+                "namespace": namespace,
+                "total_chunks": vector_count,
+                "note": "Document listing not available, but chunks exist",
+            }
+
+    except Exception as e:
+        logger.error(f"Error listing documents: {e}")
         raise HTTPException(status_code=500, detail=f"Error: {str(e)}")

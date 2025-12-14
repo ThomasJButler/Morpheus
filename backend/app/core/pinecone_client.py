@@ -108,9 +108,12 @@ class PineconeClient:
         sparse = None  # Sparse index not used in simplified version
         return dense, sparse
 
-    def index_stats(self) -> dict:
+    def index_stats(self, namespace: str = None) -> dict:
         """
         Get current index statistics.
+
+        Args:
+            namespace: Optional namespace to filter stats for
 
         Returns:
             dict: Index statistics including vector count, dimension, etc.
@@ -129,23 +132,38 @@ class PineconeClient:
                         "vector_count": getattr(namespace_obj, "vector_count", 0)
                     }
 
-            stats = {
-                "dense": {
-                    "total_vector_count": dense_stats.total_vector_count,
-                    "dimension": dense_stats.dimension,
-                    "namespaces": namespaces_dict
+            # If namespace specified, return stats for that namespace only
+            if namespace:
+                namespace_stats = namespaces_dict.get(namespace, {"vector_count": 0})
+                stats = {
+                    "dense": {
+                        "total_vector_count": namespace_stats.get("vector_count", 0),
+                        "dimension": dense_stats.dimension,
+                        "namespace": namespace,
+                        "namespaces": {namespace: namespace_stats}
+                    }
                 }
-            }
+            else:
+                stats = {
+                    "dense": {
+                        "total_vector_count": dense_stats.total_vector_count,
+                        "dimension": dense_stats.dimension,
+                        "namespaces": namespaces_dict
+                    }
+                }
 
             return stats
         except Exception as e:
             logger.error(f"Failed to get index stats: {e}", exc_info=True)
             return {}
 
-    def delete_all_vectors(self) -> bool:
+    def delete_all_vectors(self, namespace: str = None) -> bool:
         """
         Delete all vectors from the dense index.
-        USE WITH CAUTION - This is irreversible.
+        USE WITH CAUTION - This is irreversible!
+
+        Args:
+            namespace: Optional namespace to delete from (if None, deletes ALL vectors)
 
         Returns:
             bool: True if successful, False otherwise
@@ -153,13 +171,32 @@ class PineconeClient:
         try:
             # Delete from dense index
             dense_index = self.get_index()
-            dense_index.delete(delete_all=True)
-            logger.warning("All vectors deleted from dense index")
+            if namespace:
+                dense_index.delete(delete_all=True, namespace=namespace)
+                logger.warning(f"All vectors deleted from namespace: {namespace}")
+            else:
+                dense_index.delete(delete_all=True)
+                logger.warning("All vectors deleted from dense index (all namespaces)")
 
             return True
         except Exception as e:
             logger.error(f"Failed to delete vectors: {e}")
             return False
+
+    def delete_namespace(self, namespace: str) -> bool:
+        """
+        Delete all vectors in a specific namespace.
+
+        Args:
+            namespace: Namespace to clear
+
+        Returns:
+            bool: True if successful, False otherwise
+        """
+        if not namespace:
+            logger.error("Namespace is required for delete_namespace")
+            return False
+        return self.delete_all_vectors(namespace=namespace)
 
 
 # Singleton instance

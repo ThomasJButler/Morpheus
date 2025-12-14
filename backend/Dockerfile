@@ -7,7 +7,7 @@
 # ==============================================================================
 # STAGE 1: Builder - Install dependencies
 # ==============================================================================
-FROM python:3.11-slim as builder
+FROM python:3.11-slim AS builder
 
 # Set working directory
 WORKDIR /app
@@ -30,6 +30,9 @@ ENV PATH="/opt/venv/bin:$PATH"
 RUN pip install --no-cache-dir --upgrade pip setuptools wheel && \
     pip install --no-cache-dir -r requirements.txt
 
+# Download NLTK data for tokenization (required by pinecone-text BM25 encoder)
+RUN python -c "import nltk; nltk.download('punkt_tab', download_dir='/opt/venv/nltk_data')"
+
 # ==============================================================================
 # STAGE 2: Runtime - Create production image
 # ==============================================================================
@@ -39,6 +42,7 @@ FROM python:3.11-slim
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
     PATH="/opt/venv/bin:$PATH" \
+    NLTK_DATA="/opt/venv/nltk_data" \
     PORT=8000
 
 # Install runtime dependencies only

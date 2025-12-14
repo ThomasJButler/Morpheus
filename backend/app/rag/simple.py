@@ -62,7 +62,7 @@ class SimpleRAG:
             raise
 
     async def retrieve_context(
-        self, query_embedding: List[float], top_k: int = None
+        self, query_embedding: List[float], top_k: int = None, namespace: str = None
     ) -> tuple[List[dict], RetrievalMetrics]:
         """
         Retrieve relevant context from Pinecone.
@@ -70,19 +70,23 @@ class SimpleRAG:
         Args:
             query_embedding: Query vector
             top_k: Number of results to retrieve
+            namespace: Pinecone namespace for session isolation
 
         Returns:
             Tuple of (context chunks, retrieval metrics)
         """
         start_time = time.time()
         top_k = top_k or settings.top_k_results
+        # Use default namespace if not specified
+        namespace = namespace or "default"
 
         try:
-            # Query Pinecone
+            # Query Pinecone (within namespace)
             results = self.index.query(
                 vector=query_embedding,
                 top_k=top_k,
                 include_metadata=True,
+                namespace=namespace,
                 filter=None,  # Add filters if needed
             )
 
@@ -217,7 +221,7 @@ class SimpleRAG:
             raise
 
     async def process_query_streaming(
-        self, query: str, top_k: Optional[int] = None
+        self, query: str, top_k: Optional[int] = None, namespace: str = None
     ) -> AsyncGenerator[StreamChunk, None]:
         """
         Process query with streaming response.
@@ -225,6 +229,7 @@ class SimpleRAG:
         Args:
             query: User query
             top_k: Number of results to retrieve
+            namespace: Pinecone namespace for session isolation
 
         Yields:
             StreamChunk: Stream chunks (tokens, citations, metrics)
@@ -233,8 +238,8 @@ class SimpleRAG:
             # 1. Embed query
             query_embedding = await self.embed_query(query)
 
-            # 2. Retrieve context
-            contexts, metrics = await self.retrieve_context(query_embedding, top_k)
+            # 2. Retrieve context (within namespace)
+            contexts, metrics = await self.retrieve_context(query_embedding, top_k, namespace)
 
             # 3. Send citations
             citations = self.create_citations(contexts)
@@ -253,7 +258,7 @@ class SimpleRAG:
             yield StreamChunk(type="error", content=str(e))
 
     async def process_query(
-        self, query: str, top_k: Optional[int] = None
+        self, query: str, top_k: Optional[int] = None, namespace: str = None
     ) -> tuple[str, List[Citation], RetrievalMetrics]:
         """
         Process query and return complete response (non-streaming).
@@ -261,6 +266,7 @@ class SimpleRAG:
         Args:
             query: User query
             top_k: Number of results to retrieve
+            namespace: Pinecone namespace for session isolation
 
         Returns:
             Tuple of (response text, citations, metrics)
@@ -268,8 +274,8 @@ class SimpleRAG:
         # 1. Embed query
         query_embedding = await self.embed_query(query)
 
-        # 2. Retrieve context
-        contexts, metrics = await self.retrieve_context(query_embedding, top_k)
+        # 2. Retrieve context (within namespace)
+        contexts, metrics = await self.retrieve_context(query_embedding, top_k, namespace)
 
         # 3. Generate response
         response_parts = []

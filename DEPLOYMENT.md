@@ -27,7 +27,7 @@
 1. **Anthropic API Key**
    - Sign up at: https://console.anthropic.com/
    - Create API key in Account Settings
-   - Pricing: ~$3/1M input tokens, ~$15/1M output tokens (Claude Haiku)
+   - Pricing: ~$1/1M input tokens, ~$5/1M output tokens (Claude 3.5 Haiku)
 
 2. **OpenAI API Key**
    - Sign up at: https://platform.openai.com/
@@ -176,7 +176,7 @@ railway variables set OPENAI_API_KEY="sk-..."
 railway variables set PINECONE_API_KEY="..."
 railway variables set PINECONE_INDEX_NAME="morpheus"
 railway variables set PINECONE_ENVIRONMENT="us-east-1"
-railway variables set ANTHROPIC_MODEL="claude-3-haiku-20240307"
+railway variables set ANTHROPIC_MODEL="claude-3-5-haiku-latest"
 railway variables set EMBEDDING_MODEL="text-embedding-3-small"
 railway variables set TOP_K_RESULTS="10"
 railway variables set MIN_RELEVANCE_SCORE="0.7"
@@ -252,7 +252,7 @@ OPENAI_API_KEY=sk-...
 PINECONE_API_KEY=...
 PINECONE_INDEX_NAME=morpheus
 PINECONE_ENVIRONMENT=us-east-1
-ANTHROPIC_MODEL=claude-3-haiku-20240307
+ANTHROPIC_MODEL=claude-3-5-haiku-latest
 EMBEDDING_MODEL=text-embedding-3-small
 TOP_K_RESULTS=10
 MIN_RELEVANCE_SCORE=0.7
@@ -488,7 +488,7 @@ PINECONE_INDEX_NAME=morpheus
 PINECONE_ENVIRONMENT=us-east-1
 
 # Model Configuration
-ANTHROPIC_MODEL=claude-3-haiku-20240307
+ANTHROPIC_MODEL=claude-3-5-haiku-latest
 EMBEDDING_MODEL=text-embedding-3-small
 RERANKER_MODEL=bge-reranker-v2-m3
 
