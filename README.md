@@ -9,10 +9,30 @@
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.6-blue.svg)](https://www.typescriptlang.org/)
 [![Next.js](https://img.shields.io/badge/Next.js-15-black.svg)](https://nextjs.org/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.115+-green.svg)](https://fastapi.tiangolo.com/)
+[![API Docs](https://img.shields.io/badge/API-Docs-orange.svg)](https://morpheus-backend-4c0h.onrender.com/docs)
+[![Live Demo](https://img.shields.io/badge/Live-Demo-brightgreen.svg)](https://morpheusrag.vercel.app)
 
-[![Backend CI](https://github.com/ThomasJButler/Morpheus/workflows/Backend%20CI/badge.svg)](https://github.com/ThomasJButler/Morpheus/actions)
-[![Frontend CI](https://github.com/ThomasJButler/Morpheus/workflows/Frontend%20CI/badge.svg)](https://github.com/ThomasJButler/Morpheus/actions)
-[![codecov](https://codecov.io/gh/ThomasJButler/Morpheus/branch/main/graph/badge.svg)](https://codecov.io/gh/ThomasJButler/Morpheus)
+## Why Morpheus Over ChatGPT Custom GPTs?
+
+| Aspect | ChatGPT Custom GPTs | Morpheus |
+|--------|--------------------| --------------|
+| **Data Location** | OpenAI's servers | Your Pinecone instance (you control it) |
+| **Model Lock-in** | OpenAI only | Claude + GPT (swap anytime) |
+| **RAG Pipeline** | Black box | Full control: chunking, embeddings, retrieval, reranking |
+| **Cost Model** | $20/mo per user | Pay-per-API-call (scales better for teams) |
+| **Transparency** | Can't see what's retrieved | See exact context chunks + relevance scores |
+| **Customization** | Limited prompt tweaks | Everything: prompts, personality, thresholds, retrieval strategy |
+| **Multi-tenant** | No | Yes (session-based namespace isolation) |
+| **White-label** | No | Yes - fully self-hosted |
+
+### Key Advantages
+
+- **Data Sovereignty** - Documents never touch OpenAI. Critical for enterprise/privacy-conscious users.
+- **Model Arbitrage** - Use the best or cheapest model for each use case. Switch providers without rebuilding.
+- **Pipeline Visibility** - Debug *why* answers are wrong by inspecting retrieved chunks and scores.
+- **Extensibility** - Add hybrid search, reranking, agents, evaluation metrics, custom integrations.
+
+**TL;DR:** Custom GPTs are convenient for casual use. Morpheus is what you build when you need **control, transparency, or multi-provider flexibility** - exactly what enterprises and developers want.
 
 ---
 
