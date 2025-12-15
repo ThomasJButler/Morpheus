@@ -188,15 +188,8 @@ export default function ChatInterface() {
               </div>
             )}
 
-            {/* Quick Start Guide or Morpheus Quote */}
-            {messages.length === 0 && !guideDismissed && (
-              <QuickStartGuide
-                onDismiss={handleDismissGuide}
-                onOpenSettings={() => setShowSettings(true)}
-              />
-            )}
-
-            {messages.length === 0 && guideDismissed && (
+            {/* Morpheus Quote - shown when chat is empty */}
+            {messages.length === 0 && (
               <div className="text-center py-12 text-matrix-green/70">
                 <p className="matrix-quote text-lg mb-4 inline-block text-left max-w-md mx-auto">
                   &quot;I can only show you the door. You&apos;re the one that has to walk through it.&quot;
