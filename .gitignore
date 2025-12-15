@@ -4,6 +4,10 @@ backend/.env
 /Pinecone RAG
 /gicc
 
+# Personal/local config files
+claude-mcp-config.json
+*.local.json
+
 # Node modules
 node_modules/
 **/node_modules/
