@@ -12,7 +12,7 @@
   "regions": ["iad1"],
 
   "env": {
-    "NEXT_PUBLIC_API_URL": "@morpheus-api-url"
+    "NEXT_PUBLIC_API_URL": "https://morpheus-backend-4c0h.onrender.com"
   },
 
   "build": {
