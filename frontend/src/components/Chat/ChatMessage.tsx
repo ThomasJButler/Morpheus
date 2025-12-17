@@ -30,11 +30,17 @@ export default function ChatMessage({ message }: ChatMessageProps) {
         ? 'bg-matrix-black/40 border-l-matrix-cyan ml-4 sm:ml-12 hover:bg-matrix-black/50'
         : 'bg-matrix-black/60 border-l-matrix-green mr-4 sm:mr-12 hover:bg-matrix-black/70 hover:shadow-[0_0_15px_rgba(0,255,0,0.2)]'}
     `}>
-      {/* Copy Button - shows on hover */}
+      {/* Copy Button - always visible on mobile, hover on desktop */}
       <button
         onClick={handleCopy}
-        className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity duration-200 p-2 rounded-md bg-matrix-black/50 hover:bg-matrix-green/20 text-matrix-green/60 hover:text-matrix-green"
+        className="absolute top-2 right-2 sm:top-3 sm:right-3
+                   opacity-60 sm:opacity-0 sm:group-hover:opacity-100
+                   transition-opacity duration-200 p-2 rounded-md
+                   bg-matrix-black/50 hover:bg-matrix-green/20 active:bg-matrix-green/30
+                   text-matrix-green/60 hover:text-matrix-green
+                   min-w-[40px] min-h-[40px] flex items-center justify-center"
         title="Copy message"
+        aria-label={copied ? "Copied!" : "Copy message"}
       >
         {copied ? (
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -47,14 +53,21 @@ export default function ChatMessage({ message }: ChatMessageProps) {
         )}
       </button>
 
-      {/* Role Icon */}
+      {/* Role Icon - Using SVG instead of emoji to prevent stretching on mobile */}
       <div className={`
-        flex-shrink-0 rounded-lg p-3 border-r flex items-center
+        flex-shrink-0 rounded-lg p-2 sm:p-3 border-r flex items-center justify-center
+        w-10 h-10 sm:w-12 sm:h-12
         ${isUser ? 'border-matrix-cyan/30' : 'border-matrix-green/30'}
       `}>
-        <span className="text-3xl">
-          {isUser ? '🧑‍💻' : '🤖'}
-        </span>
+        {isUser ? (
+          <svg className="w-5 h-5 sm:w-6 sm:h-6 text-matrix-cyan" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+          </svg>
+        ) : (
+          <svg className="w-5 h-5 sm:w-6 sm:h-6 text-matrix-green" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+          </svg>
+        )}
       </div>
 
       {/* Message Content */}
