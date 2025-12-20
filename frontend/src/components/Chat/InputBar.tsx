@@ -79,7 +79,7 @@ export default function InputBar({
           maxLength={characterLimit}
           rows={1}
           className={`
-            w-full px-4 py-4 sm:px-5 rounded-lg font-mono text-base
+            w-full px-4 py-3 sm:px-5 sm:py-3 rounded-lg font-mono text-base
             bg-glass-bg border-2 border-glass-border text-matrix-white
             placeholder:text-matrix-white/50
             focus:outline-none focus:border-matrix-green

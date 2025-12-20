@@ -22,7 +22,6 @@ export default function ChatInterface() {
   const [documentList, setDocumentList] = useState<string[]>([]);
   const [statsRefreshKey, setStatsRefreshKey] = useState(0);
   const [showGuide, setShowGuide] = useState(false);
-  const [guideDismissed, setGuideDismissed] = useState(false);
   const [showBackToTop, setShowBackToTop] = useState(false);
   const [showClearConfirm, setShowClearConfirm] = useState(false);
 
@@ -38,12 +37,6 @@ export default function ChatInterface() {
       apiClient.setSessionId(sessionId);
     }
   }, [sessionId]);
-
-  // Load guide dismissed state from localStorage
-  useEffect(() => {
-    const dismissed = localStorage.getItem('quickStartGuideDismissed') === 'true';
-    setGuideDismissed(dismissed);
-  }, []);
 
   // Use Vercel AI SDK's useChat hook - now points to Next.js BFF route
   const {
@@ -73,6 +66,31 @@ export default function ChatInterface() {
     },
   });
 
+  // Export chat as JSON
+  const exportChat = useCallback(() => {
+    if (messages.length === 0) return;
+
+    const chatExport = {
+      exportedAt: new Date().toISOString(),
+      provider: settings.provider,
+      messages: messages.map(m => ({
+        role: m.role,
+        content: m.content,
+        timestamp: m.createdAt || new Date().toISOString(),
+      })),
+    };
+
+    const blob = new Blob([JSON.stringify(chatExport, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `morpheus-chat-${new Date().toISOString().split('T')[0]}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }, [messages, settings.provider]);
+
   // Keyboard shortcuts
   useEffect(() => {
     const handleKeyboard = (e: KeyboardEvent) => {
@@ -100,7 +118,7 @@ export default function ChatInterface() {
 
     document.addEventListener('keydown', handleKeyboard);
     return () => document.removeEventListener('keydown', handleKeyboard);
-  }, [messages]);
+  }, [messages, exportChat]);
 
   // Handle scroll to show/hide back-to-top button
   const handleScroll = useCallback(() => {
@@ -114,31 +132,6 @@ export default function ChatInterface() {
     messageContainerRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
   }, []);
 
-  // Export chat as JSON
-  const exportChat = useCallback(() => {
-    if (messages.length === 0) return;
-
-    const chatExport = {
-      exportedAt: new Date().toISOString(),
-      provider: settings.provider,
-      messages: messages.map(m => ({
-        role: m.role,
-        content: m.content,
-        timestamp: m.createdAt || new Date().toISOString(),
-      })),
-    };
-
-    const blob = new Blob([JSON.stringify(chatExport, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `morpheus-chat-${new Date().toISOString().split('T')[0]}.json`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  }, [messages, settings.provider]);
-
   const handleClearClick = useCallback(() => {
     if (messages.length > 0) {
       setShowClearConfirm(true);
@@ -149,12 +142,6 @@ export default function ChatInterface() {
     setMessages([]);
     setShowClearConfirm(false);
   }, [setMessages]);
-
-  const handleDismissGuide = useCallback(() => {
-    localStorage.setItem('quickStartGuideDismissed', 'true');
-    setGuideDismissed(true);
-    setShowGuide(false);
-  }, []);
 
   const handleUploadComplete = useCallback(async (response: DocumentUploadResponse) => {
     setUploadSuccess(`Uploaded "${response.document_id}" - ${response.chunks_created} chunks created`);
@@ -184,89 +171,199 @@ export default function ChatInterface() {
 
   return (
     <div className="flex flex-col h-[100dvh] sm:h-[calc(100vh-140px)] overflow-hidden">
-      {/* Toolbar */}
-      <div className="flex-shrink-0 flex items-center justify-between px-1 py-2">
-        {/* Provider Badge */}
-        <div className="flex items-center space-x-2">
-          <span className={`
-            inline-flex items-center px-3 py-1 rounded-full text-xs font-mono
-            border transition-all duration-200
-            ${settings.provider === 'anthropic'
-              ? 'border-matrix-green/50 text-matrix-green bg-matrix-green/10'
-              : 'border-matrix-cyan/50 text-matrix-cyan bg-matrix-cyan/10'}
-          `}>
-            <span className={`w-1.5 h-1.5 rounded-full mr-2 animate-pulse ${
-              settings.provider === 'anthropic' ? 'bg-matrix-green' : 'bg-matrix-cyan'
-            }`} />
-            {settings.provider === 'anthropic' ? 'Claude' : 'GPT'}
-          </span>
+      {/* Enhanced Toolbar */}
+      <div className="flex-shrink-0 flex items-center justify-between px-1 py-2 gap-2">
+        {/* Left side: Provider Badge + Message count */}
+        <div className="flex items-center gap-2 sm:gap-3">
+          {/* Provider Badge with tooltip */}
+          <div className="relative group/provider">
+            <span className={`
+              inline-flex items-center px-3 py-1.5 rounded-full text-xs font-mono
+              border transition-all duration-300 cursor-default
+              hover:scale-105
+              ${settings.provider === 'anthropic'
+                ? 'border-matrix-green/50 text-matrix-green bg-matrix-green/10 hover:bg-matrix-green/20 hover:border-matrix-green'
+                : 'border-matrix-cyan/50 text-matrix-cyan bg-matrix-cyan/10 hover:bg-matrix-cyan/20 hover:border-matrix-cyan'}
+            `}>
+              <span className={`w-1.5 h-1.5 rounded-full mr-2 animate-pulse ${
+                settings.provider === 'anthropic' ? 'bg-matrix-green' : 'bg-matrix-cyan'
+              }`} />
+              {settings.provider === 'anthropic' ? 'Claude' : 'GPT'}
+            </span>
+            {/* Tooltip */}
+            <div className="absolute top-full left-0 mt-2 px-2 py-1
+                            bg-matrix-black/95 border border-matrix-green/30 rounded
+                            text-xs font-mono text-matrix-white/80 whitespace-nowrap
+                            opacity-0 group-hover/provider:opacity-100 transition-opacity duration-200
+                            pointer-events-none z-20">
+              {settings.provider === 'anthropic' ? settings.anthropicModel : settings.openaiModel}
+            </div>
+          </div>
+
+          {/* Message count badge */}
+          {messages.length > 0 && (
+            <span className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-mono
+                           bg-matrix-white/5 border border-matrix-white/10 text-matrix-white/60
+                           animate-fade-in">
+              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+              </svg>
+              {messages.length}
+            </span>
+          )}
         </div>
 
-        {/* Controls */}
-        <div className="flex items-center space-x-1">
-          <UploadButton onUploadComplete={handleUploadComplete} />
+        {/* Right side: Controls with improved grouping */}
+        <div className="flex items-center">
+          {/* Primary actions group */}
+          <div className="flex items-center gap-0.5 sm:gap-1 p-1 rounded-lg bg-matrix-white/5 border border-matrix-white/10">
+            <UploadButton onUploadComplete={handleUploadComplete} />
 
-          <button
-            onClick={() => setShowDocStats(!showDocStats)}
-            className="toolbar-button"
-            aria-label="Toggle document statistics"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-            </svg>
-            <span>Docs</span>
-          </button>
+            {/* Docs button with active state */}
+            <div className="relative group/docs">
+              <button
+                onClick={() => setShowDocStats(!showDocStats)}
+                className={`toolbar-button ${showDocStats ? 'bg-matrix-green/20 border-matrix-green/50 text-matrix-green' : ''}`}
+                aria-label="Toggle document statistics"
+                aria-pressed={showDocStats}
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                <span className="hidden sm:inline">Docs</span>
+                {documentList.length > 0 && (
+                  <span className="absolute -top-1 -right-1 w-4 h-4 flex items-center justify-center
+                                   bg-matrix-green text-matrix-black text-[10px] font-bold rounded-full
+                                   animate-fade-in">
+                    {documentList.length}
+                  </span>
+                )}
+              </button>
+              {/* Tooltip */}
+              <div className="absolute top-full right-0 mt-2 px-2 py-1
+                              bg-matrix-black/95 border border-matrix-green/30 rounded
+                              text-xs font-mono text-matrix-white/80 whitespace-nowrap
+                              opacity-0 group-hover/docs:opacity-100 transition-opacity duration-200
+                              pointer-events-none z-20">
+                {showDocStats ? 'Hide documents' : 'Show documents'}
+              </div>
+            </div>
+          </div>
 
-          {/* Save Chat Button */}
-          <button
-            onClick={exportChat}
-            disabled={messages.length === 0}
-            className="toolbar-button disabled:opacity-40 disabled:cursor-not-allowed"
-            title="Save chat (Cmd+S)"
-            aria-label="Save chat"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-            </svg>
-            <span>Save</span>
-          </button>
+          {/* Divider */}
+          <div className="w-px h-6 bg-matrix-green/20 mx-1.5 sm:mx-2" />
 
-          <button
-            onClick={handleClearClick}
-            disabled={messages.length === 0 || isLoading}
-            className="toolbar-button disabled:opacity-40 disabled:cursor-not-allowed"
-            aria-label="Clear messages"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-            </svg>
-            <span>Clear</span>
-          </button>
+          {/* Chat actions group */}
+          <div className="flex items-center gap-0.5 sm:gap-1 p-1 rounded-lg bg-matrix-white/5 border border-matrix-white/10">
+            {/* Save Chat Button with tooltip */}
+            <div className="relative group/save">
+              <button
+                onClick={exportChat}
+                disabled={messages.length === 0}
+                className="toolbar-button disabled:opacity-40 disabled:cursor-not-allowed"
+                aria-label="Save chat"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                </svg>
+                <span className="hidden sm:inline">Save</span>
+              </button>
+              {/* Tooltip with shortcut */}
+              <div className="absolute top-full right-0 mt-2 px-2 py-1
+                              bg-matrix-black/95 border border-matrix-green/30 rounded
+                              text-xs font-mono text-matrix-white/80 whitespace-nowrap
+                              opacity-0 group-hover/save:opacity-100 transition-opacity duration-200
+                              pointer-events-none z-20 flex items-center gap-2">
+                <span>Export chat</span>
+                <kbd className="px-1.5 py-0.5 bg-matrix-green/10 rounded text-[10px] text-matrix-green">⌘S</kbd>
+              </div>
+            </div>
 
-          <div className="w-px h-5 bg-matrix-green/20 mx-1 hidden sm:block" />
+            {/* Clear button with tooltip */}
+            <div className="relative group/clear">
+              <button
+                onClick={handleClearClick}
+                disabled={messages.length === 0 || isLoading}
+                className="toolbar-button disabled:opacity-40 disabled:cursor-not-allowed hover:text-red-400 hover:border-red-400/30"
+                aria-label="Clear messages"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+                <span className="hidden sm:inline">Clear</span>
+              </button>
+              {/* Tooltip */}
+              <div className="absolute top-full right-0 mt-2 px-2 py-1
+                              bg-matrix-black/95 border border-matrix-green/30 rounded
+                              text-xs font-mono text-matrix-white/80 whitespace-nowrap
+                              opacity-0 group-hover/clear:opacity-100 transition-opacity duration-200
+                              pointer-events-none z-20">
+                Clear conversation
+              </div>
+            </div>
+          </div>
 
-          <button
-            onClick={() => setShowGuide(true)}
-            className="toolbar-button hidden sm:inline-flex"
-            title="Quick start guide"
-            aria-label="Show quick start guide"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            <span>Guide</span>
-          </button>
+          {/* Divider */}
+          <div className="w-px h-6 bg-matrix-green/20 mx-1.5 sm:mx-2 hidden sm:block" />
 
+          {/* Help & Settings group */}
+          <div className="hidden sm:flex items-center gap-0.5 sm:gap-1 p-1 rounded-lg bg-matrix-white/5 border border-matrix-white/10">
+            {/* Guide button with tooltip */}
+            <div className="relative group/guide">
+              <button
+                onClick={() => setShowGuide(true)}
+                className="toolbar-button"
+                aria-label="Show quick start guide"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span>Guide</span>
+              </button>
+              {/* Tooltip */}
+              <div className="absolute top-full right-0 mt-2 px-2 py-1
+                              bg-matrix-black/95 border border-matrix-green/30 rounded
+                              text-xs font-mono text-matrix-white/80 whitespace-nowrap
+                              opacity-0 group-hover/guide:opacity-100 transition-opacity duration-200
+                              pointer-events-none z-20">
+                Quick start guide
+              </div>
+            </div>
+
+            {/* Settings button with tooltip */}
+            <div className="relative group/settings">
+              <button
+                onClick={() => setShowSettings(true)}
+                className={`toolbar-button icon-spin-hover ${showSettings ? 'bg-matrix-green/20 border-matrix-green/50 text-matrix-green' : ''}`}
+                aria-label="Open settings"
+              >
+                <svg className="w-4 h-4 transition-transform duration-300 group-hover/settings:rotate-90" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+                <span>Settings</span>
+              </button>
+              {/* Tooltip */}
+              <div className="absolute top-full right-0 mt-2 px-2 py-1
+                              bg-matrix-black/95 border border-matrix-green/30 rounded
+                              text-xs font-mono text-matrix-white/80 whitespace-nowrap
+                              opacity-0 group-hover/settings:opacity-100 transition-opacity duration-200
+                              pointer-events-none z-20">
+                Configure API keys & preferences
+              </div>
+            </div>
+          </div>
+
+          {/* Mobile settings button (outside group) */}
           <button
             onClick={() => setShowSettings(true)}
-            className="toolbar-button icon-spin-hover"
+            className="toolbar-button sm:hidden ml-1"
             aria-label="Open settings"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
             </svg>
-            <span>Settings</span>
           </button>
         </div>
       </div>
@@ -295,35 +392,87 @@ export default function ChatInterface() {
               onScroll={handleScroll}
               className="flex-1 overflow-y-auto overflow-x-hidden min-h-0 scrollbar-matrix"
             >
-              {/* Enhanced Empty State */}
+              {/* Enhanced Empty State with animations */}
               {messages.length === 0 && (
-                <div className="flex flex-col items-center justify-center h-full text-center py-8 px-4">
-                  <div className="max-w-md space-y-6">
-                    <p className="matrix-quote text-base sm:text-lg text-matrix-green/70 italic">
-                      &quot;I can only show you the door. You&apos;re the one that has to walk through it.&quot;
-                    </p>
-
-                    <div className="space-y-3 text-left">
-                      <p className="text-sm font-mono text-matrix-green font-semibold">Get started:</p>
-                      <ol className="space-y-2 text-sm text-matrix-white/80">
-                        <li className="flex items-start gap-2">
-                          <span className="text-matrix-green">1.</span>
-                          <span>Upload documents using the button above</span>
-                        </li>
-                        <li className="flex items-start gap-2">
-                          <span className="text-matrix-cyan">2.</span>
-                          <span>Ask questions about your content</span>
-                        </li>
-                        <li className="flex items-start gap-2">
-                          <span className="text-matrix-green">3.</span>
-                          <span>Get AI-powered answers with sources</span>
-                        </li>
-                      </ol>
+                <div className="flex flex-col items-center justify-center h-full text-center py-4 sm:py-8 px-4 animate-fade-in">
+                  <div className="max-w-lg space-y-4 sm:space-y-8">
+                    {/* Animated Logo/Icon */}
+                    <div className="relative mx-auto w-16 h-16 sm:w-20 sm:h-20 mb-2 sm:mb-4">
+                      <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-matrix-green/20 to-matrix-cyan/20 animate-pulse" />
+                      <div className="absolute inset-2 rounded-xl bg-matrix-black border border-matrix-green/30 flex items-center justify-center">
+                        <svg className="w-7 h-7 sm:w-10 sm:h-10 text-matrix-green" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                        </svg>
+                      </div>
+                      {/* Pulse rings */}
+                      <div className="absolute inset-0 rounded-2xl border border-matrix-green/30 pulse-ring" />
                     </div>
 
-                    <div className="pt-2 border-t border-matrix-green/20">
-                      <p className="text-xs text-matrix-white/60 font-mono mb-2">Try asking:</p>
-                      <div className="space-y-1.5 text-xs">
+                    {/* Matrix quote with typewriter style */}
+                    <div className="relative">
+                      <p className="text-xs sm:text-sm text-matrix-green/80 italic font-mono leading-relaxed">
+                        &quot;I can only show you the door. You&apos;re the one that has to walk through it.&quot;
+                      </p>
+                      <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 w-16 h-px bg-gradient-to-r from-transparent via-matrix-green/50 to-transparent" />
+                    </div>
+
+                    {/* Steps - animated cards */}
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3 text-left">
+                      {/* Step 1 */}
+                      <div className="group p-2.5 sm:p-3 rounded-lg bg-matrix-black/40 border border-matrix-green/20
+                                      hover:border-matrix-green/50 hover:bg-matrix-green/5
+                                      transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:shadow-matrix-green/10
+                                      slide-in-left" style={{ animationDelay: '100ms' }}>
+                        <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-matrix-green/20 border border-matrix-green/40
+                                        flex items-center justify-center mb-1.5 sm:mb-2 group-hover:scale-110 transition-transform">
+                          <span className="text-matrix-green font-mono font-bold text-[10px] sm:text-xs">1</span>
+                        </div>
+                        <p className="text-xs sm:text-sm text-matrix-white/90 font-mono">
+                          <span className="text-matrix-green font-semibold">Upload</span> your documents
+                        </p>
+                        <p className="text-[10px] sm:text-xs text-matrix-white/50 mt-0.5">PDF, DOCX, TXT, MD</p>
+                      </div>
+
+                      {/* Step 2 */}
+                      <div className="group p-2.5 sm:p-3 rounded-lg bg-matrix-black/40 border border-matrix-cyan/20
+                                      hover:border-matrix-cyan/50 hover:bg-matrix-cyan/5
+                                      transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:shadow-matrix-cyan/10
+                                      slide-in-left" style={{ animationDelay: '200ms' }}>
+                        <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-matrix-cyan/20 border border-matrix-cyan/40
+                                        flex items-center justify-center mb-1.5 sm:mb-2 group-hover:scale-110 transition-transform">
+                          <span className="text-matrix-cyan font-mono font-bold text-[10px] sm:text-xs">2</span>
+                        </div>
+                        <p className="text-xs sm:text-sm text-matrix-white/90 font-mono">
+                          <span className="text-matrix-cyan font-semibold">Ask</span> questions
+                        </p>
+                        <p className="text-[10px] sm:text-xs text-matrix-white/50 mt-0.5">Natural language queries</p>
+                      </div>
+
+                      {/* Step 3 */}
+                      <div className="group p-2.5 sm:p-3 rounded-lg bg-matrix-black/40 border border-matrix-green/20
+                                      hover:border-matrix-green/50 hover:bg-matrix-green/5
+                                      transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:shadow-matrix-green/10
+                                      slide-in-left" style={{ animationDelay: '300ms' }}>
+                        <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-matrix-green/20 border border-matrix-green/40
+                                        flex items-center justify-center mb-1.5 sm:mb-2 group-hover:scale-110 transition-transform">
+                          <span className="text-matrix-green font-mono font-bold text-[10px] sm:text-xs">3</span>
+                        </div>
+                        <p className="text-xs sm:text-sm text-matrix-white/90 font-mono">
+                          <span className="text-matrix-green font-semibold">Get</span> cited answers
+                        </p>
+                        <p className="text-[10px] sm:text-xs text-matrix-white/50 mt-0.5">With source references</p>
+                      </div>
+                    </div>
+
+                    {/* Example prompts - enhanced */}
+                    <div className="pt-2 sm:pt-3 border-t border-matrix-green/20">
+                      <p className="text-[10px] sm:text-xs text-matrix-white/50 font-mono mb-1.5 sm:mb-2 flex items-center justify-center gap-1">
+                        <svg className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-matrix-green" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                        </svg>
+                        Quick prompts
+                      </p>
+                      <div className="flex flex-wrap justify-center gap-1.5 sm:gap-2">
                         <button
                           onClick={() => {
                             const textarea = inputRef.current;
@@ -333,9 +482,14 @@ export default function ChatInterface() {
                               textarea.focus();
                             }
                           }}
-                          className="block w-full text-left px-3 py-2 rounded bg-matrix-green/10 hover:bg-matrix-green/20 text-matrix-green border border-matrix-green/30 transition-colors"
+                          className="group/prompt px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-full text-[10px] sm:text-xs font-mono
+                                     bg-matrix-green/10 hover:bg-matrix-green/20
+                                     text-matrix-green border border-matrix-green/30 hover:border-matrix-green/60
+                                     transition-all duration-200 hover:scale-105 hover:shadow-lg hover:shadow-matrix-green/20"
                         >
-                          "What is this document about?"
+                          <span className="opacity-60 group-hover/prompt:opacity-100">&quot;</span>
+                          What is this document about?
+                          <span className="opacity-60 group-hover/prompt:opacity-100">&quot;</span>
                         </button>
                         <button
                           onClick={() => {
@@ -346,11 +500,50 @@ export default function ChatInterface() {
                               textarea.focus();
                             }
                           }}
-                          className="block w-full text-left px-3 py-2 rounded bg-matrix-cyan/10 hover:bg-matrix-cyan/20 text-matrix-cyan border border-matrix-cyan/30 transition-colors"
+                          className="group/prompt px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-full text-[10px] sm:text-xs font-mono
+                                     bg-matrix-cyan/10 hover:bg-matrix-cyan/20
+                                     text-matrix-cyan border border-matrix-cyan/30 hover:border-matrix-cyan/60
+                                     transition-all duration-200 hover:scale-105 hover:shadow-lg hover:shadow-matrix-cyan/20"
                         >
-                          "Summarize the key points"
+                          <span className="opacity-60 group-hover/prompt:opacity-100">&quot;</span>
+                          Summarize the key points
+                          <span className="opacity-60 group-hover/prompt:opacity-100">&quot;</span>
+                        </button>
+                        <button
+                          onClick={() => {
+                            const textarea = inputRef.current;
+                            if (textarea) {
+                              textarea.value = "Find references to...";
+                              textarea.dispatchEvent(new Event('input', { bubbles: true }));
+                              textarea.focus();
+                            }
+                          }}
+                          className="group/prompt px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-full text-[10px] sm:text-xs font-mono
+                                     bg-matrix-green/10 hover:bg-matrix-green/20
+                                     text-matrix-green border border-matrix-green/30 hover:border-matrix-green/60
+                                     transition-all duration-200 hover:scale-105 hover:shadow-lg hover:shadow-matrix-green/20"
+                        >
+                          <span className="opacity-60 group-hover/prompt:opacity-100">&quot;</span>
+                          Find references to...
+                          <span className="opacity-60 group-hover/prompt:opacity-100">&quot;</span>
                         </button>
                       </div>
+                    </div>
+
+                    {/* Keyboard shortcuts hint */}
+                    <div className="flex items-center justify-center gap-2 sm:gap-3 text-[10px] font-mono text-matrix-white/30">
+                      <span className="flex items-center gap-1">
+                        <kbd className="px-1.5 py-0.5 bg-matrix-green/10 rounded text-[10px] text-matrix-green border border-matrix-green/20">⌘K</kbd>
+                        <span>focus</span>
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <kbd className="px-1.5 py-0.5 bg-matrix-green/10 rounded text-[10px] text-matrix-green border border-matrix-green/20">⌘S</kbd>
+                        <span>save</span>
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <kbd className="px-1.5 py-0.5 bg-matrix-green/10 rounded text-[10px] text-matrix-green border border-matrix-green/20">Esc</kbd>
+                        <span>close</span>
+                      </span>
                     </div>
                   </div>
                 </div>
