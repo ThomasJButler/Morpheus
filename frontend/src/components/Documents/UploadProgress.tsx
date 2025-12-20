@@ -11,7 +11,7 @@ export default function UploadProgress({ progress }: UploadProgressProps) {
       </div>
       <div className="h-2 bg-glass-bg rounded-full overflow-hidden">
         <div
-          className="h-full bg-matrix-green transition-all duration-300 ease-out"
+          className="h-full bg-matrix-green transition-all duration-250 ease-out"
           style={{ width: `${progress}%` }}
         />
       </div>

@@ -38,7 +38,7 @@ export default function RetrievalMetrics({ metrics }: RetrievalMetricsProps) {
           <div className="flex items-center space-x-2">
             <div className="flex-1 h-2 bg-glass-bg rounded-full overflow-hidden">
               <div
-                className="h-full bg-matrix-green transition-all duration-500"
+                className="h-full bg-matrix-green transition-all duration-400"
                 style={{ width: `${metrics.relevance_score * 100}%` }}
               />
             </div>
@@ -54,7 +54,7 @@ export default function RetrievalMetrics({ metrics }: RetrievalMetricsProps) {
           <div className="flex items-center space-x-2">
             <div className="flex-1 h-2 bg-glass-bg rounded-full overflow-hidden">
               <div
-                className="h-full bg-matrix-cyan transition-all duration-500"
+                className="h-full bg-matrix-cyan transition-all duration-400"
                 style={{ width: `${metrics.confidence * 100}%` }}
               />
             </div>

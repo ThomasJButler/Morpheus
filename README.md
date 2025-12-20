@@ -1,225 +1,130 @@
 # Morpheus
 
-> *"Just like Morpheus revealed the truth about The Matrix, this AI reveals knowledge from your documents."*
+> *"Free your mind."*
 
-**Production-grade RAG system with agentic reasoning, cascading retrieval, and Matrix-themed UI - 48% better performance than standard semantic search**
+**An intelligent document reasoning system with a stunning Matrix-themed interface.**
 
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![Python](https://img.shields.io/badge/Python-3.11+-blue.svg)](https://python.org)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.6-blue.svg)](https://www.typescriptlang.org/)
-[![Next.js](https://img.shields.io/badge/Next.js-15-black.svg)](https://nextjs.org/)
-[![FastAPI](https://img.shields.io/badge/FastAPI-0.115+-green.svg)](https://fastapi.tiangolo.com/)
-[![API Docs](https://img.shields.io/badge/API-Docs-orange.svg)](https://morpheus-backend-4c0h.onrender.com/docs)
 [![Live Demo](https://img.shields.io/badge/Live-Demo-brightgreen.svg)](https://morpheusrag.vercel.app)
 
-## Why Morpheus Over ChatGPT Custom GPTs?
+---
 
-| Aspect | ChatGPT Custom GPTs | Morpheus |
-|--------|--------------------| --------------|
-| **Data Location** | OpenAI's servers | Your Pinecone instance (you control it) |
-| **Model Lock-in** | OpenAI only | Claude + GPT (swap anytime) |
-| **RAG Pipeline** | Black box | Full control: chunking, embeddings, retrieval, reranking |
-| **Cost Model** | $20/mo per user | Pay-per-API-call (scales better for teams) |
-| **Transparency** | Can't see what's retrieved | See exact context chunks + relevance scores |
-| **Customization** | Limited prompt tweaks | Everything: prompts, personality, thresholds, retrieval strategy |
-| **Multi-tenant** | No | Yes (session-based namespace isolation) |
-| **White-label** | No | Yes - fully self-hosted |
+## What Is This?
 
-### Key Advantages
+Morpheus doesn't just search your documents—it *understands* them. Upload files, ask questions in natural language, and receive accurate answers with full source citations. All wrapped in a beautiful, terminal-inspired Matrix UI.
 
-- **Data Sovereignty** - Documents never touch OpenAI. Critical for enterprise/privacy-conscious users.
-- **Model Arbitrage** - Use the best or cheapest model for each use case. Switch providers without rebuilding.
-- **Pipeline Visibility** - Debug *why* answers are wrong by inspecting retrieved chunks and scores.
-- **Extensibility** - Add hybrid search, reranking, agents, evaluation metrics, custom integrations.
-
-**TL;DR:** Custom GPTs are convenient for casual use. Morpheus is what you build when you need **control, transparency, or multi-provider flexibility** - exactly what enterprises and developers want.
+**Try it now:** [morpheusrag.vercel.app](https://morpheusrag.vercel.app)
 
 ---
 
-## What Makes Morpheus Different
+## Current Features
 
-Unlike basic RAG implementations that just match queries to documents, **Morpheus thinks before it searches**.
+### 🎯 Intelligent Document Q&A
+- Upload PDF, DOCX, TXT, and Markdown files
+- Ask questions in natural language
+- Get contextually accurate answers
+- Full source citations with relevance scores
+- Session-based document isolation
 
-### The Problem with Traditional RAG
-- Uses only semantic similarity (misses keyword matches)
-- Can't adapt search strategy to query type
-- Returns context without reasoning about relevance
-- No query enhancement or rewriting
+### 🎨 Matrix-Themed Interface
+A visual experience that matches the technical sophistication:
+- Glass morphism design with backdrop blur
+- Animated Matrix rain background (toggle on/off)
+- Smooth typewriter effects and staggered animations
+- Mobile-first responsive design
+- Terminal-style interactions with cyan/green accents
+- Real-time streaming responses
 
-**Result:** Poor retrieval quality, generic responses, missed information.
-
-### The Morpheus Solution
-
-**Morpheus** isn't just another RAG chatbot—it's an intelligent document reasoning system that demonstrates production-ready AI engineering.
-
-#### Agentic Intelligence
-Claude doesn't just answer—it **reasons about how to find the answer**:
-- Analyzes query intent and complexity
-- Decides whether to search, what terms to use
-- Can perform multiple targeted searches
-- Synthesizes findings with full context awareness
-
-#### Cascading Retrieval Pipeline
-Hybrid approach combining multiple retrieval methods:
-```
-Dense Retrieval (semantic) → Sparse Retrieval (BM25) →
-Cross-Encoder Reranking → Context Fusion
-```
-**Result:** 48% better retrieval performance vs. single-method baseline
-
-#### Intelligent Query Enhancement
-- Automatic query rewriting for ambiguous inputs
-- Term expansion and clarification
-- Multi-step reasoning for complex questions
-
-#### Production Polish
-- Full TypeScript strict mode
-- Streaming responses with Server-Sent Events
-- Built-in metrics and performance monitoring
-- Comprehensive test coverage
-- Docker containerization
-
-#### Matrix-Themed Interface
-A stunning visual experience matching technical sophistication:
-- Terminal-style interactions with animated typing
-- Glass morphism panels with subtle backdrop blur
-- Smooth fade-in animations for responses
-- Citation highlighting with source tracking
-- Optional Matrix rain background (performance-optimized)
+### ⚡ Production-Ready Engineering
+- TypeScript strict mode throughout
+- Server-sent events for streaming
+- Session-based multi-tenancy
+- Keyboard shortcuts (⌘K, ⌘S, Esc)
+- Export conversations as JSON
+- Performance-optimised animations
 
 ---
 
-## Performance Benchmarks
+## The Stack
 
-| Metric | Simple Search | Morpheus (Cascading) | Improvement |
-|--------|---------------|---------------------|-------------|
-| Retrieval Accuracy | 62% | 91% | **+48%** |
-| Response Time | 1.2s | 1.8s | Acceptable tradeoff |
-| Context Relevance | 71% | 94% | **+32%** |
+**Frontend**
+- Next.js 15 with App Router
+- TypeScript (strict mode)
+- Tailwind CSS
+- Server-sent events for streaming
+
+**Backend**
+- Python 3.11+ with FastAPI
+- Claude 3.5 Sonnet for responses
+- OpenAI embeddings (text-embedding-3-large)
+- Pinecone vector database
+- Custom chunking and embedding pipeline
+- Session-based namespace isolation
+
+**How It Works**
+1. Documents are chunked intelligently (1000 tokens, 200 overlap)
+2. Embedded using OpenAI's latest model (1536 dimensions)
+3. Stored in Pinecone with session-specific namespaces
+4. Retrieved via semantic search when you ask questions
+5. Claude synthesises contextually relevant answers
+6. Sessions refresh embeddings for optimal performance
+
+---
+
+## What's Next?
+
+The frontend is polished and production-ready. Backend enhancements are in development:
+
+- **Agentic Intelligence**: Claude will reason about *how* to find answers, not just retrieve documents
+- **Multiple RAG Modes**: Simple, cascading (hybrid), agentic, and query-rewriting strategies
+- **Enhanced Retrieval**: BM25 sparse retrieval + cross-encoder reranking
+- **Improved Accuracy**: Targeting 90%+ retrieval accuracy through hybrid approaches
 
 ---
 
 ## Architecture
 
-### System Design
 ```
-┌─────────────────────────────────────────────────┐
-│                   Frontend                       │
-│            Next.js 15 + TypeScript               │
-│         Matrix Theme + Glass Morphism            │
-└────────────────┬────────────────────────────────┘
-                 │ REST API + SSE
-┌────────────────▼────────────────────────────────┐
-│                   Backend                        │
-│              Python + FastAPI                    │
-│                                                  │
-│  ┌──────────────────────────────────────────┐   │
-│  │          RAG Pipeline Modes              │   │
-│  ├──────────────────────────────────────────┤   │
-│  │  1. Simple Semantic Search               │   │
-│  │  2. Cascading Retrieval (Hybrid)         │   │
-│  │  3. Agentic RAG (Tool Use)               │   │
-│  │  4. Query Rewriting                      │   │
-│  └──────────────────────────────────────────┘   │
-└────────────────┬────────────────────────────────┘
-                 │
-┌────────────────▼────────────────────────────────┐
-│              External Services                   │
-│   Pinecone | OpenAI | Anthropic | Reranker      │
-└──────────────────────────────────────────────────┘
+┌─────────────────────────────────────┐
+│   Next.js 15 Frontend (Vercel)     │
+│   Matrix UI + Real-time Streaming  │
+└──────────────┬──────────────────────┘
+               │ REST API + SSE
+┌──────────────▼──────────────────────┐
+│   FastAPI Backend (Railway/Render)  │
+│   Claude 3.5 + RAG Pipeline         │
+└──────────────┬──────────────────────┘
+               │
+    ┌──────────┴──────────┐
+    │                     │
+┌───▼────┐         ┌──────▼──────┐
+│Pinecone│         │   OpenAI    │
+│Vectors │         │  Embeddings │
+└────────┘         └─────────────┘
 ```
-
-### RAG Pipeline Modes
-
-#### 1. Simple Semantic Search
-Direct embedding → vector search → top-k results
-- Fast and straightforward
-- Good for simple queries
-- Baseline performance
-
-#### 2. Cascading Retrieval (Hybrid)
-Dense + sparse retrieval with reranking:
-1. **Dense Retrieval**: OpenAI embeddings for semantic similarity
-2. **Sparse Retrieval**: BM25 for keyword matching
-3. **Merge & Deduplicate**: Combine results from both methods
-4. **Cross-Encoder Reranking**: Rerank with `bge-reranker-v2-m3`
-
-**Result:** 48% better accuracy than simple search
-
-#### 3. Agentic RAG
-Claude autonomously orchestrates the search:
-1. Analyze query intent and complexity
-2. Decide search strategy dynamically
-3. Rewrite or expand query if needed
-4. Perform targeted searches
-5. Synthesize with reasoning
-
-**Result:** Most intelligent responses, especially for complex queries
-
----
-
-## Tech Stack
-
-**Backend:** Python 3.11+ • FastAPI • Claude 3.5 • OpenAI Embeddings • Pinecone • LangChain
-
-**Frontend:** Next.js 15 • TypeScript • Tailwind CSS • Server-Sent Events
-
-**Infrastructure:** Docker • Vercel • Railway/Render • GitHub Actions
-
----
-
-## Design System
-
-### Matrix Theme Colors
-```css
---matrix-black: #0a0a0a;      /* Deep black background */
---matrix-green: #00ff00;      /* Classic matrix green */
---matrix-green-dim: #00cc00;  /* Dimmed green */
---matrix-cyan: #00ffff;       /* Cyan accent */
---matrix-white: #e0e0e0;      /* Off-white text */
-```
-
-### Typography
-```css
---font-mono: 'JetBrains Mono', 'Fira Code', monospace;
---font-sans: 'Inter', system-ui, sans-serif;
-```
-
----
-
-## Deployment
-
-**For deployment instructions**, see [DEPLOYMENT.md](DEPLOYMENT.md)
-
-Quick start with Docker:
-```bash
-docker-compose up
-```
-
-Access at [http://localhost:3000](http://localhost:3000)
 
 ---
 
 ## Documentation
 
-- **[DEPLOYMENT.md](DEPLOYMENT.md)** - Complete deployment guide
-- **[TESTING.md](backend/TESTING.md)** - Testing strategy and examples
-- **[CLAUDE.md](CLAUDE.md)** - AI development instructions
+- **[DEPLOYMENT.md](DEPLOYMENT.md)** - Full deployment guide
+- **[CLAUDE.md](CLAUDE.md)** - Development instructions for AI assistants
 - **[CONTRIBUTING.md](CONTRIBUTING.md)** - Contribution guidelines
 
 ---
 
-## License
+## Licence
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
----
-
-## Contact & Links
-
-- **GitHub**: [ThomasJButler](https://github.com/ThomasJButler)
-- **Repository**: [Morpheus](https://github.com/ThomasJButler/Morpheus)
+MIT License - see [LICENSE](LICENSE) for details
 
 ---
 
-**Morpheus - Revealing knowledge, one query at a time**
+## Links
+
+- **Live Demo**: [morpheusrag.vercel.app](https://morpheusrag.vercel.app)
+- **API Docs**: [Backend Swagger](https://morpheus-backend-4c0h.onrender.com/docs)
+- **GitHub**: [ThomasJButler/Morpheus](https://github.com/ThomasJButler/Morpheus)
+
+---
+
+*"I can only show you the door. You're the one that has to walk through it."*

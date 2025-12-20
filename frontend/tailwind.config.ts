@@ -62,6 +62,10 @@ const config: Config = {
       backdropBlur: {
         xs: '2px',
       },
+      transitionDuration: {
+        '250': '250ms',
+        '400': '400ms',
+      },
     },
   },
   plugins: [],
