@@ -30,11 +30,11 @@ export default function QuickStartGuide({ onDismiss, onOpenSettings }: QuickStar
           <div className="grid grid-cols-1 md:grid-cols-2 gap-2 sm:gap-3 mb-3 sm:mb-5">
             {/* Step 1: Add API Key */}
             <div className="group relative">
-              <div className="absolute -inset-0.5 bg-gradient-to-r from-matrix-green/20 to-transparent rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300 blur" />
+              <div className="absolute -inset-0.5 bg-gradient-to-r from-matrix-green/20 to-transparent rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-250 blur" />
               <div className="relative stat-card p-2 sm:p-4 h-full">
                 <div className="flex items-start gap-2 sm:gap-3">
                   <div className="flex-shrink-0 text-center">
-                    <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-matrix-green/10 border border-matrix-green/30 flex items-center justify-center mb-0.5 sm:mb-1 group-hover:border-matrix-green/50 group-hover:bg-matrix-green/20 transition-all duration-300">
+                    <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-matrix-green/10 border border-matrix-green/30 flex items-center justify-center mb-0.5 sm:mb-1 group-hover:border-matrix-green/50 group-hover:bg-matrix-green/20 transition-all duration-250">
                       <span className="text-lg sm:text-xl">⚙️</span>
                     </div>
                     <div className="inline-block px-1 sm:px-1.5 py-0.5 rounded-full bg-matrix-green/10 border border-matrix-green/30">
@@ -65,11 +65,11 @@ export default function QuickStartGuide({ onDismiss, onOpenSettings }: QuickStar
 
             {/* Step 2: Upload Document */}
             <div className="group relative">
-              <div className="absolute -inset-0.5 bg-gradient-to-r from-matrix-cyan/20 to-transparent rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300 blur" />
+              <div className="absolute -inset-0.5 bg-gradient-to-r from-matrix-cyan/20 to-transparent rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-250 blur" />
               <div className="relative stat-card p-2 sm:p-4 h-full">
                 <div className="flex items-start gap-2 sm:gap-3">
                   <div className="flex-shrink-0 text-center">
-                    <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-matrix-cyan/10 border border-matrix-cyan/30 flex items-center justify-center mb-0.5 sm:mb-1 group-hover:border-matrix-cyan/50 group-hover:bg-matrix-cyan/20 transition-all duration-300">
+                    <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-matrix-cyan/10 border border-matrix-cyan/30 flex items-center justify-center mb-0.5 sm:mb-1 group-hover:border-matrix-cyan/50 group-hover:bg-matrix-cyan/20 transition-all duration-250">
                       <span className="text-lg sm:text-xl">📄</span>
                     </div>
                     <div className="inline-block px-1 sm:px-1.5 py-0.5 rounded-full bg-matrix-cyan/10 border border-matrix-cyan/30">
@@ -93,11 +93,11 @@ export default function QuickStartGuide({ onDismiss, onOpenSettings }: QuickStar
 
             {/* Step 3: Ask Questions */}
             <div className="group relative">
-              <div className="absolute -inset-0.5 bg-gradient-to-r from-matrix-white/10 to-transparent rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300 blur" />
+              <div className="absolute -inset-0.5 bg-gradient-to-r from-matrix-white/10 to-transparent rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-250 blur" />
               <div className="relative stat-card p-2 sm:p-4 h-full">
                 <div className="flex items-start gap-2 sm:gap-3">
                   <div className="flex-shrink-0 text-center">
-                    <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-matrix-white/5 border border-matrix-white/20 flex items-center justify-center mb-0.5 sm:mb-1 group-hover:border-matrix-white/30 group-hover:bg-matrix-white/10 transition-all duration-300">
+                    <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-matrix-white/5 border border-matrix-white/20 flex items-center justify-center mb-0.5 sm:mb-1 group-hover:border-matrix-white/30 group-hover:bg-matrix-white/10 transition-all duration-250">
                       <span className="text-lg sm:text-xl">💬</span>
                     </div>
                     <div className="inline-block px-1 sm:px-1.5 py-0.5 rounded-full bg-matrix-white/5 border border-matrix-white/20">
@@ -123,11 +123,11 @@ export default function QuickStartGuide({ onDismiss, onOpenSettings }: QuickStar
 
             {/* Step 4: Privacy Note */}
             <div className="group relative">
-              <div className="absolute -inset-0.5 bg-gradient-to-r from-matrix-cyan/20 to-transparent rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300 blur" />
+              <div className="absolute -inset-0.5 bg-gradient-to-r from-matrix-cyan/20 to-transparent rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-250 blur" />
               <div className="relative stat-card p-2 sm:p-4 h-full border-matrix-cyan/40">
                 <div className="flex items-start gap-2 sm:gap-3">
                   <div className="flex-shrink-0 text-center">
-                    <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-matrix-cyan/10 border border-matrix-cyan/30 flex items-center justify-center mb-0.5 sm:mb-1 group-hover:border-matrix-cyan/50 group-hover:bg-matrix-cyan/20 transition-all duration-300">
+                    <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-matrix-cyan/10 border border-matrix-cyan/30 flex items-center justify-center mb-0.5 sm:mb-1 group-hover:border-matrix-cyan/50 group-hover:bg-matrix-cyan/20 transition-all duration-250">
                       <span className="text-lg sm:text-xl">🔒</span>
                     </div>
                     <div className="inline-block px-1 sm:px-1.5 py-0.5 rounded-full bg-matrix-cyan/10 border border-matrix-cyan/30">

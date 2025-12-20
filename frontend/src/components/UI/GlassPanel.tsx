@@ -19,7 +19,7 @@ export default function GlassPanel({
   return (
     <div
       className={clsx(
-        'glass-panel transition-all duration-300',
+        'glass-panel transition-all duration-250',
         {
           'hover:border-matrix-green/60 hover:shadow-lg hover:shadow-matrix-green/15':
             variant === 'default',
