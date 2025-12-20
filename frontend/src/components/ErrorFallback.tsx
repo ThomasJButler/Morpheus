@@ -338,7 +338,7 @@ URL: ${window.location.href}
         }
 
         .animate-fadeIn {
-          animation: fadeIn 0.5s ease-out;
+          animation: fadeIn 0.4s ease-out;
         }
       `}</style>
     </div>
