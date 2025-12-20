@@ -24,19 +24,16 @@ export default function MessageList({
   }, [messages, isLoading]);
 
   return (
-    <div className={`
-      p-2 sm:p-4 rounded-lg overflow-y-auto overflow-x-hidden
-      flex-grow flex flex-col
-      ${className}
-    `}>
-      {/* Empty state */}
-      {messages.length === 0 && !isLoading && (
-        <div className="text-center py-8 text-matrix-green/60">
-          <p className="text-lg mb-2 font-mono">The Matrix has you...</p>
-          <p className="text-sm opacity-70">Ask a question to begin</p>
-        </div>
-      )}
-
+    <div
+      role="log"
+      aria-live="polite"
+      aria-label="Chat messages"
+      className={`
+        p-1 sm:p-2 rounded-lg
+        flex-grow flex flex-col
+        ${className}
+      `}
+    >
       {/* Messages */}
       {messages.map((message) => (
         <ChatMessage key={message.id} message={message} />
@@ -44,13 +41,13 @@ export default function MessageList({
 
       {/* Loading indicator */}
       {isLoading && (
-        <div className="flex justify-start my-2">
+        <div className="flex justify-start my-2 ml-2 sm:ml-0" aria-live="polite" aria-label="Loading">
           <LoadingPulse text="Morpheus is thinking" />
         </div>
       )}
 
       {/* Scroll anchor */}
-      <div ref={messagesEndRef} />
+      <div ref={messagesEndRef} className="h-1" />
     </div>
   );
 }
