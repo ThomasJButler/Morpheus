@@ -15,8 +15,8 @@
 
   /* Animation speeds */
   --transition-fast: 150ms;
-  --transition-normal: 300ms;
-  --transition-slow: 500ms;
+  --transition-normal: 250ms;
+  --transition-slow: 400ms;
 
   /* Spacing scale */
   --space-xs: 0.25rem;
@@ -164,7 +164,7 @@
 
   /* Icon spin animation for settings gear */
   .icon-spin-hover:hover svg {
-    animation: spin-gentle 0.5s ease-in-out;
+    animation: spin-gentle 0.4s ease-in-out;
   }
 
   @keyframes spin-gentle {
@@ -208,7 +208,7 @@
 
   /* Message Animation */
   .message-appear {
-    animation: slideUp 0.3s ease-out;
+    animation: slideUp 0.25s ease-out;
   }
 
   @keyframes slideUp {
@@ -300,7 +300,7 @@
 
   /* Panel slide animation */
   .slide-in-right {
-    animation: slide-in-right 0.3s ease-out;
+    animation: slide-in-right 0.25s ease-out;
   }
 
   @keyframes slide-in-right {
@@ -416,6 +416,57 @@
     .toolbar-button:active {
       @apply bg-matrix-green/10 border-matrix-green/30;
     }
+
+    /* Larger touch targets for buttons */
+    button {
+      @apply min-h-[44px];
+    }
+
+    /* Better scrolling on touch */
+    .scrollbar-matrix {
+      -webkit-overflow-scrolling: touch;
+      scroll-behavior: smooth;
+    }
+  }
+
+  /* Custom scrollbar for message container */
+  .scrollbar-matrix::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .scrollbar-matrix::-webkit-scrollbar-track {
+    @apply bg-transparent;
+  }
+
+  .scrollbar-matrix::-webkit-scrollbar-thumb {
+    @apply bg-matrix-green/30 rounded-full;
+  }
+
+  .scrollbar-matrix::-webkit-scrollbar-thumb:hover {
+    @apply bg-matrix-green/50;
+  }
+
+  /* Fade in animation */
+  .animate-fade-in {
+    animation: fadeIn 0.15s ease-out;
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(4px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  /* Safe area support for notched devices */
+  @supports (padding-bottom: env(safe-area-inset-bottom)) {
+    .safe-area-bottom {
+      padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
+    }
   }
 
   /* ==================== */
@@ -427,7 +478,7 @@
     @apply relative rounded-lg overflow-hidden;
     @apply bg-matrix-black/40 backdrop-blur-sm;
     @apply border border-matrix-green/20;
-    @apply transition-all duration-300;
+    @apply transition-all duration-250;
   }
 
   .glass-card:hover {
@@ -450,7 +501,7 @@
     @apply relative p-4 rounded-lg bg-matrix-black/40;
     @apply border border-matrix-green/20;
     @apply hover:border-matrix-green/40 hover:bg-matrix-black/50;
-    @apply transition-all duration-300 overflow-hidden;
+    @apply transition-all duration-250 overflow-hidden;
   }
 
   .stat-card::before {
@@ -469,7 +520,7 @@
 
   .stat-card-value {
     @apply relative text-2xl font-mono font-bold mb-1;
-    @apply transition-transform duration-300 origin-left;
+    @apply transition-transform duration-250 origin-left;
   }
 
   .stat-card:hover .stat-card-value {
@@ -483,7 +534,7 @@
   /* Matrix Tab - Tab styling for Settings modal */
   .matrix-tab {
     @apply relative flex-1 px-4 py-3 rounded-lg font-mono text-sm font-medium;
-    @apply text-matrix-white/60 transition-all duration-300;
+    @apply text-matrix-white/60 transition-all duration-250;
     @apply border-2 border-transparent;
   }
 

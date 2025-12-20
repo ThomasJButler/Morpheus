@@ -18,9 +18,9 @@
   --glass-shadow: rgba(0, 255, 0, 0.1);
 
   /* Animation speeds */
-  --transition-fast: 0.2s;
-  --transition-normal: 0.3s;
-  --transition-slow: 0.5s;
+  --transition-fast: 0.15s;
+  --transition-normal: 0.25s;
+  --transition-slow: 0.4s;
 }
 
 /* Typography */
@@ -282,7 +282,7 @@
   justify-content: center;
   align-items: center;
   z-index: 999;
-  animation: fadeIn 0.3s ease;
+  animation: fadeIn 0.25s ease;
 }
 
 .modal-content {
@@ -295,7 +295,7 @@
   max-height: 80vh;
   overflow-y: auto;
   box-shadow: 0 0 40px var(--matrix-green-dark);
-  animation: slideIn 0.3s ease;
+  animation: slideIn 0.25s ease;
 }
 
 @keyframes slideIn {
@@ -432,7 +432,7 @@
 }
 
 .slide-in-bottom {
-  animation: slideInFromBottom 0.3s ease-out;
+  animation: slideInFromBottom 0.25s ease-out;
 }
 
 /* Message Glow Effects */
