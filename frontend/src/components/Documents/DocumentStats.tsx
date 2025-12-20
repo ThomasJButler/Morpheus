@@ -72,7 +72,7 @@ export default function DocumentStats({ refreshTrigger = 0 }: DocumentStatsProps
           title="Refresh statistics"
         >
           <svg
-            className={`w-3.5 h-3.5 transition-transform duration-500 ${isLoading ? 'animate-spin' : 'group-hover:rotate-180'}`}
+            className={`w-3.5 h-3.5 transition-transform duration-400 ${isLoading ? 'animate-spin' : 'group-hover:rotate-180'}`}
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
