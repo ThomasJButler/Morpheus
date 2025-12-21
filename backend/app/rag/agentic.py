@@ -435,24 +435,7 @@ Be intelligent about when to search - not every question requires retrieval."""
                             async for text in final_stream.text_stream:
                                 yield StreamChunk(type="token", content=text)
 
-            # Execute with timeout
-            try:
-                async for chunk in asyncio.wait_for(
-                    _process_with_tools().__aiter__().__anext__,
-                    timeout=timeout
-                ):
-                    yield chunk
-            except asyncio.TimeoutError:
-                logger.warning(f"Agentic processing timed out after {timeout}s")
-                yield StreamChunk(
-                    type="error",
-                    content=f"Processing timed out after {timeout} seconds"
-                )
-                return
-            except StopAsyncIteration:
-                pass
-
-            # Actually iterate properly
+            # Execute the processing (timeout is handled per-API-call inside _process_with_tools)
             async for chunk in _process_with_tools():
                 yield chunk
 
