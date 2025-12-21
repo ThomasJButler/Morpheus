@@ -57,6 +57,9 @@ export default function ChatInterface() {
       anthropicModel: settings.anthropicModel,
       openaiApiKey: settings.openaiApiKey,
       openaiModel: settings.openaiModel,
+      // RAG mode settings
+      ragMode: settings.ragMode,
+      deepMode: settings.deepMode,
     },
     onFinish: async (message) => {
       console.log('✅ Stream finished:', message.content.substring(0, 50));

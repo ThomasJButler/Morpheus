@@ -61,7 +61,10 @@ export async function POST(req: Request) {
       anthropicApiKey,
       anthropicModel,
       openaiApiKey,
-      openaiModel
+      openaiModel,
+      // RAG mode settings
+      ragMode = 'auto',
+      deepMode = false,
     } = body;
 
     // Get the last user message for context retrieval
@@ -107,9 +110,10 @@ export async function POST(req: Request) {
     // Fetch RAG context from FastAPI backend
     let context = '';
     let citations = [];
+    let modeUsed = ragMode;
 
     try {
-      console.log(`[BFF] Fetching context from ${BACKEND_URL}/api/context (session: ${sessionId || 'none'})`);
+      console.log(`[BFF] Fetching context from ${BACKEND_URL}/api/context (session: ${sessionId || 'none'}, mode: ${ragMode}, deep: ${deepMode})`);
 
       // Build headers with session ID if available
       const headers: Record<string, string> = { 'Content-Type': 'application/json' };
@@ -117,17 +121,23 @@ export async function POST(req: Request) {
         headers['X-Session-ID'] = sessionId;
       }
 
+      // Pass RAG mode settings to backend
       const contextResponse = await fetch(`${BACKEND_URL}/api/context`, {
         method: 'POST',
         headers,
-        body: JSON.stringify({ query: lastUserMessage.content }),
+        body: JSON.stringify({
+          query: lastUserMessage.content,
+          mode: ragMode,
+          deep_mode: deepMode,
+        }),
       });
 
       if (contextResponse.ok) {
         const data = await contextResponse.json();
         context = data.context || '';
         citations = data.citations || [];
-        console.log(`[BFF] Retrieved ${citations.length} citations`);
+        modeUsed = data.mode_used || ragMode;
+        console.log(`[BFF] Retrieved ${citations.length} citations (mode: ${modeUsed})`);
       } else {
         console.warn(`[BFF] Context fetch failed: ${contextResponse.status}`);
       }

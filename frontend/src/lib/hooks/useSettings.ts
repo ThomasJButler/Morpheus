@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import type { RAGMode } from '@/lib/types';
 
 export type Provider = 'openai' | 'anthropic';
 
@@ -11,6 +12,9 @@ export interface UserSettings {
   anthropicModel: string;
   provider: Provider;
   saveApiKey: boolean;
+  // RAG Mode settings
+  ragMode: RAGMode;
+  deepMode: boolean;
 }
 
 const DEFAULT_SETTINGS: UserSettings = {
@@ -20,6 +24,9 @@ const DEFAULT_SETTINGS: UserSettings = {
   anthropicModel: 'claude-sonnet-4-20250514',
   provider: 'anthropic',
   saveApiKey: true,
+  // Default to auto mode for intelligent routing
+  ragMode: 'auto',
+  deepMode: false,
 };
 
 export function useSettings() {
@@ -34,7 +41,8 @@ export function useSettings() {
       if (savedSettings) {
         try {
           const parsed = JSON.parse(savedSettings);
-          setSettings(parsed);
+          // Merge with defaults to handle new fields added over time
+          setSettings({ ...DEFAULT_SETTINGS, ...parsed });
           setIsLoaded(true);
           return;
         } catch (e) {
@@ -47,7 +55,8 @@ export function useSettings() {
       if (sessionSettings) {
         try {
           const parsed = JSON.parse(sessionSettings);
-          setSettings(parsed);
+          // Merge with defaults to handle new fields added over time
+          setSettings({ ...DEFAULT_SETTINGS, ...parsed });
           setIsLoaded(true);
           return;
         } catch (e) {
