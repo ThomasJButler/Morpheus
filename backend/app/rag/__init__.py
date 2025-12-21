@@ -7,26 +7,34 @@ Tiered RAG system with three modes:
 - AgenticRAG: Claude as autonomous agent with tool use (~2600ms, highest accuracy)
 
 Plus supporting utilities:
+- QueryAnalyzer: Intelligent mode routing with HyDE support
 - QueryRewriter: LLM-based query optimization
+- RAGOrchestrator: Central controller with auto-escalation
 - Reranker: Cross-encoder reranking (optional)
 """
 
 from app.rag.simple import SimpleRAG
 from app.rag.hybrid import HybridRAG
 from app.rag.agentic import AgenticRAG
+from app.rag.query_analyzer import QueryAnalyzer
 from app.rag.query_rewriter import (
     QueryRewriter,
     rewrite_query,
     expand_query,
     decompose_query,
 )
+from app.rag.orchestrator import RAGOrchestrator, get_orchestrator
 
 __all__ = [
     # RAG implementations
     "SimpleRAG",
     "HybridRAG",
     "AgenticRAG",
+    # Orchestration
+    "RAGOrchestrator",
+    "get_orchestrator",
     # Query utilities
+    "QueryAnalyzer",
     "QueryRewriter",
     "rewrite_query",
     "expand_query",
