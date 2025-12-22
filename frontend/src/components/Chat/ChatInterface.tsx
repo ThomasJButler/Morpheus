@@ -593,7 +593,6 @@ export default function ChatInterface() {
 
               <MessageList
                 messages={messages}
-                className="flex-1"
               />
             </div>
 

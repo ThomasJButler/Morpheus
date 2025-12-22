@@ -27,7 +27,7 @@ export default function MessageList({
       aria-label="Chat messages"
       className={`
         p-1 sm:p-2 rounded-lg
-        flex-grow flex flex-col
+        flex flex-col
         ${className}
       `}
     >
