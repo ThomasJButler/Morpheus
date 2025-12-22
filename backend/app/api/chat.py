@@ -230,34 +230,49 @@ async def get_context(
             mode = RAGMode.AUTO
 
         deep_mode = request.get("deep_mode", False)
+        return_analysis = request.get("return_analysis", False)
 
         logger.info(
             f"Context request - Mode: {mode.value}, Query: {query[:50]}... "
-            f"(namespace: {namespace})"
+            f"(namespace: {namespace}, return_analysis: {return_analysis})"
         )
 
         # Use orchestrator to get context based on mode
         contexts = []
         citations = []
         metrics = None
-        mode_used = None
         analysis = None
 
-        # For context endpoint, we just need retrieval, not full response
-        # Use the appropriate RAG based on mode
-        if mode == RAGMode.AUTO:
-            # Analyze query to determine mode
+        # Always track mode_used for frontend display
+        mode_used = mode
+
+        # Run analysis if requested (for frontend QueryInsight visualization)
+        if return_analysis:
             analysis = await query_analyzer.analyze(query)
+            logger.info(f"Query analysis: type={analysis.query_type}, complexity={analysis.complexity_score:.2f}")
+
+        # For AUTO mode, use analysis to determine actual mode
+        if mode == RAGMode.AUTO:
+            if not analysis:
+                analysis = await query_analyzer.analyze(query)
             mode = analysis.suggested_mode
-            mode_used = mode
+            mode_used = mode  # Update to actual routed mode
+            logger.info(f"AUTO mode routed to: {mode.value}")
 
         # Get the appropriate RAG pipeline
+        # Note: For /api/context, we're doing retrieval only, not full agentic processing
+        # AgenticRAG's full power (tool use, reflection) is for /api/chat streaming endpoint
         if mode == RAGMode.SIMPLE:
             rag = orchestrator.simple_rag
         elif mode == RAGMode.HYBRID:
             rag = orchestrator.hybrid_rag
+        elif mode == RAGMode.AGENTIC:
+            # For context-only retrieval, agentic uses enhanced retrieval
+            # but without the full agent loop (that's for /api/chat)
+            rag = orchestrator.simple_rag  # Base retrieval
+            logger.info("AGENTIC mode: using enhanced retrieval for context")
         else:
-            rag = orchestrator.simple_rag  # Default fallback
+            rag = orchestrator.simple_rag  # Fallback
 
         # Retrieve context
         query_embedding = await rag.embed_query(query)
@@ -275,12 +290,14 @@ async def get_context(
         # Create citations
         citations = rag.create_citations(contexts)
 
+        logger.info(f"Context retrieved: {len(citations)} citations, mode_used: {mode_used.value}")
+
         return {
             "context": formatted_context,
             "citations": [c.model_dump() for c in citations],
             "count": len(citations),
             "metrics": metrics.model_dump() if metrics else None,
-            "mode_used": mode_used.value if mode_used else mode.value,
+            "mode_used": mode_used.value,
             "analysis": analysis.model_dump() if analysis else None,
         }
 

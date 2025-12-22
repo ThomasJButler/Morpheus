@@ -111,6 +111,8 @@ export async function POST(req: Request) {
     let context = '';
     let citations = [];
     let modeUsed = ragMode;
+    let queryAnalysis = null;
+    let ragMetrics = null;
 
     try {
       console.log(`[BFF] Fetching context from ${BACKEND_URL}/api/context (session: ${sessionId || 'none'}, mode: ${ragMode}, deep: ${deepMode})`);
@@ -121,7 +123,7 @@ export async function POST(req: Request) {
         headers['X-Session-ID'] = sessionId;
       }
 
-      // Pass RAG mode settings to backend
+      // Pass RAG mode settings to backend (request analysis for visualization)
       const contextResponse = await fetch(`${BACKEND_URL}/api/context`, {
         method: 'POST',
         headers,
@@ -129,6 +131,7 @@ export async function POST(req: Request) {
           query: lastUserMessage.content,
           mode: ragMode,
           deep_mode: deepMode,
+          return_analysis: true, // Request query analysis for frontend visualization
         }),
       });
 
@@ -137,7 +140,10 @@ export async function POST(req: Request) {
         context = data.context || '';
         citations = data.citations || [];
         modeUsed = data.mode_used || ragMode;
-        console.log(`[BFF] Retrieved ${citations.length} citations (mode: ${modeUsed})`);
+        // Backend returns 'analysis', not 'query_analysis'
+        queryAnalysis = data.analysis || data.query_analysis || null;
+        ragMetrics = data.metrics || null;
+        console.log(`[BFF] Retrieved ${citations.length} citations (mode: ${modeUsed}, analysis: ${queryAnalysis ? 'yes' : 'no'})`);
       } else {
         console.warn(`[BFF] Context fetch failed: ${contextResponse.status}`);
       }
@@ -161,14 +167,32 @@ export async function POST(req: Request) {
 
     console.log(`[BFF] Streaming response...`);
 
-    // Stream response using Vercel AI SDK
+    // Stream response using Vercel AI SDK with RAG metadata
     const result = streamText({
       model: aiModel,
       system: MORPHEUS_SYSTEM_PROMPT,
       messages: claudeMessages,
+      onFinish: async () => {
+        // Log RAG metadata for debugging
+        console.log(`[BFF] Stream finished (mode: ${modeUsed}, citations: ${citations.length})`);
+      },
     });
 
-    return result.toDataStreamResponse();
+    // Convert to standard response
+    const response = result.toDataStreamResponse();
+
+    // Add RAG metadata headers after response creation
+    // Note: This must be done before the response is returned/sent
+    response.headers.append('X-RAG-Mode', modeUsed);
+    response.headers.append('X-RAG-Citations', citations.length.toString());
+    if (queryAnalysis) {
+      response.headers.append('X-RAG-Analysis', JSON.stringify(queryAnalysis));
+    }
+    if (ragMetrics) {
+      response.headers.append('X-RAG-Metrics', JSON.stringify(ragMetrics));
+    }
+
+    return response;
 
   } catch (error) {
     console.error('[BFF] Chat API error:', error);
