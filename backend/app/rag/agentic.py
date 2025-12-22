@@ -28,6 +28,7 @@ from app.models.chat import (
     Citation,
     EnhancedRetrievalMetrics,
     RAGMode,
+    ReflectionResult,
     RetrievalMetrics,
     StreamChunk,
 )
@@ -498,3 +499,196 @@ Be intelligent about when to search - not every question requires retrieval."""
         return response, citations, metrics or RetrievalMetrics(
             query_time_ms=0, num_results=0, reranked=False
         )
+
+    async def reflect_on_response(
+        self,
+        query: str,
+        response: str,
+        contexts: List[Dict],
+    ) -> ReflectionResult:
+        """
+        Reflection pattern: Agent evaluates its own output.
+
+        This is a 2025 Agentic RAG best practice where the agent
+        critically assesses its response before returning it.
+
+        Checks:
+        - Did I actually answer the question?
+        - Did I cite sources correctly?
+        - Am I confident in this answer?
+        - Should I search for more information?
+
+        Args:
+            query: Original user query
+            response: Generated response to evaluate
+            contexts: Retrieved context chunks used for the response
+
+        Returns:
+            ReflectionResult with evaluation and confidence score
+        """
+        # Format contexts for the reflection prompt
+        context_summary = []
+        for i, ctx in enumerate(contexts[:5], 1):  # Limit to top 5 for efficiency
+            source = ctx.get("source", "Unknown")
+            score = ctx.get("score", 0)
+            text_preview = ctx.get("text", "")[:150]
+            context_summary.append(
+                f"[{i}] Source: {source} (score: {score:.2f})\n{text_preview}..."
+            )
+
+        context_str = "\n".join(context_summary) if context_summary else "No context retrieved"
+
+        reflection_prompt = f"""You are a critical evaluator assessing the quality of a RAG response.
+
+ORIGINAL QUERY:
+{query}
+
+RETRIEVED CONTEXT:
+{context_str}
+
+GENERATED RESPONSE:
+{response}
+
+Evaluate this response critically and provide your assessment in JSON format:
+
+{{
+    "answered_query": true/false,  // Did the response actually answer the question?
+    "confidence_score": 0.0-1.0,   // How confident are you in this response?
+    "citations_accurate": true/false,  // Do citations match the claims made?
+    "needs_more_search": true/false,  // Would more searching improve the answer?
+    "suggested_followup_queries": [],  // If needs_more_search is true, what queries?
+    "issues_found": [],  // List any problems (missing info, unsupported claims, etc.)
+    "reasoning": "..."  // Brief explanation of your assessment
+}}
+
+Be honest and critical. A low confidence score for an uncertain answer is better than false confidence.
+Respond ONLY with the JSON object, no other text."""
+
+        try:
+            response_msg = await self.anthropic_client.messages.create(
+                model=settings.anthropic_model,
+                max_tokens=1024,
+                messages=[{"role": "user", "content": reflection_prompt}],
+            )
+
+            # Parse the JSON response
+            reflection_text = response_msg.content[0].text.strip()
+
+            # Handle potential markdown code blocks
+            if reflection_text.startswith("```"):
+                lines = reflection_text.split("\n")
+                # Remove first and last lines (```json and ```)
+                reflection_text = "\n".join(lines[1:-1])
+
+            reflection_data = json.loads(reflection_text)
+
+            # Validate and create ReflectionResult
+            result = ReflectionResult(
+                answered_query=reflection_data.get("answered_query", False),
+                confidence_score=min(1.0, max(0.0, reflection_data.get("confidence_score", 0.5))),
+                citations_accurate=reflection_data.get("citations_accurate", True),
+                needs_more_search=reflection_data.get("needs_more_search", False),
+                suggested_followup_queries=reflection_data.get("suggested_followup_queries", []),
+                issues_found=reflection_data.get("issues_found", []),
+                reasoning=reflection_data.get("reasoning", "Reflection completed"),
+            )
+
+            logger.info(
+                f"Reflection complete: confidence={result.confidence_score:.2f}, "
+                f"answered={result.answered_query}, needs_more_search={result.needs_more_search}"
+            )
+
+            return result
+
+        except json.JSONDecodeError as e:
+            logger.warning(f"Failed to parse reflection JSON: {e}")
+            # Return a conservative default
+            return ReflectionResult(
+                answered_query=True,
+                confidence_score=0.5,
+                citations_accurate=True,
+                needs_more_search=False,
+                suggested_followup_queries=[],
+                issues_found=["Reflection parsing failed"],
+                reasoning="Could not parse reflection response, using conservative defaults",
+            )
+        except Exception as e:
+            logger.error(f"Reflection failed: {e}")
+            return ReflectionResult(
+                answered_query=True,
+                confidence_score=0.5,
+                citations_accurate=True,
+                needs_more_search=False,
+                suggested_followup_queries=[],
+                issues_found=[f"Reflection error: {str(e)}"],
+                reasoning="Reflection failed, using defaults",
+            )
+
+    async def process_query_with_reflection(
+        self,
+        query: str,
+        namespace: str = None,
+        timeout: int = None,
+        min_confidence: float = 0.6,
+    ) -> Tuple[str, List[Citation], RetrievalMetrics, ReflectionResult]:
+        """
+        Process query with reflection-based quality assurance.
+
+        If the initial response doesn't meet the confidence threshold,
+        the agent will attempt to improve it by searching for more information.
+
+        Args:
+            query: User query
+            namespace: Pinecone namespace for session isolation
+            timeout: Timeout in seconds
+            min_confidence: Minimum confidence score to accept (0-1)
+
+        Returns:
+            Tuple of (response, citations, metrics, reflection)
+        """
+        namespace = namespace or "default"
+        max_reflection_loops = 2  # Prevent infinite loops
+
+        for attempt in range(max_reflection_loops + 1):
+            # Process the query
+            response, citations, metrics = await self.process_query(
+                query, namespace, timeout
+            )
+
+            # Build contexts from citations for reflection
+            contexts = [
+                {
+                    "source": c.source,
+                    "score": c.relevance_score,
+                    "text": c.text_preview,
+                }
+                for c in citations
+            ]
+
+            # Reflect on the response
+            reflection = await self.reflect_on_response(query, response, contexts)
+
+            # If confidence is good enough or we've exhausted retries, return
+            if reflection.confidence_score >= min_confidence or attempt >= max_reflection_loops:
+                if attempt > 0:
+                    logger.info(
+                        f"Reflection loop completed after {attempt + 1} attempts, "
+                        f"final confidence: {reflection.confidence_score:.2f}"
+                    )
+                return response, citations, metrics, reflection
+
+            # If needs more search and we have followup queries, try them
+            if reflection.needs_more_search and reflection.suggested_followup_queries:
+                followup_query = reflection.suggested_followup_queries[0]
+                logger.info(
+                    f"Reflection suggests more search (confidence: {reflection.confidence_score:.2f}), "
+                    f"trying followup: '{followup_query[:50]}...'"
+                )
+                # Modify the query for next iteration
+                query = f"{query}\n\nAdditional context needed: {followup_query}"
+            else:
+                # No followup suggestions, return what we have
+                return response, citations, metrics, reflection
+
+        # Should not reach here, but return the last result
+        return response, citations, metrics, reflection

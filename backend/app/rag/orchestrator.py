@@ -16,6 +16,7 @@ from app.models.chat import (
     EnhancedRetrievalMetrics,
     QueryAnalysis,
     RAGMode,
+    ReflectionResult,
     RetrievalMetrics,
     StreamChunk,
 )
@@ -303,6 +304,235 @@ class RAGOrchestrator:
                 confidence += 0.10
 
         return min(confidence, 1.0)
+
+    async def process_with_reflection(
+        self,
+        query: str,
+        namespace: str = None,
+        mode: RAGMode = RAGMode.AUTO,
+        confidence_threshold: float = None,
+    ) -> AsyncGenerator[StreamChunk, None]:
+        """
+        Process query with agent reflection for quality assurance.
+
+        Combines mode selection with AgenticRAG's reflection capability
+        to ensure response quality meets the threshold.
+
+        Flow:
+        1. Route to appropriate RAG mode
+        2. If using AgenticRAG, apply reflection
+        3. If reflection indicates low confidence and more search needed,
+           yield reflection metadata and potentially improved response
+
+        Args:
+            query: User query
+            namespace: Pinecone namespace
+            mode: RAG mode (default: AUTO for intelligent routing)
+            confidence_threshold: Minimum confidence (uses config default if not set)
+
+        Yields:
+            StreamChunk objects including reflection results
+        """
+        namespace = namespace or "default"
+        confidence_threshold = confidence_threshold or settings.reflection_min_confidence
+
+        # Determine mode
+        analysis = None
+        if mode == RAGMode.AUTO:
+            analysis = await self.query_analyzer.analyze(query)
+            mode = analysis.suggested_mode
+            logger.info(f"Auto-routing to {mode.value} with reflection enabled")
+
+        # Send analysis if available
+        if analysis:
+            yield StreamChunk(type="analysis", analysis=analysis)
+
+        # If using AgenticRAG, use its reflection capability
+        if mode == RAGMode.AGENTIC and settings.enable_reflection:
+            yield StreamChunk(type="mode", mode=RAGMode.AGENTIC)
+
+            # Use AgenticRAG with reflection
+            response, citations, metrics, reflection = await self.agentic_rag.process_query_with_reflection(
+                query=query,
+                namespace=namespace,
+                min_confidence=confidence_threshold,
+            )
+
+            # Yield citations
+            for citation in citations:
+                yield StreamChunk(type="citation", citation=citation)
+
+            # Yield response tokens
+            for token in response:
+                yield StreamChunk(type="token", content=token)
+
+            # Yield reflection result
+            yield StreamChunk(
+                type="reflection",
+                content=reflection.model_dump_json(),
+            )
+
+            # Create enhanced metrics with reflection info
+            enhanced_metrics = EnhancedRetrievalMetrics(
+                query_time_ms=metrics.query_time_ms,
+                num_results=metrics.num_results,
+                reranked=metrics.reranked,
+                top_score=metrics.top_score,
+                average_score=metrics.average_score,
+                mode_used=RAGMode.AGENTIC,
+                mode_confidence=reflection.confidence_score,
+            )
+
+            yield StreamChunk(type="done", metrics=enhanced_metrics)
+
+        else:
+            # For non-agentic modes, process normally
+            async for chunk in self.process_query(
+                query=query,
+                mode=mode,
+                namespace=namespace,
+            ):
+                yield chunk
+
+    async def process_with_smart_escalation(
+        self,
+        query: str,
+        namespace: str = None,
+        initial_mode: RAGMode = None,
+    ) -> AsyncGenerator[StreamChunk, None]:
+        """
+        Smart escalation combining metrics-based and reflection-based evaluation.
+
+        This is an enhanced version of process_with_auto_escalation that:
+        1. Uses query analysis to pick initial mode
+        2. Evaluates confidence from retrieval metrics
+        3. Uses AgenticRAG reflection for final quality check
+        4. Tracks escalation path in metadata
+
+        Args:
+            query: User query
+            namespace: Pinecone namespace
+            initial_mode: Starting mode (default: determined by query analysis)
+
+        Yields:
+            StreamChunk objects with escalation metadata
+        """
+        namespace = namespace or "default"
+        escalation_path = []
+        start_time = time.time()
+
+        # Determine initial mode via analysis
+        analysis = await self.query_analyzer.analyze(query)
+        current_mode = initial_mode or analysis.suggested_mode
+
+        # Cap initial mode at HYBRID if we want escalation potential
+        if current_mode == RAGMode.AGENTIC and not initial_mode:
+            # Start lower to allow escalation
+            current_mode = RAGMode.SIMPLE if analysis.complexity_score < 0.5 else RAGMode.HYBRID
+
+        escalation_path.append(current_mode)
+        yield StreamChunk(type="analysis", analysis=analysis)
+        yield StreamChunk(type="mode", mode=current_mode)
+
+        # Process with current mode
+        response_parts = []
+        citations = []
+        metrics = None
+
+        if current_mode == RAGMode.SIMPLE:
+            async for chunk in self.simple_rag.process_query_streaming(query, namespace=namespace):
+                if chunk.type == "token":
+                    response_parts.append(chunk.content)
+                    yield chunk
+                elif chunk.type == "citation":
+                    citations.append(chunk.citation)
+                    yield chunk
+                elif chunk.type == "done":
+                    metrics = chunk.metrics
+        elif current_mode == RAGMode.HYBRID:
+            async for chunk in self.hybrid_rag.process_query_streaming(query, namespace=namespace):
+                if chunk.type == "token":
+                    response_parts.append(chunk.content)
+                    yield chunk
+                elif chunk.type == "citation":
+                    citations.append(chunk.citation)
+                    yield chunk
+                elif chunk.type == "done":
+                    metrics = chunk.metrics
+
+        # Evaluate confidence
+        confidence = self._evaluate_confidence(metrics, citations) if metrics else 0.0
+
+        # Escalate if needed
+        if confidence < settings.reflection_min_confidence and current_mode != RAGMode.AGENTIC:
+            # Try next tier
+            if current_mode == RAGMode.SIMPLE:
+                next_mode = RAGMode.HYBRID
+            else:
+                next_mode = RAGMode.AGENTIC
+
+            escalation_path.append(next_mode)
+            logger.info(
+                f"Escalating from {current_mode.value} to {next_mode.value} "
+                f"(confidence: {confidence:.2f})"
+            )
+
+            yield StreamChunk(
+                type="mode",
+                mode=next_mode,
+                content=f"Escalating from {current_mode.value} for better results..."
+            )
+
+            # Clear and retry
+            response_parts = []
+            citations = []
+
+            if next_mode == RAGMode.HYBRID:
+                async for chunk in self.hybrid_rag.process_query_streaming(query, namespace=namespace):
+                    if chunk.type == "token":
+                        response_parts.append(chunk.content)
+                        yield chunk
+                    elif chunk.type == "citation":
+                        citations.append(chunk.citation)
+                        yield chunk
+                    elif chunk.type == "done":
+                        metrics = chunk.metrics
+                        current_mode = next_mode
+            else:
+                # AgenticRAG with reflection
+                response, citations_list, metrics, reflection = await self.agentic_rag.process_query_with_reflection(
+                    query=query,
+                    namespace=namespace,
+                )
+                for citation in citations_list:
+                    citations.append(citation)
+                    yield StreamChunk(type="citation", citation=citation)
+                for token in response:
+                    response_parts.append(token)
+                    yield StreamChunk(type="token", content=token)
+
+                yield StreamChunk(
+                    type="reflection",
+                    content=reflection.model_dump_json(),
+                )
+                current_mode = next_mode
+                confidence = reflection.confidence_score
+
+        # Final metrics with escalation info
+        total_time = (time.time() - start_time) * 1000
+        final_metrics = EnhancedRetrievalMetrics(
+            query_time_ms=total_time,
+            num_results=metrics.num_results if metrics else 0,
+            reranked=metrics.reranked if metrics else False,
+            top_score=metrics.top_score if metrics else None,
+            average_score=metrics.average_score if metrics else None,
+            mode_used=current_mode,
+            mode_confidence=confidence,
+            escalated_from=escalation_path[0] if len(escalation_path) > 1 else None,
+            escalation_reason=f"Confidence below threshold" if len(escalation_path) > 1 else None,
+        )
+
+        yield StreamChunk(type="done", metrics=final_metrics)
 
     async def process_with_hyde(
         self,

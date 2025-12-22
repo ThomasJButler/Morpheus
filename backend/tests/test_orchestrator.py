@@ -582,3 +582,238 @@ class TestRAGOrchestratorErrorHandling:
         error_chunks = [c for c in chunks if c.type == "error"]
         assert len(error_chunks) >= 1
         assert "Simulated error" in error_chunks[0].content
+
+
+class TestRAGOrchestratorWithReflection:
+    """Tests for process_with_reflection method."""
+
+    @pytest.fixture
+    def reflection_orchestrator(self):
+        """Create orchestrator with reflection capability."""
+        with patch('app.rag.orchestrator.SimpleRAG'):
+            with patch('app.rag.orchestrator.HybridRAG'):
+                with patch('app.rag.orchestrator.AgenticRAG') as mock_agentic:
+                    with patch('app.rag.orchestrator.QueryAnalyzer') as mock_analyzer:
+                        orchestrator = RAGOrchestrator()
+
+                        # Mock analyzer to recommend AGENTIC mode
+                        mock_analysis = MagicMock()
+                        mock_analysis.suggested_mode = RAGMode.AGENTIC
+                        mock_analysis.complexity_score = 0.8
+                        mock_analysis.reasoning = "Complex query"
+                        orchestrator.query_analyzer.analyze = AsyncMock(
+                            return_value=mock_analysis
+                        )
+
+                        # Mock AgenticRAG with reflection
+                        from app.models.chat import ReflectionResult
+                        mock_reflection = ReflectionResult(
+                            answered_query=True,
+                            confidence_score=0.85,
+                            citations_accurate=True,
+                            needs_more_search=False,
+                            suggested_followup_queries=[],
+                            issues_found=[],
+                            reasoning="Good response"
+                        )
+
+                        mock_metrics = MagicMock()
+                        mock_metrics.query_time_ms = 100
+                        mock_metrics.num_results = 5
+                        mock_metrics.reranked = False
+                        mock_metrics.top_score = 0.9
+                        mock_metrics.average_score = 0.7
+
+                        from app.models.chat import Citation
+                        mock_citation = Citation(
+                            source="doc.pdf",
+                            relevance_score=0.9,
+                            text_preview="Sample text"
+                        )
+
+                        orchestrator.agentic_rag.process_query_with_reflection = AsyncMock(
+                            return_value=(
+                                "This is the response",
+                                [mock_citation],
+                                mock_metrics,
+                                mock_reflection
+                            )
+                        )
+
+                        return orchestrator
+
+    @pytest.mark.asyncio
+    async def test_process_with_reflection_yields_mode_chunk(self, reflection_orchestrator):
+        """Test process_with_reflection yields mode chunk."""
+        with patch('app.rag.orchestrator.settings') as mock_settings:
+            mock_settings.enable_reflection = True
+            mock_settings.reflection_min_confidence = 0.6
+
+            chunks = []
+            async for chunk in reflection_orchestrator.process_with_reflection(
+                "Complex query", mode=RAGMode.AGENTIC
+            ):
+                chunks.append(chunk)
+
+        mode_chunks = [c for c in chunks if c.type == "mode"]
+        assert len(mode_chunks) >= 1
+        assert mode_chunks[0].mode == RAGMode.AGENTIC
+
+    @pytest.mark.asyncio
+    async def test_process_with_reflection_yields_reflection_chunk(self, reflection_orchestrator):
+        """Test process_with_reflection yields reflection result."""
+        with patch('app.rag.orchestrator.settings') as mock_settings:
+            mock_settings.enable_reflection = True
+            mock_settings.reflection_min_confidence = 0.6
+
+            chunks = []
+            async for chunk in reflection_orchestrator.process_with_reflection(
+                "Complex query", mode=RAGMode.AGENTIC
+            ):
+                chunks.append(chunk)
+
+        reflection_chunks = [c for c in chunks if c.type == "reflection"]
+        assert len(reflection_chunks) >= 1
+        # Reflection is JSON serialized
+        assert "confidence_score" in reflection_chunks[0].content
+
+    @pytest.mark.asyncio
+    async def test_process_with_reflection_yields_enhanced_metrics(self, reflection_orchestrator):
+        """Test process_with_reflection yields EnhancedRetrievalMetrics."""
+        from app.models.chat import EnhancedRetrievalMetrics
+
+        with patch('app.rag.orchestrator.settings') as mock_settings:
+            mock_settings.enable_reflection = True
+            mock_settings.reflection_min_confidence = 0.6
+
+            chunks = []
+            async for chunk in reflection_orchestrator.process_with_reflection(
+                "Complex query", mode=RAGMode.AGENTIC
+            ):
+                chunks.append(chunk)
+
+        done_chunks = [c for c in chunks if c.type == "done"]
+        assert len(done_chunks) >= 1
+        # Should have enhanced metrics with mode info
+        assert done_chunks[0].metrics is not None
+        assert hasattr(done_chunks[0].metrics, 'mode_used')
+
+
+class TestRAGOrchestratorSmartEscalation:
+    """Tests for process_with_smart_escalation method."""
+
+    @pytest.fixture
+    def smart_escalation_orchestrator(self):
+        """Create orchestrator for smart escalation tests."""
+        with patch('app.rag.orchestrator.SimpleRAG'):
+            with patch('app.rag.orchestrator.HybridRAG'):
+                with patch('app.rag.orchestrator.AgenticRAG'):
+                    with patch('app.rag.orchestrator.QueryAnalyzer'):
+                        orchestrator = RAGOrchestrator()
+
+                        # Mock analyzer with real QueryAnalysis object
+                        from app.models.chat import QueryAnalysis, QueryType
+                        mock_analysis = QueryAnalysis(
+                            complexity_score=0.3,
+                            query_type=QueryType.FACTUAL,
+                            suggested_mode=RAGMode.SIMPLE,
+                            keywords=["test"],
+                            is_ambiguous=False,
+                            needs_rewriting=False,
+                            reasoning="Simple query"
+                        )
+                        orchestrator.query_analyzer.analyze = AsyncMock(
+                            return_value=mock_analysis
+                        )
+
+                        # Mock SimpleRAG with low confidence results
+                        async def low_conf_stream(*args, **kwargs):
+                            yield StreamChunk(type="mode", mode=RAGMode.SIMPLE)
+                            yield StreamChunk(type="token", content="Simple response")
+                            # Low metrics = should trigger escalation
+                            yield StreamChunk(
+                                type="done",
+                                metrics=RetrievalMetrics(
+                                    query_time_ms=100,
+                                    num_results=1,
+                                    top_score=0.3,
+                                    average_score=0.2,
+                                    reranked=False
+                                )
+                            )
+
+                        orchestrator.simple_rag.process_query_streaming = low_conf_stream
+
+                        # Mock HybridRAG
+                        async def hybrid_stream(*args, **kwargs):
+                            yield StreamChunk(type="mode", mode=RAGMode.HYBRID)
+                            yield StreamChunk(type="token", content="Hybrid response")
+                            yield StreamChunk(
+                                type="done",
+                                metrics=RetrievalMetrics(
+                                    query_time_ms=200,
+                                    num_results=5,
+                                    top_score=0.8,
+                                    average_score=0.7,
+                                    reranked=False
+                                )
+                            )
+
+                        orchestrator.hybrid_rag.process_query_streaming = hybrid_stream
+
+                        return orchestrator
+
+    @pytest.mark.asyncio
+    async def test_smart_escalation_yields_analysis(self, smart_escalation_orchestrator):
+        """Test smart escalation yields analysis chunk."""
+        with patch('app.rag.orchestrator.settings') as mock_settings:
+            mock_settings.reflection_min_confidence = 0.6
+
+            chunks = []
+            async for chunk in smart_escalation_orchestrator.process_with_smart_escalation(
+                "Test query"
+            ):
+                chunks.append(chunk)
+
+        analysis_chunks = [c for c in chunks if c.type == "analysis"]
+        assert len(analysis_chunks) >= 1
+
+    @pytest.mark.asyncio
+    async def test_smart_escalation_escalates_on_low_confidence(self, smart_escalation_orchestrator):
+        """Test smart escalation escalates when confidence is low."""
+        with patch('app.rag.orchestrator.settings') as mock_settings:
+            mock_settings.reflection_min_confidence = 0.6
+
+            chunks = []
+            async for chunk in smart_escalation_orchestrator.process_with_smart_escalation(
+                "Test query"
+            ):
+                chunks.append(chunk)
+
+        mode_chunks = [c for c in chunks if c.type == "mode"]
+        # Should have at least 2 mode chunks: initial + escalation
+        assert len(mode_chunks) >= 2
+        # First should be SIMPLE, second should be HYBRID
+        assert mode_chunks[0].mode == RAGMode.SIMPLE
+        assert mode_chunks[1].mode == RAGMode.HYBRID
+
+    @pytest.mark.asyncio
+    async def test_smart_escalation_tracks_escalation_in_metrics(self, smart_escalation_orchestrator):
+        """Test smart escalation tracks escalation path in metrics."""
+        with patch('app.rag.orchestrator.settings') as mock_settings:
+            mock_settings.reflection_min_confidence = 0.6
+
+            chunks = []
+            async for chunk in smart_escalation_orchestrator.process_with_smart_escalation(
+                "Test query"
+            ):
+                chunks.append(chunk)
+
+        done_chunks = [c for c in chunks if c.type == "done"]
+        assert len(done_chunks) >= 1
+
+        final_metrics = done_chunks[-1].metrics
+        assert final_metrics is not None
+        # Should have escalation info
+        assert final_metrics.escalated_from == RAGMode.SIMPLE
+        assert "Confidence" in final_metrics.escalation_reason

@@ -270,11 +270,12 @@ class StreamChunk(BaseModel):
     - 'mode': RAG mode being used (sent early in stream)
     - 'analysis': Query analysis (if requested)
     - 'tool_call': Tool call in agentic mode
+    - 'reflection': Agent self-reflection result (2025 pattern)
     - 'done': Stream complete with metrics
     - 'error': Error occurred
     """
 
-    type: str = Field(..., description="Chunk type: 'token', 'citation', 'mode', 'analysis', 'tool_call', 'done', 'error'")
+    type: str = Field(..., description="Chunk type: 'token', 'citation', 'mode', 'analysis', 'tool_call', 'reflection', 'done', 'error'")
     content: Optional[str] = Field(None, description="Text content if type=token")
     citation: Optional[Citation] = Field(None, description="Citation if type=citation")
     metrics: Optional[RetrievalMetrics] = Field(
@@ -291,6 +292,41 @@ class StreamChunk(BaseModel):
     )
     tool_input: Optional[dict] = Field(
         None, description="Tool input if type=tool_call"
+    )
+
+
+class ReflectionResult(BaseModel):
+    """
+    Result from agent self-reflection on its response.
+    Part of the 2025 Agentic RAG "Reflection" pattern.
+
+    The agent evaluates its own output to:
+    - Check if it actually answered the question
+    - Verify citations are correct
+    - Assess confidence level
+    - Determine if more searching is needed
+    """
+
+    answered_query: bool = Field(
+        ..., description="Whether the response actually answers the query"
+    )
+    confidence_score: float = Field(
+        ..., ge=0, le=1, description="Confidence in the response quality (0-1)"
+    )
+    citations_accurate: bool = Field(
+        ..., description="Whether citations accurately support claims"
+    )
+    needs_more_search: bool = Field(
+        default=False, description="Whether additional searching would improve response"
+    )
+    suggested_followup_queries: List[str] = Field(
+        default=[], description="Suggested queries if more search is needed"
+    )
+    issues_found: List[str] = Field(
+        default=[], description="Any issues identified with the response"
+    )
+    reasoning: str = Field(
+        ..., description="Explanation of the reflection assessment"
     )
 
 

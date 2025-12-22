@@ -79,6 +79,12 @@ class Settings(BaseSettings):
     agentic_timeout_seconds: int = Field(
         default=30, description="Timeout for agentic processing"
     )
+    enable_reflection: bool = Field(
+        default=True, description="Enable agent self-reflection on responses"
+    )
+    reflection_min_confidence: float = Field(
+        default=0.6, description="Minimum confidence score to accept without retry"
+    )
 
     # Query Rewriter Settings
     enable_query_rewriting: bool = Field(

@@ -478,7 +478,7 @@
     @apply relative rounded-lg overflow-hidden;
     @apply bg-matrix-black/40 backdrop-blur-sm;
     @apply border border-matrix-green/20;
-    @apply transition-all duration-250;
+    @apply transition-all duration-[250ms];
   }
 
   .glass-card:hover {
@@ -501,7 +501,7 @@
     @apply relative p-4 rounded-lg bg-matrix-black/40;
     @apply border border-matrix-green/20;
     @apply hover:border-matrix-green/40 hover:bg-matrix-black/50;
-    @apply transition-all duration-250 overflow-hidden;
+    @apply transition-all duration-[250ms] overflow-hidden;
   }
 
   .stat-card::before {
@@ -520,7 +520,7 @@
 
   .stat-card-value {
     @apply relative text-2xl font-mono font-bold mb-1;
-    @apply transition-transform duration-250 origin-left;
+    @apply transition-transform duration-[250ms] origin-left;
   }
 
   .stat-card:hover .stat-card-value {
@@ -534,7 +534,7 @@
   /* Matrix Tab - Tab styling for Settings modal */
   .matrix-tab {
     @apply relative flex-1 px-4 py-3 rounded-lg font-mono text-sm font-medium;
-    @apply text-matrix-white/60 transition-all duration-250;
+    @apply text-matrix-white/60 transition-all duration-[250ms];
     @apply border-2 border-transparent;
   }
 
