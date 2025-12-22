@@ -4,16 +4,20 @@ import { useState, useCallback, useEffect, useRef } from 'react';
 import { useChat } from 'ai/react';
 import MessageList from './MessageList';
 import DocumentStats from '../Documents/DocumentStats';
+import SystemStatus from '../Documents/SystemStatus';
 import UploadButton from '../Documents/UploadButton';
 import GlassPanel from '../UI/GlassPanel';
 import Settings from '../Settings/Settings';
 import QuickStartGuide from '../Onboarding/QuickStartGuide';
 import BackToTopButton from '../UI/BackToTopButton';
 import ConfirmDialog from '../UI/ConfirmDialog';
+import RAGModeIndicator from './RAGModeIndicator';
+import FloatingInsightPanel from './FloatingInsightPanel';
+import ThinkingInputState from './ThinkingInputState';
 import { useSettings } from '@/lib/hooks/useSettings';
 import { useSession } from '@/lib/hooks/useSession';
 import { apiClient } from '@/lib/api-client';
-import { DocumentUploadResponse } from '@/lib/types';
+import { DocumentUploadResponse, RAGMode, QueryAnalysis, EnhancedRetrievalMetrics } from '@/lib/types';
 
 export default function ChatInterface() {
   const [showDocStats, setShowDocStats] = useState(false);
@@ -24,6 +28,13 @@ export default function ChatInterface() {
   const [showGuide, setShowGuide] = useState(false);
   const [showBackToTop, setShowBackToTop] = useState(false);
   const [showClearConfirm, setShowClearConfirm] = useState(false);
+
+  // RAG metadata state for visualization
+  const [ragMetadata, setRagMetadata] = useState<{
+    modeUsed?: RAGMode;
+    analysis?: QueryAnalysis;
+    metrics?: EnhancedRetrievalMetrics;
+  }>({});
 
   const messageContainerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -60,6 +71,23 @@ export default function ChatInterface() {
       // RAG mode settings
       ragMode: settings.ragMode,
       deepMode: settings.deepMode,
+    },
+    onResponse: async (response) => {
+      // Extract RAG metadata from response headers
+      const modeUsed = response.headers.get('X-RAG-Mode') as RAGMode | null;
+      const analysisHeader = response.headers.get('X-RAG-Analysis');
+      const metricsHeader = response.headers.get('X-RAG-Metrics');
+
+      try {
+        setRagMetadata({
+          modeUsed: modeUsed || undefined,
+          analysis: analysisHeader ? JSON.parse(analysisHeader) : undefined,
+          metrics: metricsHeader ? JSON.parse(metricsHeader) : undefined,
+        });
+        console.log('📊 RAG metadata extracted:', { mode: modeUsed, hasAnalysis: !!analysisHeader, hasMetrics: !!metricsHeader });
+      } catch (error) {
+        console.error('Failed to parse RAG metadata:', error);
+      }
     },
     onFinish: async (message) => {
       console.log('✅ Stream finished:', message.content.substring(0, 50));
@@ -202,6 +230,16 @@ export default function ChatInterface() {
               {settings.provider === 'anthropic' ? settings.anthropicModel : settings.openaiModel}
             </div>
           </div>
+
+          {/* RAG Mode Badge - shows current/last used mode */}
+          {ragMetadata.modeUsed && (
+            <RAGModeIndicator
+              mode={ragMetadata.modeUsed}
+              metrics={ragMetadata.metrics}
+              isProcessing={isLoading}
+              compact={true}
+            />
+          )}
 
           {/* Message count badge */}
           {messages.length > 0 && (
@@ -393,7 +431,8 @@ export default function ChatInterface() {
             <div
               ref={messageContainerRef}
               onScroll={handleScroll}
-              className="flex-1 overflow-y-auto overflow-x-hidden min-h-0 scrollbar-matrix"
+              className="flex-1 overflow-y-auto overflow-x-hidden min-h-0 scrollbar-matrix touch-pan-y"
+              style={{ WebkitOverflowScrolling: 'touch', overscrollBehavior: 'contain' }}
             >
               {/* Enhanced Empty State with animations */}
               {messages.length === 0 && (
@@ -554,7 +593,6 @@ export default function ChatInterface() {
 
               <MessageList
                 messages={messages}
-                isLoading={isLoading}
                 className="flex-1"
               />
             </div>
@@ -562,96 +600,104 @@ export default function ChatInterface() {
             {/* Back to Top Button */}
             <BackToTopButton show={showBackToTop} onClick={scrollToTop} />
 
+            {/* Insight Panel - shows RAG analysis between messages and input */}
+            {ragMetadata.analysis && messages.length > 0 && (
+              <FloatingInsightPanel
+                analysis={ragMetadata.analysis}
+                modeUsed={ragMetadata.modeUsed || 'auto'}
+                metrics={ragMetadata.metrics}
+                wasEscalated={!!ragMetadata.metrics?.escalated_from}
+                isProcessing={isLoading}
+              />
+            )}
+
             {/* Fixed Input Area */}
             <div className="flex-shrink-0 pt-3 sm:pt-4 border-t border-matrix-green/20 bg-transparent">
-              <form onSubmit={handleSubmit} className="flex items-end gap-2 sm:gap-3">
-                <div className="flex-1 relative group">
-                  <textarea
-                    ref={inputRef}
-                    value={input}
-                    onChange={handleInputChange}
-                    disabled={isLoading}
-                    placeholder="Ask me about your documents... (Cmd+K to focus)"
-                    rows={1}
-                    maxLength={2000}
-                    className="matrix-input resize-none min-h-[44px] sm:min-h-[48px] max-h-[100px] sm:max-h-[120px] pr-14 sm:pr-16 w-full
-                               focus:ring-2 focus:ring-matrix-green/40 focus:border-matrix-green
-                               focus:shadow-[0_0_20px_rgba(0,255,0,0.15)]
-                               transition-all duration-200 text-base"
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' && !e.shiftKey) {
-                        e.preventDefault();
-                        handleSubmit();
-                      }
-                    }}
-                    aria-label="Chat input"
-                  />
-                  <span className={`absolute bottom-2 sm:bottom-3 right-2 sm:right-3 text-xs font-mono
-                                   group-focus-within:text-matrix-green/70 transition-colors ${charCountColor}`}>
-                    {input.length}/2000
-                    {input.length > 1800 && <span className="ml-1">⚠</span>}
-                  </span>
-                </div>
-                <button
-                  type="submit"
-                  disabled={isLoading || !input.trim()}
-                  className="flex-shrink-0 px-4 sm:px-6 py-2.5 sm:py-3 bg-matrix-green text-matrix-black rounded-md
-                             font-mono text-sm font-bold uppercase tracking-wider
-                             hover:bg-matrix-cyan hover:shadow-[0_0_25px_rgba(0,255,255,0.4)]
-                             active:scale-95
-                             transition-all duration-200
-                             disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:shadow-none
-                             min-h-[44px] min-w-[44px]"
-                  aria-label="Send message"
-                >
-                  {isLoading ? (
-                    <span className="flex items-center gap-2">
-                      <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                      </svg>
-                      <span className="hidden sm:inline">Sending</span>
+              {isLoading ? (
+                <ThinkingInputState />
+              ) : (
+                <form onSubmit={handleSubmit} className="flex items-end gap-2 sm:gap-3">
+                  <div className="flex-1 relative group">
+                    <textarea
+                      ref={inputRef}
+                      value={input}
+                      onChange={handleInputChange}
+                      placeholder="Ask me about your documents... (Cmd+K to focus)"
+                      rows={1}
+                      maxLength={2000}
+                      className="matrix-input resize-none min-h-[44px] sm:min-h-[48px] max-h-[100px] sm:max-h-[120px] pr-14 sm:pr-16 w-full
+                                 focus:ring-2 focus:ring-matrix-green/40 focus:border-matrix-green
+                                 focus:shadow-[0_0_20px_rgba(0,255,0,0.15)]
+                                 transition-all duration-200 text-base"
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && !e.shiftKey) {
+                          e.preventDefault();
+                          handleSubmit();
+                        }
+                      }}
+                      aria-label="Chat input"
+                    />
+                    <span className={`absolute bottom-2 sm:bottom-3 right-2 sm:right-3 text-xs font-mono
+                                     group-focus-within:text-matrix-green/70 transition-colors ${charCountColor}`}>
+                      {input.length}/2000
+                      {input.length > 1800 && <span className="ml-1">⚠</span>}
                     </span>
-                  ) : (
+                  </div>
+                  <button
+                    type="submit"
+                    disabled={!input.trim()}
+                    className="flex-shrink-0 px-4 sm:px-6 py-2.5 sm:py-3 bg-matrix-green text-matrix-black rounded-md
+                               font-mono text-sm font-bold uppercase tracking-wider
+                               hover:bg-matrix-cyan hover:shadow-[0_0_25px_rgba(0,255,255,0.4)]
+                               active:scale-95
+                               transition-all duration-200
+                               disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:shadow-none
+                               min-h-[44px] min-w-[44px]"
+                    aria-label="Send message"
+                  >
                     <span className="flex items-center gap-2">
                       <svg className="w-4 h-4 sm:hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
                       </svg>
                       <span className="hidden sm:inline">Send</span>
                     </span>
-                  )}
-                </button>
-              </form>
+                  </button>
+                </form>
+              )}
             </div>
           </GlassPanel>
         </div>
 
         {/* Document Stats Panel */}
         {showDocStats && (
-          <div className="flex-shrink-0 w-full md:w-96 slide-in-right space-y-4 overflow-y-auto max-h-[40vh] md:max-h-full">
+          <div className="flex-shrink-0 w-full md:w-80 slide-in-right flex flex-col gap-3 overflow-y-auto max-h-[40vh] md:max-h-full">
             <DocumentStats refreshTrigger={statsRefreshKey} />
 
             {/* Document List */}
             {documentList.length > 0 && (
-              <GlassPanel className="p-4">
-                <h3 className="text-sm font-mono text-matrix-green mb-3">
-                  Uploaded Documents
-                </h3>
-                <ul className="space-y-2">
+              <GlassPanel className="p-3">
+                <div className="flex items-center gap-2 mb-2 pb-2 border-b border-matrix-green/20">
+                  <span className="text-matrix-green font-mono text-xs">&gt;_</span>
+                  <span className="text-matrix-white/80 font-mono text-xs uppercase tracking-wider">
+                    DOCUMENTS
+                  </span>
+                </div>
+                <ul className="space-y-1">
                   {documentList.map((doc, index) => (
                     <li
                       key={index}
-                      className="text-sm text-matrix-white/80 font-mono flex items-center"
+                      className="text-xs text-matrix-white/70 font-mono flex items-center"
                     >
-                      <svg className="w-4 h-4 text-matrix-green mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                      </svg>
+                      <span className="text-matrix-green/50 mr-2">[{String(index + 1).padStart(2, '0')}]</span>
                       <span className="truncate">{doc}</span>
                     </li>
                   ))}
                 </ul>
               </GlassPanel>
             )}
+
+            {/* System Status - fills remaining space */}
+            <SystemStatus isConnected={true} />
           </div>
         )}
       </div>
