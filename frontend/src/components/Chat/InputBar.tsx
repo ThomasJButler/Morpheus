@@ -85,7 +85,7 @@ export default function InputBar({
             focus:outline-none focus:border-matrix-green
             transition-all duration-300 ease-out
             resize-none overflow-y-auto
-            min-h-[72px] sm:min-h-[64px] max-h-[200px]
+            min-h-[56px] sm:min-h-[64px] max-h-[200px]
             disabled:opacity-50 disabled:cursor-not-allowed
             ${isFocused ? 'shadow-lg shadow-matrix-green/20' : ''}
             ${isOverLimit ? 'border-red-500/50 focus:border-red-500' : ''}
@@ -130,7 +130,7 @@ export default function InputBar({
         disabled={disabled || !message.trim() || isOverLimit}
         variant="primary"
         size="lg"
-        className="min-w-[72px] sm:min-w-[100px] h-[72px] sm:h-[64px] font-semibold text-base shadow-lg hover:shadow-xl hover:shadow-matrix-green/30 transition-all duration-300"
+        className="min-w-[56px] sm:min-w-[100px] h-[56px] sm:h-[64px] font-semibold text-base shadow-lg hover:shadow-xl hover:shadow-matrix-green/30 transition-all duration-300"
       >
         {disabled ? (
           <span className="flex items-center gap-2">

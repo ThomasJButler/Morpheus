@@ -123,7 +123,7 @@ export default function Home() {
       {showMatrixRain && <MatrixRain />}
 
       {/* Main Content */}
-      <div className="relative z-10 container mx-auto px-2 sm:px-4 py-2">
+      <div className="relative z-10 container mx-auto px-2 sm:px-4 py-1 sm:py-2">
         {/* Header - Enhanced */}
         <header className="mb-2 flex items-center justify-center gap-3 sm:gap-4">
           <div className="text-center">

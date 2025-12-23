@@ -201,9 +201,9 @@ export default function ChatInterface() {
   const charCountColor = input.length > 1950 ? 'text-red-400' : input.length > 1800 ? 'text-yellow-400' : 'text-matrix-white/30';
 
   return (
-    <div className="flex flex-col h-[100dvh] sm:h-[calc(100vh-140px)] overflow-hidden">
+    <div className="flex flex-col h-[calc(100dvh-120px)] sm:h-[calc(100vh-140px)] overflow-hidden">
       {/* Enhanced Toolbar */}
-      <div className="flex-shrink-0 flex items-center justify-between px-1 py-2 gap-2">
+      <div className="flex-shrink-0 flex items-center justify-between px-1 py-1.5 gap-2">
         {/* Left side: Provider Badge + Message count */}
         <div className="flex items-center gap-2 sm:gap-3">
           {/* Provider Badge with tooltip */}
@@ -436,10 +436,10 @@ export default function ChatInterface() {
             >
               {/* Enhanced Empty State with animations */}
               {messages.length === 0 && (
-                <div className="flex flex-col items-center justify-center h-full text-center py-4 sm:py-8 px-4 animate-fade-in">
-                  <div className="max-w-lg space-y-4 sm:space-y-8">
+                <div className="flex flex-col items-center justify-center h-full text-center py-2 sm:py-8 px-3 animate-fade-in">
+                  <div className="max-w-lg space-y-2 sm:space-y-8">
                     {/* Animated Logo/Icon */}
-                    <div className="relative mx-auto w-16 h-16 sm:w-20 sm:h-20 mb-2 sm:mb-4">
+                    <div className="relative mx-auto w-12 h-12 sm:w-20 sm:h-20 mb-1 sm:mb-4">
                       <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-matrix-green/20 to-matrix-cyan/20 animate-pulse" />
                       <div className="absolute inset-2 rounded-xl bg-matrix-black border border-matrix-green/30 flex items-center justify-center">
                         <svg className="w-7 h-7 sm:w-10 sm:h-10 text-matrix-green" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -461,7 +461,7 @@ export default function ChatInterface() {
                     {/* Steps - animated cards */}
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3 text-left">
                       {/* Step 1 */}
-                      <div className="group p-2.5 sm:p-3 rounded-lg bg-matrix-black/40 border border-matrix-green/20
+                      <div className="group p-2 sm:p-3 rounded-lg bg-matrix-black/40 border border-matrix-green/20
                                       hover:border-matrix-green/50 hover:bg-matrix-green/5
                                       transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:shadow-matrix-green/10
                                       slide-in-left" style={{ animationDelay: '100ms' }}>
@@ -476,7 +476,7 @@ export default function ChatInterface() {
                       </div>
 
                       {/* Step 2 */}
-                      <div className="group p-2.5 sm:p-3 rounded-lg bg-matrix-black/40 border border-matrix-cyan/20
+                      <div className="group p-2 sm:p-3 rounded-lg bg-matrix-black/40 border border-matrix-cyan/20
                                       hover:border-matrix-cyan/50 hover:bg-matrix-cyan/5
                                       transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:shadow-matrix-cyan/10
                                       slide-in-left" style={{ animationDelay: '200ms' }}>
@@ -491,7 +491,7 @@ export default function ChatInterface() {
                       </div>
 
                       {/* Step 3 */}
-                      <div className="group p-2.5 sm:p-3 rounded-lg bg-matrix-black/40 border border-matrix-green/20
+                      <div className="group p-2 sm:p-3 rounded-lg bg-matrix-black/40 border border-matrix-green/20
                                       hover:border-matrix-green/50 hover:bg-matrix-green/5
                                       transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:shadow-matrix-green/10
                                       slide-in-left" style={{ animationDelay: '300ms' }}>
@@ -507,7 +507,7 @@ export default function ChatInterface() {
                     </div>
 
                     {/* Example prompts - enhanced */}
-                    <div className="pt-2 sm:pt-3 border-t border-matrix-green/20">
+                    <div className="pt-1.5 sm:pt-3 border-t border-matrix-green/20">
                       <p className="text-[10px] sm:text-xs text-matrix-white/50 font-mono mb-1.5 sm:mb-2 flex items-center justify-center gap-1">
                         <svg className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-matrix-green" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
@@ -524,7 +524,7 @@ export default function ChatInterface() {
                               textarea.focus();
                             }
                           }}
-                          className="group/prompt px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-full text-[10px] sm:text-xs font-mono
+                          className="group/prompt px-2 py-0.5 sm:px-3 sm:py-1.5 rounded-full text-[10px] sm:text-xs font-mono
                                      bg-matrix-green/10 hover:bg-matrix-green/20
                                      text-matrix-green border border-matrix-green/30 hover:border-matrix-green/60
                                      transition-all duration-200 hover:scale-105 hover:shadow-lg hover:shadow-matrix-green/20"
@@ -542,7 +542,7 @@ export default function ChatInterface() {
                               textarea.focus();
                             }
                           }}
-                          className="group/prompt px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-full text-[10px] sm:text-xs font-mono
+                          className="group/prompt px-2 py-0.5 sm:px-3 sm:py-1.5 rounded-full text-[10px] sm:text-xs font-mono
                                      bg-matrix-cyan/10 hover:bg-matrix-cyan/20
                                      text-matrix-cyan border border-matrix-cyan/30 hover:border-matrix-cyan/60
                                      transition-all duration-200 hover:scale-105 hover:shadow-lg hover:shadow-matrix-cyan/20"
@@ -560,7 +560,7 @@ export default function ChatInterface() {
                               textarea.focus();
                             }
                           }}
-                          className="group/prompt px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-full text-[10px] sm:text-xs font-mono
+                          className="group/prompt px-2 py-0.5 sm:px-3 sm:py-1.5 rounded-full text-[10px] sm:text-xs font-mono
                                      bg-matrix-green/10 hover:bg-matrix-green/20
                                      text-matrix-green border border-matrix-green/30 hover:border-matrix-green/60
                                      transition-all duration-200 hover:scale-105 hover:shadow-lg hover:shadow-matrix-green/20"
@@ -573,17 +573,17 @@ export default function ChatInterface() {
                     </div>
 
                     {/* Keyboard shortcuts hint */}
-                    <div className="flex items-center justify-center gap-2 sm:gap-3 text-[10px] font-mono text-matrix-white/30">
+                    <div className="flex items-center justify-center gap-1.5 sm:gap-3 text-[10px] font-mono text-matrix-white/30">
                       <span className="flex items-center gap-1">
-                        <kbd className="px-1.5 py-0.5 bg-matrix-green/10 rounded text-[10px] text-matrix-green border border-matrix-green/20">⌘K</kbd>
+                        <kbd className="px-1 py-0.5 bg-matrix-green/10 rounded text-[10px] text-matrix-green border border-matrix-green/20">⌘K</kbd>
                         <span>focus</span>
                       </span>
                       <span className="flex items-center gap-1">
-                        <kbd className="px-1.5 py-0.5 bg-matrix-green/10 rounded text-[10px] text-matrix-green border border-matrix-green/20">⌘S</kbd>
+                        <kbd className="px-1 py-0.5 bg-matrix-green/10 rounded text-[10px] text-matrix-green border border-matrix-green/20">⌘S</kbd>
                         <span>save</span>
                       </span>
                       <span className="flex items-center gap-1">
-                        <kbd className="px-1.5 py-0.5 bg-matrix-green/10 rounded text-[10px] text-matrix-green border border-matrix-green/20">Esc</kbd>
+                        <kbd className="px-1 py-0.5 bg-matrix-green/10 rounded text-[10px] text-matrix-green border border-matrix-green/20">Esc</kbd>
                         <span>close</span>
                       </span>
                     </div>
