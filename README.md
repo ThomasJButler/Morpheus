@@ -4,6 +4,8 @@ An intelligent document reasoning system with a Matrix-themed interface.
 
 [Live Demo](https://morpheusrag.vercel.app) | [API Docs](https://morpheus-backend-4c0h.onrender.com/docs)
 
+<img width="1266" height="891" alt="image" src="https://github.com/user-attachments/assets/5bd64eb7-97a5-409f-b970-926d2929a986" />
+
 ## Overview
 
 Upload your private documents and ask questions in natural language. Morpheus learns from your documents and returns accurate answers with source citations.
