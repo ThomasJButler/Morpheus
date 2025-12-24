@@ -162,6 +162,7 @@ export default function FloatingInsightPanel({
             metrics={metrics}
             wasEscalated={wasEscalated}
             defaultExpanded={true}
+            hideHeader={true}
           />
         </div>
       </div>

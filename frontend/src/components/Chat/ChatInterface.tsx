@@ -201,7 +201,7 @@ export default function ChatInterface() {
   const charCountColor = input.length > 1950 ? 'text-red-400' : input.length > 1800 ? 'text-yellow-400' : 'text-matrix-white/30';
 
   return (
-    <div className="flex flex-col h-[calc(100dvh-120px)] sm:h-[calc(100vh-140px)] overflow-hidden">
+    <div className="flex flex-col h-[calc(100dvh-60px)] sm:h-[calc(100vh-120px)] overflow-hidden">
       {/* Enhanced Toolbar */}
       <div className="flex-shrink-0 flex items-center justify-between px-1 py-1.5 gap-2">
         {/* Left side: Provider Badge + Message count */}
@@ -417,10 +417,10 @@ export default function ChatInterface() {
       )}
 
       {/* Main Chat Area - Fixed frame with internal scroll */}
-      <div className="flex flex-col md:flex-row flex-1 gap-4 min-h-0 overflow-hidden px-1">
+      <div className="flex flex-col md:flex-row flex-1 gap-2 sm:gap-4 min-h-0 overflow-hidden px-1">
         {/* Chat Container */}
-        <div className={`flex flex-col ${showDocStats ? 'flex-1 min-h-0' : 'w-full'} min-h-0`}>
-          <GlassPanel className="h-full flex flex-col p-2 sm:p-4 overflow-hidden" noPadding>
+        <div className={`flex flex-col flex-1 ${showDocStats ? 'md:flex-1' : 'w-full'} min-h-0`}>
+          <GlassPanel className="flex-1 flex flex-col p-2 sm:p-4 overflow-hidden min-h-0" noPadding>
             {error && (
               <div className="flex-shrink-0 mb-4 p-3 bg-red-500/10 border border-red-500/50 rounded-md text-red-400 text-sm matrix-font">
                 {error instanceof Error ? error.message : String(error)}
@@ -436,13 +436,13 @@ export default function ChatInterface() {
             >
               {/* Enhanced Empty State with animations */}
               {messages.length === 0 && (
-                <div className="flex flex-col items-center justify-center h-full text-center py-2 sm:py-8 px-3 animate-fade-in">
-                  <div className="max-w-lg space-y-2 sm:space-y-8">
-                    {/* Animated Logo/Icon */}
-                    <div className="relative mx-auto w-12 h-12 sm:w-20 sm:h-20 mb-1 sm:mb-4">
+                <div className="flex flex-col items-center justify-start text-center pt-8 sm:pt-16 px-3 animate-fade-in">
+                  <div className="max-w-lg space-y-3 sm:space-y-6">
+                    {/* Animated Logo/Icon - hidden on mobile */}
+                    <div className="hidden sm:block relative mx-auto w-20 h-20 mb-4">
                       <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-matrix-green/20 to-matrix-cyan/20 animate-pulse" />
                       <div className="absolute inset-2 rounded-xl bg-matrix-black border border-matrix-green/30 flex items-center justify-center">
-                        <svg className="w-7 h-7 sm:w-10 sm:h-10 text-matrix-green" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg className="w-10 h-10 text-matrix-green" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                         </svg>
                       </div>
@@ -452,14 +452,14 @@ export default function ChatInterface() {
 
                     {/* Matrix quote with typewriter style */}
                     <div className="relative">
-                      <p className="text-xs sm:text-sm text-matrix-green/80 italic font-mono leading-relaxed">
+                      <p className="text-sm sm:text-base text-matrix-green/80 italic font-mono leading-relaxed">
                         &quot;I can only show you the door. You&apos;re the one that has to walk through it.&quot;
                       </p>
-                      <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 w-16 h-px bg-gradient-to-r from-transparent via-matrix-green/50 to-transparent" />
+                      <div className="hidden sm:block absolute -bottom-3 left-1/2 -translate-x-1/2 w-16 h-px bg-gradient-to-r from-transparent via-matrix-green/50 to-transparent" />
                     </div>
 
-                    {/* Steps - animated cards */}
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3 text-left">
+                    {/* Steps - animated cards (hidden on mobile) */}
+                    <div className="hidden sm:grid sm:grid-cols-3 gap-3 text-left">
                       {/* Step 1 */}
                       <div className="group p-2 sm:p-3 rounded-lg bg-matrix-black/40 border border-matrix-green/20
                                       hover:border-matrix-green/50 hover:bg-matrix-green/5
@@ -506,15 +506,15 @@ export default function ChatInterface() {
                       </div>
                     </div>
 
-                    {/* Example prompts - enhanced */}
-                    <div className="pt-1.5 sm:pt-3 border-t border-matrix-green/20">
-                      <p className="text-[10px] sm:text-xs text-matrix-white/50 font-mono mb-1.5 sm:mb-2 flex items-center justify-center gap-1">
-                        <svg className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-matrix-green" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    {/* Example prompts - hidden on mobile */}
+                    <div className="hidden sm:block pt-3 border-t border-matrix-green/20">
+                      <p className="text-xs text-matrix-white/50 font-mono mb-2 flex items-center justify-center gap-1">
+                        <svg className="w-3 h-3 text-matrix-green" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                         </svg>
                         Quick prompts
                       </p>
-                      <div className="flex flex-wrap justify-center gap-1.5 sm:gap-2">
+                      <div className="flex flex-wrap justify-center gap-2">
                         <button
                           onClick={() => {
                             const textarea = inputRef.current;
@@ -572,8 +572,8 @@ export default function ChatInterface() {
                       </div>
                     </div>
 
-                    {/* Keyboard shortcuts hint */}
-                    <div className="flex items-center justify-center gap-1.5 sm:gap-3 text-[10px] font-mono text-matrix-white/30">
+                    {/* Keyboard shortcuts hint (hidden on mobile) */}
+                    <div className="hidden sm:flex items-center justify-center gap-3 text-[10px] font-mono text-matrix-white/30">
                       <span className="flex items-center gap-1">
                         <kbd className="px-1 py-0.5 bg-matrix-green/10 rounded text-[10px] text-matrix-green border border-matrix-green/20">⌘K</kbd>
                         <span>focus</span>
@@ -621,7 +621,7 @@ export default function ChatInterface() {
                       ref={inputRef}
                       value={input}
                       onChange={handleInputChange}
-                      placeholder="Ask me about your documents... (Cmd+K to focus)"
+                      placeholder="Ask about your documents..."
                       rows={1}
                       maxLength={2000}
                       className="matrix-input resize-none min-h-[44px] sm:min-h-[48px] max-h-[100px] sm:max-h-[120px] pr-14 sm:pr-16 w-full
@@ -636,7 +636,7 @@ export default function ChatInterface() {
                       }}
                       aria-label="Chat input"
                     />
-                    <span className={`absolute bottom-2 sm:bottom-3 right-2 sm:right-3 text-xs font-mono
+                    <span className={`hidden sm:block absolute bottom-3 right-3 text-xs font-mono
                                      group-focus-within:text-matrix-green/70 transition-colors ${charCountColor}`}>
                       {input.length}/2000
                       {input.length > 1800 && <span className="ml-1">⚠</span>}

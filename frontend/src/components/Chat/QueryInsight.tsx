@@ -10,6 +10,7 @@ interface QueryInsightProps {
   confidenceScore?: number;
   metrics?: EnhancedRetrievalMetrics;
   defaultExpanded?: boolean;
+  hideHeader?: boolean;
 }
 
 // Query type configuration
@@ -120,9 +121,146 @@ export default function QueryInsight({
   confidenceScore,
   metrics,
   defaultExpanded = false,
+  hideHeader = false,
 }: QueryInsightProps) {
   const [isExpanded, setIsExpanded] = useState(defaultExpanded);
   const queryTypeConfig = QUERY_TYPE_CONFIG[analysis.query_type] || QUERY_TYPE_CONFIG.factual;
+
+  // When header is hidden (embedded mode), always show content expanded
+  if (hideHeader) {
+    return (
+      <div className="
+        relative rounded-lg overflow-hidden
+        bg-matrix-black/40 backdrop-blur-sm
+        border border-matrix-green/20
+      ">
+        <div className="p-3 space-y-3">
+          {/* Complexity bar */}
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] font-mono text-matrix-white/40">
+              Query Complexity
+            </span>
+            <ComplexityBar score={analysis.complexity_score} />
+          </div>
+
+          {/* Suggested mode vs used mode */}
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] font-mono text-matrix-white/40">
+              Mode Selection
+            </span>
+            <div className="flex items-center gap-2 text-[10px] font-mono">
+              <span className="text-matrix-white/50">
+                Suggested: <span className="text-matrix-green">{analysis.suggested_mode}</span>
+              </span>
+              {modeUsed !== analysis.suggested_mode && (
+                <>
+                  <span className="text-matrix-white/30">→</span>
+                  <span className="text-matrix-cyan">
+                    Used: {modeUsed}
+                  </span>
+                </>
+              )}
+            </div>
+          </div>
+
+          {/* Keywords */}
+          {analysis.keywords.length > 0 && (
+            <div className="space-y-1.5">
+              <span className="text-[10px] font-mono text-matrix-white/40">
+                Key Terms
+              </span>
+              <KeywordChips keywords={analysis.keywords} />
+            </div>
+          )}
+
+          {/* Insight badges */}
+          <InsightBadges analysis={analysis} />
+
+          {/* Reasoning */}
+          {analysis.reasoning && (
+            <div className="space-y-1">
+              <span className="text-[10px] font-mono text-matrix-white/40">
+                Analysis Reasoning
+              </span>
+              <p className="text-xs font-mono text-matrix-white/60 leading-relaxed">
+                {analysis.reasoning}
+              </p>
+            </div>
+          )}
+
+          {/* Additional metrics if available */}
+          {metrics && (
+            <div className="pt-2 border-t border-matrix-green/10 space-y-2">
+              <span className="text-[10px] font-mono text-matrix-white/40">
+                Retrieval Details
+              </span>
+
+              <div className="grid grid-cols-2 gap-2 text-[10px] font-mono">
+                <div className="flex justify-between">
+                  <span className="text-matrix-white/40">Query Time</span>
+                  <span className="text-matrix-white/60">{metrics.query_time_ms}ms</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-matrix-white/40">Results</span>
+                  <span className="text-matrix-white/60">{metrics.num_results}</span>
+                </div>
+                {metrics.top_score != null && (
+                  <div className="flex justify-between">
+                    <span className="text-matrix-white/40">Top Score</span>
+                    <span className="text-matrix-white/60">{(metrics.top_score * 100).toFixed(1)}%</span>
+                  </div>
+                )}
+                {metrics.average_score != null && (
+                  <div className="flex justify-between">
+                    <span className="text-matrix-white/40">Avg Score</span>
+                    <span className="text-matrix-white/60">{(metrics.average_score * 100).toFixed(1)}%</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Hybrid mode scores */}
+              {(metrics.dense_score != null || metrics.sparse_score != null) && (
+                <div className="flex gap-3 pt-1">
+                  {metrics.dense_score != null && (
+                    <span className="text-[10px] font-mono text-matrix-cyan">
+                      Dense: {(metrics.dense_score * 100).toFixed(1)}%
+                    </span>
+                  )}
+                  {metrics.sparse_score != null && (
+                    <span className="text-[10px] font-mono text-yellow-400">
+                      Sparse: {(metrics.sparse_score * 100).toFixed(1)}%
+                    </span>
+                  )}
+                </div>
+              )}
+
+              {/* Escalation path */}
+              {metrics.escalated_from && (
+                <div className="flex items-center gap-2 text-[10px] font-mono pt-1">
+                  <span className="text-matrix-white/40">Escalation:</span>
+                  <span className="text-matrix-white/50">{metrics.escalated_from}</span>
+                  <span className="text-matrix-white/30">→</span>
+                  <span className="text-matrix-cyan">{metrics.mode_used}</span>
+                  {metrics.escalation_reason && (
+                    <span className="text-matrix-white/30 truncate max-w-[150px]" title={metrics.escalation_reason}>
+                      ({metrics.escalation_reason})
+                    </span>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Subtle gradient overlay */}
+        <div className="
+          absolute inset-0 pointer-events-none
+          bg-gradient-to-br from-matrix-green/5 via-transparent to-transparent
+          opacity-50
+        " />
+      </div>
+    );
+  }
 
   return (
     <div className="
