@@ -34,17 +34,17 @@ export default function DocumentStats({ refreshTrigger = 0 }: DocumentStatsProps
 
   if (isLoading) {
     return (
-      <GlassPanel className="p-4">
-        <LoadingPulse text="Loading document stats" />
+      <GlassPanel className="p-3">
+        <LoadingPulse text="LOADING..." />
       </GlassPanel>
     );
   }
 
   if (error) {
     return (
-      <GlassPanel className="p-4">
-        <div className="text-red-400 text-sm">
-          {error}
+      <GlassPanel className="p-3">
+        <div className="text-red-400 text-xs font-mono">
+          [ERR] {error}
         </div>
       </GlassPanel>
     );
@@ -55,24 +55,24 @@ export default function DocumentStats({ refreshTrigger = 0 }: DocumentStatsProps
   }
 
   return (
-    <GlassPanel className="p-6">
-      {/* Header with inline refresh */}
-      <div className="flex items-center justify-between mb-5">
-        <h3 className="section-header mb-0">
-          Document Statistics
-        </h3>
+    <GlassPanel className="p-3">
+      {/* Retro Terminal Header */}
+      <div className="flex items-center justify-between mb-3 pb-2 border-b border-matrix-green/20">
+        <div className="flex items-center gap-2">
+          <span className="text-matrix-green font-mono text-xs">&gt;_</span>
+          <span className="text-matrix-white/80 font-mono text-xs uppercase tracking-wider">
+            INDEX STATUS
+          </span>
+        </div>
         <button
           onClick={loadStats}
           disabled={isLoading}
-          className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-mono text-matrix-green
-                     border border-matrix-green/30 rounded-md
-                     hover:bg-matrix-green/10 hover:border-matrix-green/50
-                     disabled:opacity-50 disabled:cursor-not-allowed
-                     transition-all duration-200 group"
-          title="Refresh statistics"
+          className="text-matrix-green/60 hover:text-matrix-green disabled:opacity-50
+                     transition-colors duration-200"
+          title="Refresh"
         >
           <svg
-            className={`w-3.5 h-3.5 transition-transform duration-400 ${isLoading ? 'animate-spin' : 'group-hover:rotate-180'}`}
+            className={`w-3 h-3 ${isLoading ? 'animate-spin' : ''}`}
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -82,45 +82,33 @@ export default function DocumentStats({ refreshTrigger = 0 }: DocumentStatsProps
         </button>
       </div>
 
-      {/* Stats Grid */}
-      <div className="grid grid-cols-2 gap-3 mb-4">
-        <div className="stat-card group">
-          <div className="stat-card-value text-matrix-green">
-            <span className="text-2xl mr-2 opacity-70">📄</span>
-            <span className="tabular-nums">{stats.total_documents}</span>
-          </div>
-          <div className="stat-card-label">Documents</div>
+      {/* Compact Stats Grid - Retro Terminal Style */}
+      <div className="space-y-1.5 font-mono text-xs">
+        <div className="flex justify-between items-center">
+          <span className="text-matrix-white/50">[DOC]</span>
+          <span className="text-matrix-green tabular-nums">{stats.total_documents}</span>
         </div>
 
-        <div className="stat-card group">
-          <div className="stat-card-value text-matrix-cyan">
-            <span className="text-2xl mr-2 opacity-70">🧩</span>
-            <span className="tabular-nums">{stats.total_chunks}</span>
-          </div>
-          <div className="stat-card-label">Chunks</div>
+        <div className="flex justify-between items-center">
+          <span className="text-matrix-white/50">[CHK]</span>
+          <span className="text-matrix-cyan tabular-nums">{stats.total_chunks}</span>
         </div>
 
-        <div className="stat-card group">
-          <div className="stat-card-value text-matrix-white">
-            <span className="text-2xl mr-2 opacity-70">🎯</span>
-            <span className="tabular-nums">{stats.total_embeddings}</span>
-          </div>
-          <div className="stat-card-label">Embeddings</div>
+        <div className="flex justify-between items-center">
+          <span className="text-matrix-white/50">[VEC]</span>
+          <span className="text-matrix-white/80 tabular-nums">{stats.total_embeddings}</span>
         </div>
 
-        <div className="stat-card group">
-          <div className="stat-card-value text-matrix-white">
-            <span className="text-2xl mr-2 opacity-70">💾</span>
-            <span className="text-base tabular-nums">{stats.index_size}</span>
-          </div>
-          <div className="stat-card-label">Index Size</div>
+        <div className="flex justify-between items-center">
+          <span className="text-matrix-white/50">[SIZ]</span>
+          <span className="text-matrix-white/80 tabular-nums">{stats.index_size}</span>
         </div>
       </div>
 
-      {/* Timestamp */}
+      {/* Timestamp - minimal */}
       {stats.last_updated && (
-        <div className="text-xs text-matrix-white/30 font-mono text-center pt-2 border-t border-matrix-green/10">
-          Updated {new Date(stats.last_updated).toLocaleTimeString()}
+        <div className="text-[10px] text-matrix-white/20 font-mono text-right mt-2 pt-2 border-t border-matrix-green/10">
+          {new Date(stats.last_updated).toLocaleTimeString()}
         </div>
       )}
     </GlassPanel>

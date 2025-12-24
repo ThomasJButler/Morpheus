@@ -46,6 +46,59 @@ class Settings(BaseSettings):
         default=0.3, description="Minimum relevance score"
     )
 
+    # RAG Mode Configuration (Tiered RAG System)
+    default_rag_mode: str = Field(
+        default="auto",
+        description="Default RAG mode: simple, hybrid, agentic, or auto"
+    )
+    enable_hybrid_rag: bool = Field(
+        default=True, description="Enable HybridRAG tier"
+    )
+    enable_agentic_rag: bool = Field(
+        default=True, description="Enable AgenticRAG tier"
+    )
+
+    # Hybrid RAG Settings (Dense + Sparse retrieval)
+    dense_weight: float = Field(
+        default=0.7, description="Weight for dense (semantic) retrieval in hybrid mode"
+    )
+    sparse_weight: float = Field(
+        default=0.3, description="Weight for sparse (BM25) retrieval in hybrid mode"
+    )
+    enable_reranking: bool = Field(
+        default=True, description="Enable cross-encoder reranking"
+    )
+    rerank_top_k: int = Field(
+        default=5, description="Number of results to keep after reranking"
+    )
+
+    # Agentic RAG Settings
+    agentic_max_tool_calls: int = Field(
+        default=5, description="Maximum tool calls per agentic query"
+    )
+    agentic_timeout_seconds: int = Field(
+        default=30, description="Timeout for agentic processing"
+    )
+    enable_reflection: bool = Field(
+        default=True, description="Enable agent self-reflection on responses"
+    )
+    reflection_min_confidence: float = Field(
+        default=0.6, description="Minimum confidence score to accept without retry"
+    )
+
+    # Query Rewriter Settings
+    enable_query_rewriting: bool = Field(
+        default=True, description="Enable LLM-based query rewriting"
+    )
+
+    # Query Analyzer Settings (Auto-routing)
+    complexity_threshold_low: float = Field(
+        default=0.3, description="Below this → SimpleRAG"
+    )
+    complexity_threshold_high: float = Field(
+        default=0.7, description="Above this → AgenticRAG"
+    )
+
     # Document Processing
     supported_file_types: str = Field(
         default="pdf,txt,md,docx", description="Comma-separated supported file types"

@@ -4,21 +4,12 @@ import { useState, useEffect } from 'react';
 import GlassPanel from '../UI/GlassPanel';
 import Button from '../UI/Button';
 import { clsx } from 'clsx';
+import type { RAGMode } from '@/lib/types';
+import type { UserSettings, Provider } from '@/lib/hooks/useSettings';
 
 interface SettingsProps {
   isOpen: boolean;
   onClose: () => void;
-}
-
-export type Provider = 'openai' | 'anthropic';
-
-export interface UserSettings {
-  openaiApiKey: string;
-  openaiModel: string;
-  anthropicApiKey: string;
-  anthropicModel: string;
-  provider: Provider;
-  saveApiKey: boolean;
 }
 
 const OPENAI_MODELS = [
@@ -33,6 +24,14 @@ const ANTHROPIC_MODELS = [
   { value: 'claude-3-5-sonnet-20241022', label: 'Claude 3.5 Sonnet', description: 'Fast and capable' },
   { value: 'claude-3-opus-20240229', label: 'Claude 3 Opus', description: 'Most capable' },
   { value: 'claude-3-haiku-20240307', label: 'Claude 3 Haiku', description: 'Fastest, cost-effective' },
+];
+
+// RAG modes for intelligent document retrieval
+const RAG_MODES: { value: RAGMode; label: string; description: string; latency: string }[] = [
+  { value: 'auto', label: 'Auto', description: 'Intelligent routing based on query', latency: 'varies' },
+  { value: 'simple', label: 'Simple', description: 'Fast semantic search', latency: '~800ms' },
+  { value: 'hybrid', label: 'Hybrid', description: 'Semantic + keyword search', latency: '~1200ms' },
+  { value: 'agentic', label: 'Agentic', description: 'AI agent with tool use', latency: '~2600ms' },
 ];
 
 export default function Settings({ isOpen, onClose }: SettingsProps) {
@@ -53,6 +52,10 @@ export default function Settings({ isOpen, onClose }: SettingsProps) {
   // Provider selection
   const [provider, setProvider] = useState<Provider>('anthropic');
 
+  // RAG mode settings
+  const [ragMode, setRagMode] = useState<RAGMode>('auto');
+  const [deepMode, setDeepMode] = useState(false);
+
   // General settings
   const [saveKey, setSaveKey] = useState(true);
 
@@ -68,6 +71,9 @@ export default function Settings({ isOpen, onClose }: SettingsProps) {
         setAnthropicModel(settings.anthropicModel || 'claude-sonnet-4-20250514');
         setProvider(settings.provider || 'anthropic');
         setSaveKey(settings.saveApiKey ?? true);
+        // Load RAG mode settings with defaults for backwards compatibility
+        setRagMode(settings.ragMode || 'auto');
+        setDeepMode(settings.deepMode ?? false);
       } catch (e) {
         console.error('Failed to load settings:', e);
       }
@@ -82,6 +88,8 @@ export default function Settings({ isOpen, onClose }: SettingsProps) {
       anthropicModel: anthropicModel,
       provider: provider,
       saveApiKey: saveKey,
+      ragMode: ragMode,
+      deepMode: deepMode,
     };
 
     if (saveKey) {
@@ -132,6 +140,8 @@ export default function Settings({ isOpen, onClose }: SettingsProps) {
     setAnthropicModel('claude-sonnet-4-20250514');
     setProvider('anthropic');
     setSaveKey(true);
+    setRagMode('auto');
+    setDeepMode(false);
     localStorage.removeItem('userSettings');
     sessionStorage.removeItem('userSettings');
     setTestResult(null);
@@ -301,6 +311,57 @@ export default function Settings({ isOpen, onClose }: SettingsProps) {
                 ))}
               </select>
             </div>
+          </div>
+
+          <div className="matrix-divider" />
+
+          {/* RAG Mode Settings */}
+          <div className="space-y-5">
+            <h3 className="section-header">
+              Retrieval Mode
+            </h3>
+
+            {/* RAG Mode Selector */}
+            <div>
+              <label className="block text-xs font-mono text-matrix-white/50 uppercase tracking-wider mb-2">
+                Search Strategy
+              </label>
+              <select
+                value={ragMode}
+                onChange={(e) => setRagMode(e.target.value as RAGMode)}
+                className="matrix-select"
+              >
+                {RAG_MODES.map((mode) => (
+                  <option key={mode.value} value={mode.value}>
+                    {mode.label} - {mode.description} ({mode.latency})
+                  </option>
+                ))}
+              </select>
+              <p className="mt-2 text-xs text-matrix-white/40">
+                {ragMode === 'auto' && 'System analyzes query complexity and routes to optimal mode.'}
+                {ragMode === 'simple' && 'Fastest option using semantic embeddings only.'}
+                {ragMode === 'hybrid' && 'Combines semantic + keyword search for better recall.'}
+                {ragMode === 'agentic' && 'AI agent that can search multiple times and refine results.'}
+              </p>
+            </div>
+
+            {/* Deep Mode Toggle */}
+            <label className="flex items-center gap-3 cursor-pointer group">
+              <input
+                type="checkbox"
+                checked={deepMode}
+                onChange={(e) => setDeepMode(e.target.checked)}
+                className="w-4 h-4 bg-matrix-black/60 border-glass-border rounded text-matrix-green focus:ring-matrix-green/50 focus:ring-offset-0"
+              />
+              <div>
+                <span className="text-sm font-mono text-matrix-white/70 group-hover:text-matrix-white transition-colors">
+                  Deep Dive Mode
+                </span>
+                <p className="text-xs text-matrix-white/40 mt-0.5">
+                  Force agentic mode for thorough multi-pass search
+                </p>
+              </div>
+            </label>
           </div>
 
           <div className="matrix-divider" />

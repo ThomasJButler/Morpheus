@@ -4,16 +4,20 @@ import { useState, useCallback, useEffect, useRef } from 'react';
 import { useChat } from 'ai/react';
 import MessageList from './MessageList';
 import DocumentStats from '../Documents/DocumentStats';
+import SystemStatus from '../Documents/SystemStatus';
 import UploadButton from '../Documents/UploadButton';
 import GlassPanel from '../UI/GlassPanel';
 import Settings from '../Settings/Settings';
 import QuickStartGuide from '../Onboarding/QuickStartGuide';
 import BackToTopButton from '../UI/BackToTopButton';
 import ConfirmDialog from '../UI/ConfirmDialog';
+import RAGModeIndicator from './RAGModeIndicator';
+import FloatingInsightPanel from './FloatingInsightPanel';
+import ThinkingInputState from './ThinkingInputState';
 import { useSettings } from '@/lib/hooks/useSettings';
 import { useSession } from '@/lib/hooks/useSession';
 import { apiClient } from '@/lib/api-client';
-import { DocumentUploadResponse } from '@/lib/types';
+import { DocumentUploadResponse, RAGMode, QueryAnalysis, EnhancedRetrievalMetrics } from '@/lib/types';
 
 export default function ChatInterface() {
   const [showDocStats, setShowDocStats] = useState(false);
@@ -24,6 +28,13 @@ export default function ChatInterface() {
   const [showGuide, setShowGuide] = useState(false);
   const [showBackToTop, setShowBackToTop] = useState(false);
   const [showClearConfirm, setShowClearConfirm] = useState(false);
+
+  // RAG metadata state for visualization
+  const [ragMetadata, setRagMetadata] = useState<{
+    modeUsed?: RAGMode;
+    analysis?: QueryAnalysis;
+    metrics?: EnhancedRetrievalMetrics;
+  }>({});
 
   const messageContainerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -57,6 +68,26 @@ export default function ChatInterface() {
       anthropicModel: settings.anthropicModel,
       openaiApiKey: settings.openaiApiKey,
       openaiModel: settings.openaiModel,
+      // RAG mode settings
+      ragMode: settings.ragMode,
+      deepMode: settings.deepMode,
+    },
+    onResponse: async (response) => {
+      // Extract RAG metadata from response headers
+      const modeUsed = response.headers.get('X-RAG-Mode') as RAGMode | null;
+      const analysisHeader = response.headers.get('X-RAG-Analysis');
+      const metricsHeader = response.headers.get('X-RAG-Metrics');
+
+      try {
+        setRagMetadata({
+          modeUsed: modeUsed || undefined,
+          analysis: analysisHeader ? JSON.parse(analysisHeader) : undefined,
+          metrics: metricsHeader ? JSON.parse(metricsHeader) : undefined,
+        });
+        console.log('📊 RAG metadata extracted:', { mode: modeUsed, hasAnalysis: !!analysisHeader, hasMetrics: !!metricsHeader });
+      } catch (error) {
+        console.error('Failed to parse RAG metadata:', error);
+      }
     },
     onFinish: async (message) => {
       console.log('✅ Stream finished:', message.content.substring(0, 50));
@@ -170,9 +201,9 @@ export default function ChatInterface() {
   const charCountColor = input.length > 1950 ? 'text-red-400' : input.length > 1800 ? 'text-yellow-400' : 'text-matrix-white/30';
 
   return (
-    <div className="flex flex-col h-[100dvh] sm:h-[calc(100vh-140px)] overflow-hidden">
+    <div className="flex flex-col h-[calc(100dvh-60px)] sm:h-[calc(100vh-120px)] overflow-hidden">
       {/* Enhanced Toolbar */}
-      <div className="flex-shrink-0 flex items-center justify-between px-1 py-2 gap-2">
+      <div className="flex-shrink-0 flex items-center justify-between px-1 py-1.5 gap-2">
         {/* Left side: Provider Badge + Message count */}
         <div className="flex items-center gap-2 sm:gap-3">
           {/* Provider Badge with tooltip */}
@@ -199,6 +230,16 @@ export default function ChatInterface() {
               {settings.provider === 'anthropic' ? settings.anthropicModel : settings.openaiModel}
             </div>
           </div>
+
+          {/* RAG Mode Badge - shows current/last used mode */}
+          {ragMetadata.modeUsed && (
+            <RAGModeIndicator
+              mode={ragMetadata.modeUsed}
+              metrics={ragMetadata.metrics}
+              isProcessing={isLoading}
+              compact={true}
+            />
+          )}
 
           {/* Message count badge */}
           {messages.length > 0 && (
@@ -376,10 +417,10 @@ export default function ChatInterface() {
       )}
 
       {/* Main Chat Area - Fixed frame with internal scroll */}
-      <div className="flex flex-col md:flex-row flex-1 gap-4 min-h-0 overflow-hidden px-1">
+      <div className="flex flex-col md:flex-row flex-1 gap-2 sm:gap-4 min-h-0 overflow-hidden px-1">
         {/* Chat Container */}
-        <div className={`flex flex-col ${showDocStats ? 'flex-1 min-h-0' : 'w-full'} min-h-0`}>
-          <GlassPanel className="h-full flex flex-col p-2 sm:p-4 overflow-hidden" noPadding>
+        <div className={`flex flex-col flex-1 ${showDocStats ? 'md:flex-1' : 'w-full'} min-h-0`}>
+          <GlassPanel className="flex-1 flex flex-col p-2 sm:p-4 overflow-hidden min-h-0" noPadding>
             {error && (
               <div className="flex-shrink-0 mb-4 p-3 bg-red-500/10 border border-red-500/50 rounded-md text-red-400 text-sm matrix-font">
                 {error instanceof Error ? error.message : String(error)}
@@ -390,17 +431,18 @@ export default function ChatInterface() {
             <div
               ref={messageContainerRef}
               onScroll={handleScroll}
-              className="flex-1 overflow-y-auto overflow-x-hidden min-h-0 scrollbar-matrix"
+              className="flex-1 overflow-y-auto overflow-x-hidden min-h-0 scrollbar-matrix touch-pan-y"
+              style={{ WebkitOverflowScrolling: 'touch', overscrollBehavior: 'contain' }}
             >
               {/* Enhanced Empty State with animations */}
               {messages.length === 0 && (
-                <div className="flex flex-col items-center justify-center h-full text-center py-4 sm:py-8 px-4 animate-fade-in">
-                  <div className="max-w-lg space-y-4 sm:space-y-8">
-                    {/* Animated Logo/Icon */}
-                    <div className="relative mx-auto w-16 h-16 sm:w-20 sm:h-20 mb-2 sm:mb-4">
+                <div className="flex flex-col items-center justify-start text-center pt-8 sm:pt-16 px-3 animate-fade-in">
+                  <div className="max-w-lg space-y-3 sm:space-y-6">
+                    {/* Animated Logo/Icon - hidden on mobile */}
+                    <div className="hidden sm:block relative mx-auto w-20 h-20 mb-4">
                       <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-matrix-green/20 to-matrix-cyan/20 animate-pulse" />
                       <div className="absolute inset-2 rounded-xl bg-matrix-black border border-matrix-green/30 flex items-center justify-center">
-                        <svg className="w-7 h-7 sm:w-10 sm:h-10 text-matrix-green" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg className="w-10 h-10 text-matrix-green" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                         </svg>
                       </div>
@@ -410,16 +452,16 @@ export default function ChatInterface() {
 
                     {/* Matrix quote with typewriter style */}
                     <div className="relative">
-                      <p className="text-xs sm:text-sm text-matrix-green/80 italic font-mono leading-relaxed">
+                      <p className="text-sm sm:text-base text-matrix-green/80 italic font-mono leading-relaxed">
                         &quot;I can only show you the door. You&apos;re the one that has to walk through it.&quot;
                       </p>
-                      <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 w-16 h-px bg-gradient-to-r from-transparent via-matrix-green/50 to-transparent" />
+                      <div className="hidden sm:block absolute -bottom-3 left-1/2 -translate-x-1/2 w-16 h-px bg-gradient-to-r from-transparent via-matrix-green/50 to-transparent" />
                     </div>
 
-                    {/* Steps - animated cards */}
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3 text-left">
+                    {/* Steps - animated cards (hidden on mobile) */}
+                    <div className="hidden sm:grid sm:grid-cols-3 gap-3 text-left">
                       {/* Step 1 */}
-                      <div className="group p-2.5 sm:p-3 rounded-lg bg-matrix-black/40 border border-matrix-green/20
+                      <div className="group p-2 sm:p-3 rounded-lg bg-matrix-black/40 border border-matrix-green/20
                                       hover:border-matrix-green/50 hover:bg-matrix-green/5
                                       transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:shadow-matrix-green/10
                                       slide-in-left" style={{ animationDelay: '100ms' }}>
@@ -434,7 +476,7 @@ export default function ChatInterface() {
                       </div>
 
                       {/* Step 2 */}
-                      <div className="group p-2.5 sm:p-3 rounded-lg bg-matrix-black/40 border border-matrix-cyan/20
+                      <div className="group p-2 sm:p-3 rounded-lg bg-matrix-black/40 border border-matrix-cyan/20
                                       hover:border-matrix-cyan/50 hover:bg-matrix-cyan/5
                                       transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:shadow-matrix-cyan/10
                                       slide-in-left" style={{ animationDelay: '200ms' }}>
@@ -449,7 +491,7 @@ export default function ChatInterface() {
                       </div>
 
                       {/* Step 3 */}
-                      <div className="group p-2.5 sm:p-3 rounded-lg bg-matrix-black/40 border border-matrix-green/20
+                      <div className="group p-2 sm:p-3 rounded-lg bg-matrix-black/40 border border-matrix-green/20
                                       hover:border-matrix-green/50 hover:bg-matrix-green/5
                                       transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:shadow-matrix-green/10
                                       slide-in-left" style={{ animationDelay: '300ms' }}>
@@ -464,15 +506,15 @@ export default function ChatInterface() {
                       </div>
                     </div>
 
-                    {/* Example prompts - enhanced */}
-                    <div className="pt-2 sm:pt-3 border-t border-matrix-green/20">
-                      <p className="text-[10px] sm:text-xs text-matrix-white/50 font-mono mb-1.5 sm:mb-2 flex items-center justify-center gap-1">
-                        <svg className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-matrix-green" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    {/* Example prompts - hidden on mobile */}
+                    <div className="hidden sm:block pt-3 border-t border-matrix-green/20">
+                      <p className="text-xs text-matrix-white/50 font-mono mb-2 flex items-center justify-center gap-1">
+                        <svg className="w-3 h-3 text-matrix-green" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                         </svg>
                         Quick prompts
                       </p>
-                      <div className="flex flex-wrap justify-center gap-1.5 sm:gap-2">
+                      <div className="flex flex-wrap justify-center gap-2">
                         <button
                           onClick={() => {
                             const textarea = inputRef.current;
@@ -482,7 +524,7 @@ export default function ChatInterface() {
                               textarea.focus();
                             }
                           }}
-                          className="group/prompt px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-full text-[10px] sm:text-xs font-mono
+                          className="group/prompt px-2 py-0.5 sm:px-3 sm:py-1.5 rounded-full text-[10px] sm:text-xs font-mono
                                      bg-matrix-green/10 hover:bg-matrix-green/20
                                      text-matrix-green border border-matrix-green/30 hover:border-matrix-green/60
                                      transition-all duration-200 hover:scale-105 hover:shadow-lg hover:shadow-matrix-green/20"
@@ -500,7 +542,7 @@ export default function ChatInterface() {
                               textarea.focus();
                             }
                           }}
-                          className="group/prompt px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-full text-[10px] sm:text-xs font-mono
+                          className="group/prompt px-2 py-0.5 sm:px-3 sm:py-1.5 rounded-full text-[10px] sm:text-xs font-mono
                                      bg-matrix-cyan/10 hover:bg-matrix-cyan/20
                                      text-matrix-cyan border border-matrix-cyan/30 hover:border-matrix-cyan/60
                                      transition-all duration-200 hover:scale-105 hover:shadow-lg hover:shadow-matrix-cyan/20"
@@ -518,7 +560,7 @@ export default function ChatInterface() {
                               textarea.focus();
                             }
                           }}
-                          className="group/prompt px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-full text-[10px] sm:text-xs font-mono
+                          className="group/prompt px-2 py-0.5 sm:px-3 sm:py-1.5 rounded-full text-[10px] sm:text-xs font-mono
                                      bg-matrix-green/10 hover:bg-matrix-green/20
                                      text-matrix-green border border-matrix-green/30 hover:border-matrix-green/60
                                      transition-all duration-200 hover:scale-105 hover:shadow-lg hover:shadow-matrix-green/20"
@@ -530,18 +572,18 @@ export default function ChatInterface() {
                       </div>
                     </div>
 
-                    {/* Keyboard shortcuts hint */}
-                    <div className="flex items-center justify-center gap-2 sm:gap-3 text-[10px] font-mono text-matrix-white/30">
+                    {/* Keyboard shortcuts hint (hidden on mobile) */}
+                    <div className="hidden sm:flex items-center justify-center gap-3 text-[10px] font-mono text-matrix-white/30">
                       <span className="flex items-center gap-1">
-                        <kbd className="px-1.5 py-0.5 bg-matrix-green/10 rounded text-[10px] text-matrix-green border border-matrix-green/20">⌘K</kbd>
+                        <kbd className="px-1 py-0.5 bg-matrix-green/10 rounded text-[10px] text-matrix-green border border-matrix-green/20">⌘K</kbd>
                         <span>focus</span>
                       </span>
                       <span className="flex items-center gap-1">
-                        <kbd className="px-1.5 py-0.5 bg-matrix-green/10 rounded text-[10px] text-matrix-green border border-matrix-green/20">⌘S</kbd>
+                        <kbd className="px-1 py-0.5 bg-matrix-green/10 rounded text-[10px] text-matrix-green border border-matrix-green/20">⌘S</kbd>
                         <span>save</span>
                       </span>
                       <span className="flex items-center gap-1">
-                        <kbd className="px-1.5 py-0.5 bg-matrix-green/10 rounded text-[10px] text-matrix-green border border-matrix-green/20">Esc</kbd>
+                        <kbd className="px-1 py-0.5 bg-matrix-green/10 rounded text-[10px] text-matrix-green border border-matrix-green/20">Esc</kbd>
                         <span>close</span>
                       </span>
                     </div>
@@ -551,104 +593,110 @@ export default function ChatInterface() {
 
               <MessageList
                 messages={messages}
-                isLoading={isLoading}
-                className="flex-1"
               />
             </div>
 
             {/* Back to Top Button */}
             <BackToTopButton show={showBackToTop} onClick={scrollToTop} />
 
+            {/* Insight Panel - shows RAG analysis between messages and input */}
+            {ragMetadata.analysis && messages.length > 0 && (
+              <FloatingInsightPanel
+                analysis={ragMetadata.analysis}
+                modeUsed={ragMetadata.modeUsed || 'auto'}
+                metrics={ragMetadata.metrics}
+                wasEscalated={!!ragMetadata.metrics?.escalated_from}
+                isProcessing={isLoading}
+              />
+            )}
+
             {/* Fixed Input Area */}
             <div className="flex-shrink-0 pt-3 sm:pt-4 border-t border-matrix-green/20 bg-transparent">
-              <form onSubmit={handleSubmit} className="flex items-end gap-2 sm:gap-3">
-                <div className="flex-1 relative group">
-                  <textarea
-                    ref={inputRef}
-                    value={input}
-                    onChange={handleInputChange}
-                    disabled={isLoading}
-                    placeholder="Ask me about your documents... (Cmd+K to focus)"
-                    rows={1}
-                    maxLength={2000}
-                    className="matrix-input resize-none min-h-[44px] sm:min-h-[48px] max-h-[100px] sm:max-h-[120px] pr-14 sm:pr-16 w-full
-                               focus:ring-2 focus:ring-matrix-green/40 focus:border-matrix-green
-                               focus:shadow-[0_0_20px_rgba(0,255,0,0.15)]
-                               transition-all duration-200 text-base"
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' && !e.shiftKey) {
-                        e.preventDefault();
-                        handleSubmit();
-                      }
-                    }}
-                    aria-label="Chat input"
-                  />
-                  <span className={`absolute bottom-2 sm:bottom-3 right-2 sm:right-3 text-xs font-mono
-                                   group-focus-within:text-matrix-green/70 transition-colors ${charCountColor}`}>
-                    {input.length}/2000
-                    {input.length > 1800 && <span className="ml-1">⚠</span>}
-                  </span>
-                </div>
-                <button
-                  type="submit"
-                  disabled={isLoading || !input.trim()}
-                  className="flex-shrink-0 px-4 sm:px-6 py-2.5 sm:py-3 bg-matrix-green text-matrix-black rounded-md
-                             font-mono text-sm font-bold uppercase tracking-wider
-                             hover:bg-matrix-cyan hover:shadow-[0_0_25px_rgba(0,255,255,0.4)]
-                             active:scale-95
-                             transition-all duration-200
-                             disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:shadow-none
-                             min-h-[44px] min-w-[44px]"
-                  aria-label="Send message"
-                >
-                  {isLoading ? (
-                    <span className="flex items-center gap-2">
-                      <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                      </svg>
-                      <span className="hidden sm:inline">Sending</span>
+              {isLoading ? (
+                <ThinkingInputState />
+              ) : (
+                <form onSubmit={handleSubmit} className="flex items-end gap-2 sm:gap-3">
+                  <div className="flex-1 relative group">
+                    <textarea
+                      ref={inputRef}
+                      value={input}
+                      onChange={handleInputChange}
+                      placeholder="Ask about your documents..."
+                      rows={1}
+                      maxLength={2000}
+                      className="matrix-input resize-none min-h-[44px] sm:min-h-[48px] max-h-[100px] sm:max-h-[120px] pr-14 sm:pr-16 w-full
+                                 focus:ring-2 focus:ring-matrix-green/40 focus:border-matrix-green
+                                 focus:shadow-[0_0_20px_rgba(0,255,0,0.15)]
+                                 transition-all duration-200 text-base"
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && !e.shiftKey) {
+                          e.preventDefault();
+                          handleSubmit();
+                        }
+                      }}
+                      aria-label="Chat input"
+                    />
+                    <span className={`hidden sm:block absolute bottom-3 right-3 text-xs font-mono
+                                     group-focus-within:text-matrix-green/70 transition-colors ${charCountColor}`}>
+                      {input.length}/2000
+                      {input.length > 1800 && <span className="ml-1">⚠</span>}
                     </span>
-                  ) : (
+                  </div>
+                  <button
+                    type="submit"
+                    disabled={!input.trim()}
+                    className="flex-shrink-0 px-4 sm:px-6 py-2.5 sm:py-3 bg-matrix-green text-matrix-black rounded-md
+                               font-mono text-sm font-bold uppercase tracking-wider
+                               hover:bg-matrix-cyan hover:shadow-[0_0_25px_rgba(0,255,255,0.4)]
+                               active:scale-95
+                               transition-all duration-200
+                               disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:shadow-none
+                               min-h-[44px] min-w-[44px]"
+                    aria-label="Send message"
+                  >
                     <span className="flex items-center gap-2">
                       <svg className="w-4 h-4 sm:hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
                       </svg>
                       <span className="hidden sm:inline">Send</span>
                     </span>
-                  )}
-                </button>
-              </form>
+                  </button>
+                </form>
+              )}
             </div>
           </GlassPanel>
         </div>
 
         {/* Document Stats Panel */}
         {showDocStats && (
-          <div className="flex-shrink-0 w-full md:w-96 slide-in-right space-y-4 overflow-y-auto max-h-[40vh] md:max-h-full">
+          <div className="flex-shrink-0 w-full md:w-80 slide-in-right flex flex-col gap-3 overflow-y-auto max-h-[40vh] md:max-h-full">
             <DocumentStats refreshTrigger={statsRefreshKey} />
 
             {/* Document List */}
             {documentList.length > 0 && (
-              <GlassPanel className="p-4">
-                <h3 className="text-sm font-mono text-matrix-green mb-3">
-                  Uploaded Documents
-                </h3>
-                <ul className="space-y-2">
+              <GlassPanel className="p-3">
+                <div className="flex items-center gap-2 mb-2 pb-2 border-b border-matrix-green/20">
+                  <span className="text-matrix-green font-mono text-xs">&gt;_</span>
+                  <span className="text-matrix-white/80 font-mono text-xs uppercase tracking-wider">
+                    DOCUMENTS
+                  </span>
+                </div>
+                <ul className="space-y-1">
                   {documentList.map((doc, index) => (
                     <li
                       key={index}
-                      className="text-sm text-matrix-white/80 font-mono flex items-center"
+                      className="text-xs text-matrix-white/70 font-mono flex items-center"
                     >
-                      <svg className="w-4 h-4 text-matrix-green mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                      </svg>
+                      <span className="text-matrix-green/50 mr-2">[{String(index + 1).padStart(2, '0')}]</span>
                       <span className="truncate">{doc}</span>
                     </li>
                   ))}
                 </ul>
               </GlassPanel>
             )}
+
+            {/* System Status - fills remaining space */}
+            <SystemStatus isConnected={true} />
           </div>
         )}
       </div>
