@@ -1,14 +1,10 @@
 import { defineConfig, devices } from '@playwright/test'
 
 /**
- * Read environment variables from file.
- * https://github.com/motdotla/dotenv
+ * Morpheus Playwright Configuration
+ * Includes E2E tests, visual regression tests, and screenshot capture for UX analysis
  */
-// require('dotenv').config();
 
-/**
- * See https://playwright.dev/docs/test-configuration.
- */
 export default defineConfig({
   testDir: './e2e',
   /* Run tests in files in parallel */
@@ -20,7 +16,32 @@ export default defineConfig({
   /* Opt out of parallel tests on CI. */
   workers: process.env.CI ? 1 : undefined,
   /* Reporter to use. See https://playwright.dev/docs/test-reporters */
-  reporter: process.env.CI ? 'github' : 'html',
+  reporter: process.env.CI
+    ? [['github'], ['html', { open: 'never' }]]
+    : [['html', { open: 'on-failure' }], ['list']],
+
+  /* Global timeout settings */
+  timeout: 30000,
+  expect: {
+    /* Timeout for expect assertions */
+    timeout: 10000,
+    /* Visual comparison settings */
+    toHaveScreenshot: {
+      /* Maximum allowed pixel difference */
+      maxDiffPixels: 100,
+      /* Threshold for color difference (0-1) */
+      threshold: 0.2,
+      /* Animation handling */
+      animations: 'disabled',
+    },
+    toMatchSnapshot: {
+      maxDiffPixelRatio: 0.05,
+    },
+  },
+
+  /* Snapshot configuration */
+  snapshotDir: './e2e/__snapshots__',
+  snapshotPathTemplate: '{snapshotDir}/{testFilePath}/{arg}-{projectName}{ext}',
 
   /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
   use: {
@@ -35,26 +56,33 @@ export default defineConfig({
 
     /* Video on failure */
     video: 'retain-on-failure',
+
+    /* Consistent viewport for visual tests */
+    viewport: { width: 1280, height: 720 },
+
+    /* Disable animations for consistent screenshots */
+    launchOptions: {
+      args: ['--force-prefers-reduced-motion'],
+    },
   },
 
-  /* Configure projects for major browsers */
+  /* Configure projects for major browsers and viewports */
   projects: [
+    /* Desktop browsers */
     {
       name: 'chromium',
       use: { ...devices['Desktop Chrome'] },
     },
-
     {
       name: 'firefox',
       use: { ...devices['Desktop Firefox'] },
     },
-
     {
       name: 'webkit',
       use: { ...devices['Desktop Safari'] },
     },
 
-    /* Test against mobile viewports. */
+    /* Mobile viewports */
     {
       name: 'Mobile Chrome',
       use: { ...devices['Pixel 5'] },
@@ -64,15 +92,41 @@ export default defineConfig({
       use: { ...devices['iPhone 12'] },
     },
 
-    /* Test against branded browsers. */
-    // {
-    //   name: 'Microsoft Edge',
-    //   use: { ...devices['Desktop Edge'], channel: 'msedge' },
-    // },
-    // {
-    //   name: 'Google Chrome',
-    //   use: { ...devices['Desktop Chrome'], channel: 'chrome' },
-    // },
+    /* Visual regression test projects - specific viewports */
+    {
+      name: 'visual-desktop',
+      testMatch: /visual\/.*\.spec\.ts/,
+      use: {
+        ...devices['Desktop Chrome'],
+        viewport: { width: 1280, height: 800 },
+      },
+    },
+    {
+      name: 'visual-tablet',
+      testMatch: /visual\/.*\.spec\.ts/,
+      use: {
+        ...devices['iPad Pro 11'],
+        viewport: { width: 834, height: 1194 },
+      },
+    },
+    {
+      name: 'visual-mobile',
+      testMatch: /visual\/.*\.spec\.ts/,
+      use: {
+        ...devices['iPhone 12'],
+        viewport: { width: 390, height: 844 },
+      },
+    },
+
+    /* Screenshot capture project - for UX analysis */
+    {
+      name: 'screenshot-capture',
+      testMatch: /capture-screenshots\.spec\.ts/,
+      use: {
+        ...devices['Desktop Chrome'],
+        viewport: { width: 1280, height: 800 },
+      },
+    },
   ],
 
   /* Run your local dev server before starting the tests */

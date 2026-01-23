@@ -1,0 +1,3 @@
+# Visual regression test baselines
+# These are tracked in git to detect visual changes
+# Update with: npm run test:visual:update

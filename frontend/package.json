@@ -9,11 +9,18 @@
     "lint": "next lint",
     "test": "jest --watch",
     "test:ci": "jest --ci --coverage",
-    "test:e2e": "playwright test",
+    "test:e2e": "playwright test --project=chromium --project=firefox --project=webkit",
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:debug": "playwright test --debug",
+    "test:e2e:mobile": "playwright test --project='Mobile Chrome' --project='Mobile Safari'",
     "test:coverage": "jest --coverage",
-    "test:all": "npm run test:ci && npm run test:e2e"
+    "test:all": "npm run test:ci && npm run test:e2e",
+    "test:visual": "playwright test --project=visual-desktop --project=visual-tablet --project=visual-mobile",
+    "test:visual:update": "playwright test --project=visual-desktop --project=visual-tablet --project=visual-mobile --update-snapshots",
+    "test:visual:desktop": "playwright test --project=visual-desktop",
+    "test:visual:mobile": "playwright test --project=visual-mobile",
+    "screenshots:capture": "playwright test --project=screenshot-capture --reporter=list",
+    "screenshots:clean": "rm -rf screenshots/* e2e/__snapshots__/*"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^1.0.0",
