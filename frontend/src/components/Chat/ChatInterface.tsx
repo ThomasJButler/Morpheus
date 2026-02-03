@@ -432,7 +432,11 @@ export default function ChatInterface() {
               ref={messageContainerRef}
               onScroll={handleScroll}
               className="flex-1 overflow-y-auto overflow-x-hidden min-h-0 scrollbar-matrix touch-pan-y"
-              style={{ WebkitOverflowScrolling: 'touch', overscrollBehavior: 'contain' }}
+              style={{
+                WebkitOverflowScrolling: 'touch',
+                overscrollBehaviorX: 'none',
+                overscrollBehaviorY: 'auto'
+              }}
             >
               {/* Enhanced Empty State with animations */}
               {messages.length === 0 && (

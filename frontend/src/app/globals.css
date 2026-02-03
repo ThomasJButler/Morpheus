@@ -431,8 +431,20 @@
 
   /* Touch scrolling utilities - essential for mobile */
   .touch-pan-y {
-    touch-action: pan-y;
+    touch-action: pan-y pinch-zoom;
     -webkit-overflow-scrolling: touch;
+    overscroll-behavior-y: auto;
+    scroll-behavior: smooth;
+  }
+
+  /* Mobile scroll container fix - prevents scroll blocking */
+  @media (hover: none) and (pointer: coarse) {
+    .touch-pan-y {
+      /* Ensure vertical scrolling works in both directions */
+      overscroll-behavior: auto;
+      /* Prevent momentum scroll from being blocked */
+      -webkit-overflow-scrolling: touch;
+    }
   }
 
   /* Custom scrollbar for message container */
