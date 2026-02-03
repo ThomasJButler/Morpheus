@@ -19,6 +19,7 @@ from app.core.config import settings
 from app.core.morpheus_prompts import get_system_prompt, get_user_prompt_template
 from app.core.pinecone_client import get_pinecone_client
 from app.models.chat import Citation, RAGMode, RetrievalMetrics, StreamChunk
+from app.rag.reranker import Reranker
 
 logger = logging.getLogger(__name__)
 
@@ -149,7 +150,10 @@ class HybridRAG:
         # BM25 for sparse scoring (initialized per query)
         self.bm25 = InMemoryBM25()
 
-        logger.info("HybridRAG initialized with in-memory BM25")
+        # Cross-encoder reranker for improved precision
+        self.reranker = Reranker()
+
+        logger.info("HybridRAG initialized with in-memory BM25 and reranker")
 
     async def embed_query(self, query: str) -> List[float]:
         """
@@ -325,10 +329,50 @@ class HybridRAG:
             # 4. Merge scores
             merged_results = self.merge_scores(scored_matches)
 
-            # 5. Take top-k after merging
-            merged_results = merged_results[:top_k]
+            # 5. Take top-k after merging (get extra for reranking)
+            merged_results = merged_results[:top_k * 2]
 
-            # 6. Filter by minimum relevance score
+            # 6. Apply cross-encoder reranking if enabled
+            reranked = False
+            if settings.use_reranker and merged_results:
+                # Format for reranker
+                contexts_for_rerank = [
+                    {
+                        "id": r["id"],
+                        "text": r["metadata"].get("text", ""),
+                        "source": r["metadata"].get("source", "Unknown"),
+                        "page": r["metadata"].get("page"),
+                        "score": r["score"],
+                        "dense_score": r["dense_score"],
+                        "sparse_score": r["sparse_score"],
+                        "metadata": r["metadata"],
+                    }
+                    for r in merged_results
+                ]
+
+                reranked_results = await self.reranker.rerank(
+                    query, contexts_for_rerank, top_k=settings.rerank_top_k
+                )
+
+                # Convert back to expected format
+                merged_results = [
+                    {
+                        "id": r.get("id") or r.get("chunk_id"),
+                        "score": r["score"],
+                        "metadata": r.get("metadata", {}),
+                        "dense_score": r.get("dense_score", 0),
+                        "sparse_score": r.get("sparse_score", 0),
+                        "source": "hybrid+reranked",
+                    }
+                    for r in reranked_results
+                ]
+                reranked = True
+                logger.info(f"Reranked results: {len(merged_results)} contexts")
+            else:
+                # Just take top-k without reranking
+                merged_results = merged_results[:top_k]
+
+            # 7. Filter by minimum relevance score
             filtered_results = [
                 r for r in merged_results
                 if r["score"] >= settings.min_relevance_score
@@ -339,7 +383,7 @@ class HybridRAG:
             metrics = RetrievalMetrics(
                 query_time_ms=query_time,
                 num_results=len(filtered_results),
-                reranked=False,  # Reranking is a separate step
+                reranked=reranked,
                 top_score=filtered_results[0]["score"] if filtered_results else None,
                 average_score=(
                     sum(r["score"] for r in filtered_results) / len(filtered_results)
@@ -351,14 +395,16 @@ class HybridRAG:
             # Format contexts
             contexts = [
                 {
-                    "text": r["metadata"].get("text", ""),
-                    "source": r["metadata"].get("source", "Unknown"),
-                    "page": r["metadata"].get("page"),
-                    "chunk_id": r["id"],
+                    "text": r.get("text") or r.get("metadata", {}).get("text", ""),
+                    "source": r.get("source") if r.get("source") not in ["hybrid", "hybrid+reranked"]
+                              else r.get("metadata", {}).get("source", "Unknown"),
+                    "page": r.get("page") or r.get("metadata", {}).get("page"),
+                    "chunk_id": r.get("id") or r.get("chunk_id"),
                     "score": r["score"],
-                    "dense_score": r["dense_score"],
-                    "sparse_score": r["sparse_score"],
-                    "retrieval_source": r["source"],
+                    "dense_score": r.get("dense_score", 0),
+                    "sparse_score": r.get("sparse_score", 0),
+                    "retrieval_source": "hybrid+reranked" if reranked else "hybrid",
+                    "reranked": reranked,
                 }
                 for r in filtered_results
             ]
