@@ -13,17 +13,18 @@ interface SettingsProps {
 }
 
 const OPENAI_MODELS = [
-  { value: 'gpt-4-turbo-preview', label: 'GPT-4 Turbo', description: 'Most capable, higher cost' },
-  { value: 'gpt-4', label: 'GPT-4', description: 'Most capable, standard' },
-  { value: 'gpt-3.5-turbo', label: 'GPT-3.5 Turbo', description: 'Fast and cost-effective' },
-  { value: 'gpt-3.5-turbo-16k', label: 'GPT-3.5 Turbo 16K', description: 'Larger context window' },
+  { value: 'gpt-5.5', label: 'GPT-5.5', description: 'Frontier — complex reasoning & coding' },
+  { value: 'gpt-5.4', label: 'GPT-5.4', description: 'Most capable mainline' },
+  { value: 'gpt-5.4-mini', label: 'GPT-5.4 mini', description: 'Fast and cost-effective' },
+  { value: 'gpt-5.4-nano', label: 'GPT-5.4 nano', description: 'Lowest latency / cheapest' },
 ];
 
 const ANTHROPIC_MODELS = [
-  { value: 'claude-sonnet-4-20250514', label: 'Claude Sonnet 4', description: 'Latest, balanced' },
-  { value: 'claude-3-5-sonnet-20241022', label: 'Claude 3.5 Sonnet', description: 'Fast and capable' },
-  { value: 'claude-3-opus-20240229', label: 'Claude 3 Opus', description: 'Most capable' },
-  { value: 'claude-3-haiku-20240307', label: 'Claude 3 Haiku', description: 'Fastest, cost-effective' },
+  { value: 'claude-opus-4-7', label: 'Claude Opus 4.7', description: 'Top of the line' },
+  { value: 'claude-sonnet-4-6', label: 'Claude Sonnet 4.6', description: 'Balanced default' },
+  { value: 'claude-haiku-4-5-20251001', label: 'Claude Haiku 4.5', description: 'Fastest, cost-effective' },
+  { value: 'claude-sonnet-4-20250514', label: 'Claude Sonnet 4', description: 'Previous generation' },
+  { value: 'claude-3-5-sonnet-20241022', label: 'Claude 3.5 Sonnet', description: 'Legacy fallback' },
 ];
 
 // RAG modes for intelligent document retrieval
@@ -37,14 +38,14 @@ const RAG_MODES: { value: RAGMode; label: string; description: string; latency: 
 export default function Settings({ isOpen, onClose }: SettingsProps) {
   // OpenAI settings
   const [apiKey, setApiKey] = useState('');
-  const [model, setModel] = useState('gpt-3.5-turbo');
+  const [model, setModel] = useState('gpt-5.4-mini');
   const [showKey, setShowKey] = useState(false);
   const [testingConnection, setTestingConnection] = useState(false);
   const [testResult, setTestResult] = useState<'success' | 'error' | null>(null);
 
   // Anthropic settings
   const [anthropicApiKey, setAnthropicApiKey] = useState('');
-  const [anthropicModel, setAnthropicModel] = useState('claude-sonnet-4-20250514');
+  const [anthropicModel, setAnthropicModel] = useState('claude-sonnet-4-6');
   const [showAnthropicKey, setShowAnthropicKey] = useState(false);
   const [testingAnthropicConnection, setTestingAnthropicConnection] = useState(false);
   const [anthropicTestResult, setAnthropicTestResult] = useState<'success' | 'error' | null>(null);
@@ -66,9 +67,9 @@ export default function Settings({ isOpen, onClose }: SettingsProps) {
       try {
         const settings: UserSettings = JSON.parse(savedSettings);
         setApiKey(settings.openaiApiKey || '');
-        setModel(settings.openaiModel || 'gpt-3.5-turbo');
+        setModel(settings.openaiModel || 'gpt-5.4-mini');
         setAnthropicApiKey(settings.anthropicApiKey || '');
-        setAnthropicModel(settings.anthropicModel || 'claude-sonnet-4-20250514');
+        setAnthropicModel(settings.anthropicModel || 'claude-sonnet-4-6');
         setProvider(settings.provider || 'anthropic');
         setSaveKey(settings.saveApiKey ?? true);
         // Load RAG mode settings with defaults for backwards compatibility
@@ -135,9 +136,9 @@ export default function Settings({ isOpen, onClose }: SettingsProps) {
 
   const handleClearSettings = () => {
     setApiKey('');
-    setModel('gpt-3.5-turbo');
+    setModel('gpt-5.4-mini');
     setAnthropicApiKey('');
-    setAnthropicModel('claude-sonnet-4-20250514');
+    setAnthropicModel('claude-sonnet-4-6');
     setProvider('anthropic');
     setSaveKey(true);
     setRagMode('auto');
@@ -387,10 +388,13 @@ export default function Settings({ isOpen, onClose }: SettingsProps) {
               </span>
             </label>
 
-            {/* Security Note */}
-            <div className="p-3 bg-matrix-green/5 border border-matrix-green/20 rounded-lg">
+            {/* Privacy Note */}
+            <div className="p-3 bg-matrix-green/5 border border-matrix-green/20 rounded-lg space-y-1.5">
+              <p className="text-xs text-matrix-white/60 leading-relaxed">
+                <span className="text-matrix-green font-medium">Privacy:</span> API keys are stored locally in your browser (or only in this session if &ldquo;Remember settings&rdquo; is off). They&rsquo;re used to authenticate requests to {provider === 'anthropic' ? 'Anthropic' : 'OpenAI'} on your behalf via this app&rsquo;s server route — they&rsquo;re never persisted server-side and never shared with third parties.
+              </p>
               <p className="text-xs text-matrix-white/50 leading-relaxed">
-                <span className="text-matrix-green font-medium">Security:</span> API keys are stored locally and only sent directly to {provider === 'anthropic' ? 'Anthropic' : 'OpenAI'}.
+                <span className="text-matrix-green font-medium">No data retention:</span> Conversations and uploaded documents are scoped to your session and deleted when the session ends. Nothing is stored long-term on the server.
               </p>
             </div>
           </div>

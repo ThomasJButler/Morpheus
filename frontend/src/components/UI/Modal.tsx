@@ -174,7 +174,7 @@ export default function Modal({
             onClick={onClose}
             aria-label="Close"
             className="
-              inline-flex items-center justify-center w-8 h-8 rounded-v2-sm
+              inline-flex items-center justify-center w-10 h-10 rounded-v2-sm
               text-fg-muted hover:text-fg-primary hover:bg-surface-card-hover
               transition-colors
             "

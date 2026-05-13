@@ -195,12 +195,65 @@ html.redesign-v2 body {
      report). Dropping this lets the inner scroll be the sole source. */
 }
 
-/* Mobile: rails collapse to drawers (drawer logic lands in Phase 7;
-   for now we simply collapse the grid to a single column). */
+/* Mobile: rails become slide-in drawers below 920px.
+   - .app-body collapses to a single column for the chat content.
+   - Each rail leaves grid flow and becomes position:fixed, anchored below
+     the header, translated off-screen by default. The `.is-open` class
+     (set by AppShell drawer state via DocsSidebar / SystemPanel) brings
+     them back into view with a 250ms transform transition.
+   - Touch swipe-to-close is wired on the rails themselves via
+     useSwipeToClose; the scrim handles tap-to-close. */
 @media (max-width: 920px) {
   .app-body { grid-template-columns: 1fr; }
+
   .docs-rail,
-  .sys-rail { display: none; }
+  .sys-rail {
+    position: fixed;
+    top: var(--header-h);
+    bottom: 0;
+    width: 280px;
+    max-width: 85vw;
+    z-index: 50;
+    background: var(--bg-elev);
+    transition: transform 0.25s ease;
+    overscroll-behavior: contain;
+    box-shadow: 0 0 40px rgba(0, 0, 0, 0.5);
+  }
+  .docs-rail {
+    left: 0;
+    border-right: 1px solid var(--border-default);
+    transform: translateX(-100%);
+  }
+  .sys-rail {
+    right: 0;
+    border-left: 1px solid var(--border-default);
+    transform: translateX(100%);
+  }
+  .docs-rail.is-open,
+  .sys-rail.is-open {
+    transform: translateX(0);
+  }
+}
+
+/* Mobile scrim — dim layer behind the open drawer (z-40, below drawer z-50,
+   below header z-30 on desktop; header is z-30 always so it stays clickable). */
+.mobile-scrim {
+  position: fixed;
+  inset: var(--header-h) 0 0 0;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+  z-index: 40;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+}
+.mobile-scrim.is-open {
+  opacity: 1;
+  pointer-events: auto;
+}
+@media (min-width: 921px) {
+  .mobile-scrim { display: none; }
 }
 
 @layer base {
@@ -589,9 +642,16 @@ html.redesign-v2 body {
       @apply bg-matrix-green/10 border-matrix-green/30;
     }
 
-    /* Larger touch targets for buttons */
+    /* Larger touch targets for icon-only buttons.
+       `min-h` covers vertical, `min-w` ensures square icon buttons (w-X h-X
+       with X < 11) get bumped horizontally too. Skip text buttons by
+       scoping to buttons whose only child is an SVG. */
     button {
       @apply min-h-[44px];
+    }
+    button:has(> svg:only-child),
+    a[aria-label]:has(> svg:only-child) {
+      min-width: 44px;
     }
 
     /* Better scrolling on touch */
@@ -607,10 +667,27 @@ html.redesign-v2 body {
     -webkit-overflow-scrolling: touch;
   }
 
-  /* Custom scrollbar for message container */
+  /* Custom scrollbar for message container — auto-hide.
+     Thumb is transparent by default; becomes visible on hover (desktop) or
+     while the `is-scrolling` class is set by the useAutoHideScrollbar hook.
+     The class is added on scroll and removed 1s after the last scroll event.
+     Result: bar fades out when idle, reappears on motion or hover. On touch
+     devices (no hover) the bar is only visible during active scroll. */
   .scrollbar-matrix {
     -webkit-overflow-scrolling: touch;
     scroll-behavior: smooth;
+    /* Firefox: thin overlay, transparent by default */
+    scrollbar-width: thin;
+    scrollbar-color: transparent transparent;
+    transition: scrollbar-color 0.3s ease;
+  }
+  .scrollbar-matrix.is-scrolling {
+    scrollbar-color: rgba(0, 255, 65, 0.35) transparent;
+  }
+  @media (hover: hover) {
+    .scrollbar-matrix:hover {
+      scrollbar-color: rgba(0, 255, 65, 0.35) transparent;
+    }
   }
 
   .scrollbar-matrix::-webkit-scrollbar {
@@ -622,11 +699,23 @@ html.redesign-v2 body {
   }
 
   .scrollbar-matrix::-webkit-scrollbar-thumb {
-    @apply bg-matrix-green/30 rounded-full;
+    background: rgba(0, 255, 65, 0);
+    border-radius: 9999px;
+    transition: background-color 0.3s ease;
   }
-
-  .scrollbar-matrix::-webkit-scrollbar-thumb:hover {
-    @apply bg-matrix-green/50;
+  .scrollbar-matrix.is-scrolling::-webkit-scrollbar-thumb {
+    background: rgba(0, 255, 65, 0.35);
+  }
+  @media (hover: hover) {
+    .scrollbar-matrix:hover::-webkit-scrollbar-thumb {
+      background: rgba(0, 255, 65, 0.35);
+    }
+    .scrollbar-matrix:hover::-webkit-scrollbar-thumb:hover {
+      background: rgba(0, 255, 65, 0.55);
+    }
+    .scrollbar-matrix.is-scrolling:hover::-webkit-scrollbar-thumb {
+      background: rgba(0, 255, 65, 0.55);
+    }
   }
 
   /* Fade in animation */

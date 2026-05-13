@@ -1,16 +1,29 @@
 'use client';
 
+interface HeaderProps {
+  onToggleDocs: () => void;
+  onToggleSys: () => void;
+  docsOpen: boolean;
+  sysOpen: boolean;
+}
+
 /**
  * v2 AppShell header — sticky, compact, 56px tall.
- * Phase 1 scope: branding row + GitHub link + placeholder icon buttons.
- * Real interactions (docs/system drawer toggles, settings modal) wire up
- * in Phases 4 / 5 / 6.
+ * Phase 7 wires the docs / system toggle buttons to drawer state owned by
+ * AppShell. Settings stays disabled here — it's owned by ChatInterface's
+ * toolbar (Phase 6). aria-controls + aria-expanded reflect the live drawer
+ * state so assistive tech announces it correctly.
  */
-export default function Header() {
+export default function Header({
+  onToggleDocs,
+  onToggleSys,
+  docsOpen,
+  sysOpen,
+}: HeaderProps) {
   return (
     <header
       className="
-        relative z-10
+        relative z-30
         flex items-center justify-between gap-3
         px-4 sm:px-6
         border-b border-edge-subtle
@@ -34,13 +47,25 @@ export default function Header() {
 
       {/* Action cluster */}
       <div className="flex items-center gap-1.5">
-        <HeaderIconButton label="Toggle constructs" disabled title="Docs sidebar (Phase 4)">
+        <HeaderIconButton
+          label={docsOpen ? 'Close constructs' : 'Open constructs'}
+          onClick={onToggleDocs}
+          aria-controls="docs-rail"
+          aria-expanded={docsOpen}
+          active={docsOpen}
+        >
           <IconLibrary />
         </HeaderIconButton>
-        <HeaderIconButton label="Toggle system panel" disabled title="System panel (Phase 5)">
+        <HeaderIconButton
+          label={sysOpen ? 'Close system panel' : 'Open system panel'}
+          onClick={onToggleSys}
+          aria-controls="sys-rail"
+          aria-expanded={sysOpen}
+          active={sysOpen}
+        >
           <IconActivity />
         </HeaderIconButton>
-        <HeaderIconButton label="Settings" disabled title="Settings (Phase 6)">
+        <HeaderIconButton label="Settings" disabled title="Settings — open via chat toolbar">
           <IconSettings />
         </HeaderIconButton>
         <a
@@ -50,7 +75,7 @@ export default function Header() {
           aria-label="View on GitHub"
           className="
             inline-flex items-center justify-center
-            w-9 h-9 rounded-v2-sm
+            w-11 h-11 rounded-v2-sm
             border border-edge-subtle text-fg-muted
             hover:text-accent hover:border-accent/50 hover:bg-surface-card-hover
             transition-colors
@@ -67,24 +92,41 @@ interface HeaderIconButtonProps {
   label: string;
   title?: string;
   disabled?: boolean;
+  active?: boolean;
+  onClick?: () => void;
+  'aria-controls'?: string;
+  'aria-expanded'?: boolean;
   children: React.ReactNode;
 }
 
-function HeaderIconButton({ label, title, disabled, children }: HeaderIconButtonProps) {
+function HeaderIconButton({
+  label,
+  title,
+  disabled,
+  active,
+  onClick,
+  'aria-controls': ariaControls,
+  'aria-expanded': ariaExpanded,
+  children,
+}: HeaderIconButtonProps) {
   return (
     <button
       type="button"
       aria-label={label}
       title={title ?? label}
       disabled={disabled}
-      className="
+      onClick={onClick}
+      aria-controls={ariaControls}
+      aria-expanded={ariaExpanded}
+      className={`
         inline-flex items-center justify-center
-        w-9 h-9 rounded-v2-sm
-        border border-transparent text-fg-muted
-        hover:text-accent hover:bg-surface-card-hover
+        w-11 h-11 rounded-v2-sm
+        border transition-colors
+        ${active
+          ? 'border-accent/50 text-accent bg-accent/10'
+          : 'border-transparent text-fg-muted hover:text-accent hover:bg-surface-card-hover'}
         disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:text-fg-muted disabled:hover:bg-transparent
-        transition-colors
-      "
+      `}
     >
       {children}
     </button>

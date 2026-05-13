@@ -19,6 +19,7 @@ import ThinkingInputState from './ThinkingInputState';
 import { useSettings } from '@/lib/hooks/useSettings';
 import { useSession } from '@/lib/hooks/useSession';
 import { useBackendHealth } from '@/lib/hooks/useBackendHealth';
+import { useAutoHideScrollbar } from '@/lib/hooks/useAutoHideScrollbar';
 import { apiClient } from '@/lib/api-client';
 import { DocumentUploadResponse, RAGMode, QueryAnalysis, EnhancedRetrievalMetrics, Citation } from '@/lib/types';
 
@@ -51,6 +52,9 @@ export default function ChatInterface({ fillParent = false }: ChatInterfaceProps
 
   const messageContainerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+
+  // Fade the chat scrollbar after 1s of idle; mobile only shows it during scroll.
+  useAutoHideScrollbar(messageContainerRef);
 
   const { settings, hasApiKey, hasAnthropicApiKey } = useSettings();
   const { sessionId, isInitialized, isCleaningUp } = useSession();
@@ -511,33 +515,41 @@ export default function ChatInterface({ fillParent = false }: ChatInterfaceProps
               </div>
             )}
 
-            {/* Scrollable Message Area */}
-            <div
-              ref={messageContainerRef}
-              onScroll={handleScroll}
-              className="flex-1 overflow-y-auto overflow-x-hidden min-h-0 scrollbar-matrix touch-pan-y"
-              style={{ WebkitOverflowScrolling: 'touch', overscrollBehavior: 'contain' }}
-            >
-              {messages.length === 0 ? (
-                <EmptyState onSelectPrompt={handlePromptSelect} />
-              ) : (
-                <MessageList messages={messages} />
+            {/* Message area + InsightPanel overlay wrapper.
+                Relative + overflow-hidden contains the absolutely-positioned
+                FloatingInsightPanel so it can't slide over the toolbar above
+                or the composer below. messageContainerRef is now also
+                absolute so the panel can grow upward over messages when
+                expanded (anchored at bottom, max-height transition). */}
+            <div className="relative flex-1 min-h-0 overflow-hidden">
+              <div
+                ref={messageContainerRef}
+                onScroll={handleScroll}
+                className="absolute inset-0 overflow-y-auto overflow-x-hidden scrollbar-matrix touch-pan-y"
+                style={{ WebkitOverflowScrolling: 'touch', overscrollBehavior: 'contain' }}
+              >
+                {messages.length === 0 ? (
+                  <EmptyState onSelectPrompt={handlePromptSelect} />
+                ) : (
+                  <MessageList messages={messages} />
+                )}
+              </div>
+
+              {/* Back to Top Button — overlays messages */}
+              <BackToTopButton show={showBackToTop} onClick={scrollToTop} />
+
+              {/* Insight Panel — animated overlay anchored at the bottom,
+                  grows upward when expanded to (nearly) fill the wrapper. */}
+              {ragMetadata.analysis && messages.length > 0 && (
+                <FloatingInsightPanel
+                  analysis={ragMetadata.analysis}
+                  modeUsed={ragMetadata.modeUsed || 'auto'}
+                  metrics={ragMetadata.metrics}
+                  wasEscalated={!!ragMetadata.metrics?.escalated_from}
+                  isProcessing={isLoading}
+                />
               )}
             </div>
-
-            {/* Back to Top Button */}
-            <BackToTopButton show={showBackToTop} onClick={scrollToTop} />
-
-            {/* Insight Panel - shows RAG analysis between messages and input */}
-            {ragMetadata.analysis && messages.length > 0 && (
-              <FloatingInsightPanel
-                analysis={ragMetadata.analysis}
-                modeUsed={ragMetadata.modeUsed || 'auto'}
-                metrics={ragMetadata.metrics}
-                wasEscalated={!!ragMetadata.metrics?.escalated_from}
-                isProcessing={isLoading}
-              />
-            )}
 
             {/* Queued-message indicator: shown when the user sent a message
                 while the backend was still warming. The message is held in
