@@ -108,3 +108,6 @@ plan.md
 # Test documents (user-generated for testing)
 test-document.md
 testingguide.txt
+
+# Design source for the v2 redesign — kept local, not production code
+frontend/Morpheus-Redesign/
