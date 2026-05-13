@@ -497,7 +497,14 @@ export default function ChatInterface({ fillParent = false }: ChatInterfaceProps
       <div className="flex flex-col md:flex-row flex-1 gap-2 sm:gap-4 min-h-0 overflow-hidden px-1">
         {/* Chat Container */}
         <div className={`flex flex-col flex-1 ${showDocStats ? 'md:flex-1' : 'w-full'} min-h-0`}>
-          <GlassPanel className="flex-1 flex flex-col p-2 sm:p-4 overflow-hidden min-h-0" noPadding>
+          {/* Chat panel: plain styled div (NOT <GlassPanel>) so the flex chain
+              reaches `messageContainerRef`. GlassPanel always wraps its
+              children in a non-flex `<div className="relative z-10">`, which
+              kills `flex-1` on the message container and makes the area
+              unscrollable. The chat panel doesn't need GlassPanel's overlays
+              (cornerGlow/scanlines/glow/animatedBorder), so we just apply the
+              `.glass-panel` CSS class directly. */}
+          <div className="glass-panel relative flex-1 flex flex-col p-2 sm:p-4 overflow-hidden min-h-0">
             {error && (
               <div className="flex-shrink-0 mb-4 p-3 bg-red-500/10 border border-red-500/50 rounded-md text-red-400 text-sm matrix-font">
                 {error instanceof Error ? error.message : String(error)}
@@ -570,7 +577,7 @@ export default function ChatInterface({ fillParent = false }: ChatInterfaceProps
                 />
               )}
             </div>
-          </GlassPanel>
+          </div>
         </div>
 
         {/* Document Stats Panel */}
