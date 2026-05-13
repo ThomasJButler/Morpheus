@@ -196,6 +196,27 @@ export default function ChatInterface({ fillParent = false }: ChatInterfaceProps
     inputRef.current?.focus();
   }, [setInput]);
 
+  // Broadcast retrieval metrics + citations to the System panel (Phase 5).
+  // Subscribers (SystemPanel's StatusTab/SourcesTab/SystemTab) refresh on
+  // this event — same decoupled pattern as Phase 4's docs sync.
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const lastAssistant = [...messages].reverse().find((m) => m.role === 'assistant');
+    const citations = (lastAssistant && 'citations' in lastAssistant && Array.isArray((lastAssistant as { citations?: unknown }).citations))
+      ? ((lastAssistant as { citations: import('@/lib/types').Citation[] }).citations)
+      : [];
+    window.dispatchEvent(
+      new CustomEvent('morpheus:metrics-updated', {
+        detail: {
+          metrics: ragMetadata.metrics,
+          modeUsed: ragMetadata.modeUsed,
+          analysis: ragMetadata.analysis,
+          citations,
+        },
+      }),
+    );
+  }, [ragMetadata, messages]);
+
   // Cold-start message queue: when the backend isn't ready, intercept the
   // submit, stash the input, and flush via useChat's append() the moment
   // the health probe transitions to ready.
