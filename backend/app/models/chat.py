@@ -32,12 +32,12 @@ class QueryType(str, Enum):
     Determines which RAG mode is most appropriate.
     """
 
-    FACTUAL = "factual"           # Direct fact lookup → SimpleRAG
-    CONCEPTUAL = "conceptual"     # Understanding concepts → HybridRAG
-    COMPARATIVE = "comparative"   # Compare/contrast → HybridRAG or Agentic
-    PROCEDURAL = "procedural"     # How-to questions → HybridRAG
-    EXPLORATORY = "exploratory"   # Open-ended → AgenticRAG
-    MULTI_PART = "multi_part"     # Multiple questions → AgenticRAG
+    FACTUAL = "factual"  # Direct fact lookup → SimpleRAG
+    CONCEPTUAL = "conceptual"  # Understanding concepts → HybridRAG
+    COMPARATIVE = "comparative"  # Compare/contrast → HybridRAG or Agentic
+    PROCEDURAL = "procedural"  # How-to questions → HybridRAG
+    EXPLORATORY = "exploratory"  # Open-ended → AgenticRAG
+    MULTI_PART = "multi_part"  # Multiple questions → AgenticRAG
 
 
 class QueryAnalysis(BaseModel):
@@ -58,9 +58,7 @@ class QueryAnalysis(BaseModel):
     needs_rewriting: bool = Field(
         default=False, description="Whether query would benefit from rewriting"
     )
-    reasoning: Optional[str] = Field(
-        None, description="Explanation for mode selection"
-    )
+    reasoning: Optional[str] = Field(None, description="Explanation for mode selection")
 
 
 class Citation(BaseModel):
@@ -82,7 +80,9 @@ class RetrievalMetrics(BaseModel):
     Useful for debugging and performance monitoring.
     """
 
-    query_time_ms: float = Field(..., description="Query execution time in milliseconds")
+    query_time_ms: float = Field(
+        ..., description="Query execution time in milliseconds"
+    )
     num_results: int = Field(..., description="Number of results retrieved")
     reranked: bool = Field(default=False, description="Whether reranking was applied")
     top_score: Optional[float] = Field(None, description="Highest relevance score")
@@ -130,8 +130,12 @@ class ChatMessage(BaseModel):
 
     role: str = Field(..., description="Message role: 'user' or 'assistant'")
     content: str = Field(..., description="Message content")
-    timestamp: datetime = Field(default_factory=datetime.now, description="Message timestamp")
-    citations: Optional[List[Citation]] = Field(None, description="Citations for this message")
+    timestamp: datetime = Field(
+        default_factory=datetime.now, description="Message timestamp"
+    )
+    citations: Optional[List[Citation]] = Field(
+        None, description="Citations for this message"
+    )
 
 
 class Session(BaseModel):
@@ -142,11 +146,17 @@ class Session(BaseModel):
 
     session_id: str = Field(..., description="Unique session identifier")
     messages: List[ChatMessage] = Field(default=[], description="Conversation history")
-    created_at: datetime = Field(default_factory=datetime.now, description="Session creation time")
-    updated_at: datetime = Field(default_factory=datetime.now, description="Last update time")
+    created_at: datetime = Field(
+        default_factory=datetime.now, description="Session creation time"
+    )
+    updated_at: datetime = Field(
+        default_factory=datetime.now, description="Last update time"
+    )
     metadata: dict = Field(default={}, description="Additional session metadata")
 
-    def add_message(self, role: str, content: str, citations: Optional[List[Citation]] = None):
+    def add_message(
+        self, role: str, content: str, citations: Optional[List[Citation]] = None
+    ):
         """Add a message to the conversation history."""
         message = ChatMessage(role=role, content=content, citations=citations)
         self.messages.append(message)
@@ -183,9 +193,13 @@ class ChatRequest(BaseModel):
     message: Optional[str] = Field(None, description="User's message (legacy format)")
 
     # Vercel AI SDK format (messages array)
-    messages: Optional[List[dict]] = Field(None, description="Array of message objects with 'role' and 'content'")
+    messages: Optional[List[dict]] = Field(
+        None, description="Array of message objects with 'role' and 'content'"
+    )
 
-    session_id: Optional[str] = Field(None, description="Session identifier for context")
+    session_id: Optional[str] = Field(
+        None, description="Session identifier for context"
+    )
     stream: bool = Field(default=True, description="Whether to stream the response")
     history: Optional[List[ChatMessage]] = Field(
         default=None, description="Conversation history"
@@ -193,16 +207,13 @@ class ChatRequest(BaseModel):
 
     # RAG Mode Configuration
     rag_mode: RAGMode = Field(
-        default=RAGMode.AUTO,
-        description="RAG mode: simple, hybrid, agentic, or auto"
+        default=RAGMode.AUTO, description="RAG mode: simple, hybrid, agentic, or auto"
     )
     deep_mode: bool = Field(
-        default=False,
-        description="Force agentic mode for complex queries"
+        default=False, description="Force agentic mode for complex queries"
     )
     return_analysis: bool = Field(
-        default=False,
-        description="Include query analysis in response"
+        default=False, description="Include query analysis in response"
     )
 
     class Config:
@@ -275,7 +286,10 @@ class StreamChunk(BaseModel):
     - 'error': Error occurred
     """
 
-    type: str = Field(..., description="Chunk type: 'token', 'citation', 'mode', 'analysis', 'tool_call', 'reflection', 'done', 'error'")
+    type: str = Field(
+        ...,
+        description="Chunk type: 'token', 'citation', 'mode', 'analysis', 'tool_call', 'reflection', 'done', 'error'",
+    )
     content: Optional[str] = Field(None, description="Text content if type=token")
     citation: Optional[Citation] = Field(None, description="Citation if type=citation")
     metrics: Optional[RetrievalMetrics] = Field(
@@ -287,12 +301,8 @@ class StreamChunk(BaseModel):
     analysis: Optional[QueryAnalysis] = Field(
         None, description="Query analysis if type=analysis"
     )
-    tool_name: Optional[str] = Field(
-        None, description="Tool name if type=tool_call"
-    )
-    tool_input: Optional[dict] = Field(
-        None, description="Tool input if type=tool_call"
-    )
+    tool_name: Optional[str] = Field(None, description="Tool name if type=tool_call")
+    tool_input: Optional[dict] = Field(None, description="Tool input if type=tool_call")
 
 
 class ReflectionResult(BaseModel):
@@ -325,9 +335,7 @@ class ReflectionResult(BaseModel):
     issues_found: List[str] = Field(
         default=[], description="Any issues identified with the response"
     )
-    reasoning: str = Field(
-        ..., description="Explanation of the reflection assessment"
-    )
+    reasoning: str = Field(..., description="Explanation of the reflection assessment")
 
 
 class HealthResponse(BaseModel):

@@ -16,10 +16,7 @@ class TestChatEndpoint:
 
     @patch("app.api.chat.simple_rag")
     def test_chat_simple_mode_no_stream(
-        self,
-        mock_simple_rag,
-        test_client: TestClient,
-        sample_chat_message: dict
+        self, mock_simple_rag, test_client: TestClient, sample_chat_message: dict
     ):
         """Test chat with simple mode, non-streaming."""
         # Setup mock
@@ -27,7 +24,7 @@ class TestChatEndpoint:
             return_value=(
                 "This is a test response.",
                 [{"text": "citation", "source": "test.txt", "score": 0.95}],
-                MagicMock(query_time_ms=123.45, total_chunks=3)
+                MagicMock(query_time_ms=123.45, total_chunks=3),
             )
         )
 
@@ -41,26 +38,18 @@ class TestChatEndpoint:
         assert len(data["citations"]) == 1
 
     @patch("app.api.chat.hybrid_rag")
-    def test_chat_hybrid_mode_no_stream(
-        self,
-        mock_hybrid_rag,
-        test_client: TestClient
-    ):
+    def test_chat_hybrid_mode_no_stream(self, mock_hybrid_rag, test_client: TestClient):
         """Test chat with hybrid mode, non-streaming."""
         # Setup mock
         mock_hybrid_rag.process_query = AsyncMock(
             return_value=(
                 "Hybrid response.",
                 [],
-                MagicMock(query_time_ms=200.0, total_chunks=5)
+                MagicMock(query_time_ms=200.0, total_chunks=5),
             )
         )
 
-        request = {
-            "message": "Test query",
-            "mode": "hybrid",
-            "stream": False
-        }
+        request = {"message": "Test query", "mode": "hybrid", "stream": False}
 
         response = test_client.post("/api/chat", json=request)
 
@@ -71,9 +60,7 @@ class TestChatEndpoint:
 
     @patch("app.api.chat.get_agentic_rag")
     def test_chat_agentic_mode_no_stream(
-        self,
-        mock_get_agentic,
-        test_client: TestClient
+        self, mock_get_agentic, test_client: TestClient
     ):
         """Test chat with agentic mode, non-streaming."""
         # Setup mock
@@ -82,7 +69,7 @@ class TestChatEndpoint:
             return_value=(
                 "Agentic response with tool use.",
                 [{"text": "context", "source": "doc.pdf", "score": 0.92}],
-                MagicMock(query_time_ms=500.0, total_chunks=10)
+                MagicMock(query_time_ms=500.0, total_chunks=10),
             )
         )
         mock_get_agentic.return_value = mock_agentic
@@ -90,7 +77,7 @@ class TestChatEndpoint:
         request = {
             "message": "Complex query requiring tool use",
             "mode": "agentic",
-            "stream": False
+            "stream": False,
         }
 
         response = test_client.post("/api/chat", json=request)
@@ -102,11 +89,7 @@ class TestChatEndpoint:
 
     def test_chat_empty_message(self, test_client: TestClient):
         """Test chat with empty message."""
-        request = {
-            "message": "",
-            "mode": "simple",
-            "stream": False
-        }
+        request = {"message": "", "mode": "simple", "stream": False}
 
         response = test_client.post("/api/chat", json=request)
 
@@ -115,28 +98,20 @@ class TestChatEndpoint:
 
     def test_chat_whitespace_only_message(self, test_client: TestClient):
         """Test chat with whitespace-only message."""
-        request = {
-            "message": "   \n\t  ",
-            "mode": "simple",
-            "stream": False
-        }
+        request = {"message": "   \n\t  ", "mode": "simple", "stream": False}
 
         response = test_client.post("/api/chat", json=request)
 
         assert response.status_code == 400
 
     @patch("app.api.chat.simple_rag")
-    def test_chat_with_session_id(
-        self,
-        mock_simple_rag,
-        test_client: TestClient
-    ):
+    def test_chat_with_session_id(self, mock_simple_rag, test_client: TestClient):
         """Test chat with session ID for conversation tracking."""
         mock_simple_rag.process_query = AsyncMock(
             return_value=(
                 "Response",
                 [],
-                MagicMock(query_time_ms=100.0, total_chunks=1)
+                MagicMock(query_time_ms=100.0, total_chunks=1),
             )
         )
 
@@ -144,7 +119,7 @@ class TestChatEndpoint:
             "message": "Test with session",
             "mode": "simple",
             "stream": False,
-            "session_id": "test-session-456"
+            "session_id": "test-session-456",
         }
 
         response = test_client.post("/api/chat", json=request)
@@ -154,26 +129,20 @@ class TestChatEndpoint:
         assert data["session_id"] == "test-session-456"
 
     @patch("app.api.chat.simple_rag")
-    def test_chat_streaming_mode(
-        self,
-        mock_simple_rag,
-        test_client: TestClient
-    ):
+    def test_chat_streaming_mode(self, mock_simple_rag, test_client: TestClient):
         """Test chat with streaming enabled."""
+
         # Setup mock streaming
         async def mock_stream(message):
             from app.models.chat import StreamChunk
+
             yield StreamChunk(type="text", content="Part 1")
             yield StreamChunk(type="text", content=" Part 2")
             yield StreamChunk(type="done", content="")
 
         mock_simple_rag.process_query_streaming = mock_stream
 
-        request = {
-            "message": "Test streaming",
-            "mode": "simple",
-            "stream": True
-        }
+        request = {"message": "Test streaming", "mode": "simple", "stream": True}
 
         response = test_client.post("/api/chat", json=request)
 
@@ -182,22 +151,14 @@ class TestChatEndpoint:
         assert "text/event-stream" in response.headers.get("content-type", "")
 
     @patch("app.api.chat.simple_rag")
-    def test_chat_handles_rag_error(
-        self,
-        mock_simple_rag,
-        test_client: TestClient
-    ):
+    def test_chat_handles_rag_error(self, mock_simple_rag, test_client: TestClient):
         """Test error handling when RAG pipeline fails."""
         # Mock to raise exception
         mock_simple_rag.process_query = AsyncMock(
             side_effect=Exception("RAG processing failed")
         )
 
-        request = {
-            "message": "Test error handling",
-            "mode": "simple",
-            "stream": False
-        }
+        request = {"message": "Test error handling", "mode": "simple", "stream": False}
 
         response = test_client.post("/api/chat", json=request)
 
@@ -209,17 +170,11 @@ class TestHealthEndpoint:
     """Tests for GET /api/health endpoint."""
 
     @patch("app.api.chat.get_pinecone_client")
-    def test_health_check_healthy(
-        self,
-        mock_pinecone,
-        test_client: TestClient
-    ):
+    def test_health_check_healthy(self, mock_pinecone, test_client: TestClient):
         """Test health check when service is healthy."""
         # Setup mock
         mock_client = MagicMock()
-        mock_client.index_stats.return_value = {
-            "dense": {"total_vector_count": 100}
-        }
+        mock_client.index_stats.return_value = {"dense": {"total_vector_count": 100}}
         mock_pinecone.return_value = mock_client
 
         response = test_client.get("/api/health")
@@ -231,11 +186,7 @@ class TestHealthEndpoint:
         assert "index_stats" in data
 
     @patch("app.api.chat.get_pinecone_client")
-    def test_health_check_unhealthy(
-        self,
-        mock_pinecone,
-        test_client: TestClient
-    ):
+    def test_health_check_unhealthy(self, mock_pinecone, test_client: TestClient):
         """Test health check when service is unhealthy."""
         # Mock Pinecone failure
         mock_pinecone.side_effect = Exception("Connection failed")
@@ -293,7 +244,7 @@ class TestChatIntegration:
         request = {
             "message": "What is the main topic?",
             "mode": "simple",
-            "stream": False
+            "stream": False,
         }
 
         response = test_client.post("/api/chat", json=request)

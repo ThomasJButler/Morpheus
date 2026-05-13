@@ -62,7 +62,8 @@ async def cleanup_expired_sessions():
             "success": True,
             "sessions_before": stats_before["total_sessions"],
             "sessions_after": stats_after["total_sessions"],
-            "sessions_removed": stats_before["total_sessions"] - stats_after["total_sessions"],
+            "sessions_removed": stats_before["total_sessions"]
+            - stats_after["total_sessions"],
         }
 
     except Exception as e:

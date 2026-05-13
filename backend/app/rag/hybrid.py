@@ -52,8 +52,9 @@ class InMemoryBM25:
     def _tokenize(self, text: str) -> List[str]:
         """Simple whitespace tokenization with lowercasing."""
         import re
+
         # Remove punctuation and split on whitespace
-        text = re.sub(r'[^\w\s]', ' ', text.lower())
+        text = re.sub(r"[^\w\s]", " ", text.lower())
         return text.split()
 
     def fit(self, documents: List[str]) -> None:
@@ -86,11 +87,14 @@ class InMemoryBM25:
             self.doc_term_freqs.append(term_freq)
 
         # Calculate average document length
-        self.avg_doc_length = sum(self.doc_lengths) / len(self.doc_lengths) if self.doc_lengths else 0
+        self.avg_doc_length = (
+            sum(self.doc_lengths) / len(self.doc_lengths) if self.doc_lengths else 0
+        )
 
         # Calculate IDF for each term
         n_docs = len(documents)
         import math
+
         for term, df in doc_freq.items():
             # BM25 IDF formula
             self.idf[term] = math.log((n_docs - df + 0.5) / (df + 0.5) + 1)
@@ -119,7 +123,9 @@ class InMemoryBM25:
 
                     # BM25 scoring formula
                     numerator = tf * (self.k1 + 1)
-                    denominator = tf + self.k1 * (1 - self.b + self.b * doc_len / self.avg_doc_length)
+                    denominator = tf + self.k1 * (
+                        1 - self.b + self.b * doc_len / self.avg_doc_length
+                    )
                     score += idf * (numerator / denominator)
 
             scores.append(score)
@@ -164,10 +170,7 @@ class HybridRAG:
         try:
             # For text-embedding-3-small, explicitly set dimensions to 512
             dimensions = 512 if "small" in settings.embedding_model else None
-            embedding_params = {
-                "model": settings.embedding_model,
-                "input": query
-            }
+            embedding_params = {"model": settings.embedding_model, "input": query}
             if dimensions:
                 embedding_params["dimensions"] = dimensions
 
@@ -205,9 +208,7 @@ class HybridRAG:
             logger.error(f"Dense retrieval failed: {e}")
             return []
 
-    def apply_bm25_scoring(
-        self, query: str, dense_matches: List[dict]
-    ) -> List[dict]:
+    def apply_bm25_scoring(self, query: str, dense_matches: List[dict]) -> List[dict]:
         """
         Apply BM25 scoring to dense retrieval results.
 
@@ -245,9 +246,7 @@ class HybridRAG:
 
         return dense_matches
 
-    def merge_scores(
-        self, matches: List[dict]
-    ) -> List[dict]:
+    def merge_scores(self, matches: List[dict]) -> List[dict]:
         """
         Merge dense and sparse scores using weighted combination.
 
@@ -267,18 +266,20 @@ class HybridRAG:
 
             # Weighted combination
             combined_score = (
-                dense_score * settings.dense_weight +
-                sparse_score * settings.sparse_weight
+                dense_score * settings.dense_weight
+                + sparse_score * settings.sparse_weight
             )
 
-            results.append({
-                "id": match.id,
-                "score": combined_score,
-                "metadata": match.metadata,
-                "dense_score": dense_score,
-                "sparse_score": sparse_score,
-                "source": "hybrid",
-            })
+            results.append(
+                {
+                    "id": match.id,
+                    "score": combined_score,
+                    "metadata": match.metadata,
+                    "dense_score": dense_score,
+                    "sparse_score": sparse_score,
+                    "source": "hybrid",
+                }
+            )
 
         # Sort by combined score
         results.sort(key=lambda x: x["score"], reverse=True)
@@ -316,7 +317,7 @@ class HybridRAG:
             dense_matches = await self.retrieve_dense(
                 dense_embedding,
                 top_k=top_k * 2,  # Retrieve more for re-ranking
-                namespace=namespace
+                namespace=namespace,
             )
 
             # 3. Apply BM25 scoring
@@ -330,8 +331,7 @@ class HybridRAG:
 
             # 6. Filter by minimum relevance score
             filtered_results = [
-                r for r in merged_results
-                if r["score"] >= settings.min_relevance_score
+                r for r in merged_results if r["score"] >= settings.min_relevance_score
             ]
 
             # Calculate metrics
@@ -440,10 +440,7 @@ class HybridRAG:
 
         # Get user prompt template
         user_prompt_template = get_user_prompt_template()
-        user_prompt = user_prompt_template.format(
-            context=context_str,
-            query=query
-        )
+        user_prompt = user_prompt_template.format(context=context_str, query=query)
 
         try:
             async with self.anthropic_client.messages.stream(

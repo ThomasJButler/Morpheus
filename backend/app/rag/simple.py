@@ -48,10 +48,7 @@ class SimpleRAG:
         try:
             # For text-embedding-3-small, explicitly set dimensions to 512
             dimensions = 512 if "small" in settings.embedding_model else None
-            embedding_params = {
-                "model": settings.embedding_model,
-                "input": query
-            }
+            embedding_params = {"model": settings.embedding_model, "input": query}
             if dimensions:
                 embedding_params["dimensions"] = dimensions
 
@@ -126,9 +123,7 @@ class SimpleRAG:
                 for match in filtered_matches
             ]
 
-            logger.info(
-                f"Retrieved {len(contexts)} contexts in {query_time:.2f}ms"
-            )
+            logger.info(f"Retrieved {len(contexts)} contexts in {query_time:.2f}ms")
             return contexts, metrics
 
         except Exception as e:
@@ -200,10 +195,7 @@ class SimpleRAG:
 
         # Get user prompt template
         user_prompt_template = get_user_prompt_template()
-        user_prompt = user_prompt_template.format(
-            context=context_str,
-            query=query
-        )
+        user_prompt = user_prompt_template.format(context=context_str, query=query)
 
         try:
             # Stream response from Claude
@@ -239,7 +231,9 @@ class SimpleRAG:
             query_embedding = await self.embed_query(query)
 
             # 2. Retrieve context (within namespace)
-            contexts, metrics = await self.retrieve_context(query_embedding, top_k, namespace)
+            contexts, metrics = await self.retrieve_context(
+                query_embedding, top_k, namespace
+            )
 
             # 3. Send citations
             citations = self.create_citations(contexts)
@@ -275,7 +269,9 @@ class SimpleRAG:
         query_embedding = await self.embed_query(query)
 
         # 2. Retrieve context (within namespace)
-        contexts, metrics = await self.retrieve_context(query_embedding, top_k, namespace)
+        contexts, metrics = await self.retrieve_context(
+            query_embedding, top_k, namespace
+        )
 
         # 3. Generate response
         response_parts = []
