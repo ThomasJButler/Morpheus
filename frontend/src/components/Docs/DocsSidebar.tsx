@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { apiClient } from '@/lib/api-client';
+import { useBackendHealth } from '@/lib/hooks/useBackendHealth';
 import DocumentUploader from '../Documents/DocumentUploader';
 import DocItem from './DocItem';
 
@@ -21,6 +22,7 @@ const REFRESH_EVENT = 'morpheus:documents-changed';
  * alongside the mobile drawer pattern.
  */
 export default function DocsSidebar() {
+  const health = useBackendHealth();
   const [docs, setDocs] = useState<string[]>([]);
   const [count, setCount] = useState(0);
   const [totalChunks, setTotalChunks] = useState(0);
@@ -36,18 +38,22 @@ export default function DocsSidebar() {
       setCount(res.count ?? 0);
       setTotalChunks(res.total_chunks ?? 0);
     } catch (err) {
-      // Don't surface backend-down as an error — that's an expected state
-      // covered by the cold-start strip. Show empty state instead.
       setDocs([]);
       setCount(0);
       setTotalChunks(0);
-      if (err instanceof Error && !/fetch|network|connect/i.test(err.message)) {
+      // Only surface errors once the backend reports ready. While warming,
+      // `apiClient.listDocuments` will throw `'Failed to fetch document list'`
+      // (or similar) and the ColdStart strip already explains why — showing
+      // an inline error here would be redundant noise. Once ready, real
+      // 4xx/5xx responses *do* deserve to be surfaced rather than masked as
+      // empty state, so we drop the previous regex-on-message filter.
+      if (health.status === 'ready' && err instanceof Error) {
         setError(err.message);
       }
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [health.status]);
 
   useEffect(() => {
     fetchDocs();
