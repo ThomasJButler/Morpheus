@@ -50,8 +50,12 @@ export default function SystemPanel() {
   const [tab, setTab] = useState<SystemPanelTab>(initialTab);
 
   // Keep state in sync if the URL changes externally (back/forward navigation).
+  // When the panel param is absent or invalid (e.g. back-nav from
+  // `?panel=sources` to `/`), fall back to DEFAULT_TAB rather than bailing —
+  // otherwise the rendered tab desyncs from what the URL is advertising.
   useEffect(() => {
-    if (isValidTab(urlTab) && urlTab !== tab) setTab(urlTab);
+    const next: SystemPanelTab = isValidTab(urlTab) ? urlTab : DEFAULT_TAB;
+    if (next !== tab) setTab(next);
   }, [urlTab, tab]);
 
   const selectTab = useCallback(

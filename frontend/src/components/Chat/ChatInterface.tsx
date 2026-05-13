@@ -20,7 +20,7 @@ import { useSettings } from '@/lib/hooks/useSettings';
 import { useSession } from '@/lib/hooks/useSession';
 import { useBackendHealth } from '@/lib/hooks/useBackendHealth';
 import { apiClient } from '@/lib/api-client';
-import { DocumentUploadResponse, RAGMode, QueryAnalysis, EnhancedRetrievalMetrics } from '@/lib/types';
+import { DocumentUploadResponse, RAGMode, QueryAnalysis, EnhancedRetrievalMetrics, Citation } from '@/lib/types';
 
 interface ChatInterfaceProps {
   /**
@@ -199,12 +199,21 @@ export default function ChatInterface({ fillParent = false }: ChatInterfaceProps
   // Broadcast retrieval metrics + citations to the System panel (Phase 5).
   // Subscribers (SystemPanel's StatusTab/SourcesTab/SystemTab) refresh on
   // this event — same decoupled pattern as Phase 4's docs sync.
+  //
+  // Key perf detail: the dep array depends on the LAST ASSISTANT MESSAGE
+  // ID, not on `messages`. `useChat` from `'ai/react'` mutates `messages`
+  // per streamed token; metrics + citations only change when a new
+  // assistant response lands. Depending on the id keeps the dispatch to
+  // ~once-per-response instead of once-per-token.
+  const lastAssistantMessage = messages.findLast?.((m) => m.role === 'assistant');
+  const lastAssistantId = lastAssistantMessage?.id ?? null;
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    const lastAssistant = [...messages].reverse().find((m) => m.role === 'assistant');
-    const citations = (lastAssistant && 'citations' in lastAssistant && Array.isArray((lastAssistant as { citations?: unknown }).citations))
-      ? ((lastAssistant as { citations: import('@/lib/types').Citation[] }).citations)
-      : [];
+    const citations =
+      lastAssistantMessage && 'citations' in lastAssistantMessage &&
+      Array.isArray((lastAssistantMessage as { citations?: unknown }).citations)
+        ? ((lastAssistantMessage as { citations: Citation[] }).citations)
+        : [];
     window.dispatchEvent(
       new CustomEvent('morpheus:metrics-updated', {
         detail: {
@@ -215,7 +224,8 @@ export default function ChatInterface({ fillParent = false }: ChatInterfaceProps
         },
       }),
     );
-  }, [ragMetadata, messages]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- lastAssistantMessage is read but tracked via its stable id
+  }, [ragMetadata, lastAssistantId]);
 
   // Cold-start message queue: when the backend isn't ready, intercept the
   // submit, stash the input, and flush via useChat's append() the moment
