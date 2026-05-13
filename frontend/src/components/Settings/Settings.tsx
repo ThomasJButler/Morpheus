@@ -136,9 +136,9 @@ export default function Settings({ isOpen, onClose }: SettingsProps) {
 
   const handleClearSettings = () => {
     setApiKey('');
-    setModel('gpt-3.5-turbo');
+    setModel('gpt-5.4-mini');
     setAnthropicApiKey('');
-    setAnthropicModel('claude-sonnet-4-20250514');
+    setAnthropicModel('claude-sonnet-4-6');
     setProvider('anthropic');
     setSaveKey(true);
     setRagMode('auto');
