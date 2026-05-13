@@ -210,9 +210,14 @@ class DocumentProcessor:
                     current_text.append(text)
                     paragraph_count += 1
 
-                    # Group paragraphs into chunks (every 10 paragraphs or on heading)
+                    # Group paragraphs into chunks (every 10 paragraphs or on heading).
+                    # `paragraph.style` can be None for some .docx files
+                    # (Word omits the style ref when the paragraph inherits from
+                    # the document default), so null-check before reading .name.
                     if paragraph_count % 10 == 0 or (
-                        paragraph.style.name.startswith("Heading")
+                        paragraph.style is not None
+                        and paragraph.style.name
+                        and paragraph.style.name.startswith("Heading")
                     ):
                         if current_text:
                             text_content.append({

@@ -32,7 +32,7 @@ class Settings(BaseSettings):
 
     # Model Configuration
     anthropic_model: str = Field(
-        default="claude-3-5-sonnet-20241022", description="Claude model to use"
+        default="claude-sonnet-4-6", description="Claude model to use"
     )
     embedding_model: str = Field(
         default="text-embedding-3-large", description="OpenAI embedding model"
