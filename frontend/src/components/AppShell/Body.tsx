@@ -1,27 +1,19 @@
 'use client';
 
 import ChatInterface from '@/components/Chat/ChatInterface';
+import DocsSidebar from '@/components/Docs/DocsSidebar';
 
 /**
  * v2 AppShell body — three-pane grid (docs rail · chat · system rail).
- * Phase 1 scope: placeholder rails plus the existing <ChatInterface>
- * dropped into chat-col__messages via the new `fillParent` prop.
- * Real sidebar (Phase 4) and system panel (Phase 5) replace the
- * placeholders without changing this grid.
+ * Phase 4 swaps the docs-rail placeholder for the real <DocsSidebar />,
+ * which owns its own fetch + collapse + upload-modal state. The
+ * system-rail placeholder lands in Phase 5; <ChatInterface> remains
+ * embedded with `fillParent` to honour the chat-col height constraints.
  */
 export default function Body() {
   return (
     <div className="app-body relative z-10">
-      <aside
-        className="docs-rail"
-        aria-label="Constructs (documents) — coming in Phase 4"
-      >
-        <RailPlaceholder
-          title="CONSTRUCTS"
-          subtitle="Document sidebar"
-          phase="Phase 4"
-        />
-      </aside>
+      <DocsSidebar />
 
       <main className="chat-col">
         <div className="chat-col__messages">
