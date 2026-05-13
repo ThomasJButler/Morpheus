@@ -127,18 +127,19 @@ export default function Modal({
 
   return createPortal(
     <div
-      className="fixed inset-0 z-[60] flex items-center justify-center p-4 sm:p-6 animate-fade-in"
+      className="
+        fixed inset-0 z-[60] flex items-center justify-center
+        p-4 sm:p-6
+        bg-surface-overlay backdrop-blur-sm
+        animate-fade-in
+      "
       onClick={(e) => {
         // Click on the backdrop (this div, not the dialog) closes.
+        // The backdrop styling lives on this same element rather than a
+        // sibling div so e.target === e.currentTarget actually matches.
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      {/* Backdrop */}
-      <div
-        aria-hidden
-        className="absolute inset-0 bg-surface-overlay backdrop-blur-sm"
-      />
-
       {/* Dialog */}
       <div
         ref={dialogRef}
