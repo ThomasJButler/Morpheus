@@ -3,6 +3,8 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { useChat } from 'ai/react';
 import MessageList from './MessageList';
+import Composer from './Composer';
+import EmptyState from './EmptyState';
 import DocumentStats from '../Documents/DocumentStats';
 import SystemStatus from '../Documents/SystemStatus';
 import UploadButton from '../Documents/UploadButton';
@@ -68,6 +70,7 @@ export default function ChatInterface({ fillParent = false }: ChatInterfaceProps
     isLoading,
     error,
     setMessages,
+    setInput,
   } = useChat({
     api: '/api/chat', // Next.js BFF route (fetches context from FastAPI, streams from provider)
     headers: sessionId ? { 'X-Session-ID': sessionId } : {},
@@ -184,6 +187,13 @@ export default function ChatInterface({ fillParent = false }: ChatInterfaceProps
     setShowClearConfirm(false);
   }, [setMessages]);
 
+  // Quick-prompt selection from EmptyState — uses useChat's setInput
+  // (controlled input) and focuses the composer so the user can edit/send.
+  const handlePromptSelect = useCallback((text: string) => {
+    setInput(text);
+    inputRef.current?.focus();
+  }, [setInput]);
+
   const handleUploadComplete = useCallback(async (response: DocumentUploadResponse) => {
     setUploadSuccess(`Uploaded "${response.document_id}" - ${response.chunks_created} chunks created`);
     setShowDocStats(true);
@@ -206,9 +216,6 @@ export default function ChatInterface({ fillParent = false }: ChatInterfaceProps
       setUploadSuccess(null);
     }, 5000);
   }, []);
-
-  // Character count warning color
-  const charCountColor = input.length > 1950 ? 'text-red-400' : input.length > 1800 ? 'text-yellow-400' : 'text-matrix-white/30';
 
   return (
     <div className={`flex flex-col ${fillParent ? 'h-full' : 'h-[calc(100dvh-60px)] sm:h-[calc(100vh-120px)]'} overflow-hidden`}>
@@ -444,166 +451,11 @@ export default function ChatInterface({ fillParent = false }: ChatInterfaceProps
               className="flex-1 overflow-y-auto overflow-x-hidden min-h-0 scrollbar-matrix touch-pan-y"
               style={{ WebkitOverflowScrolling: 'touch', overscrollBehavior: 'contain' }}
             >
-              {/* Enhanced Empty State with animations */}
-              {messages.length === 0 && (
-                <div className="flex flex-col items-center justify-start text-center pt-8 sm:pt-16 px-3 animate-fade-in">
-                  <div className="max-w-lg space-y-3 sm:space-y-6">
-                    {/* Animated Logo/Icon - hidden on mobile */}
-                    <div className="hidden sm:block relative mx-auto w-20 h-20 mb-4">
-                      <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-matrix-green/20 to-matrix-cyan/20 animate-pulse" />
-                      <div className="absolute inset-2 rounded-xl bg-matrix-black border border-matrix-green/30 flex items-center justify-center">
-                        <svg className="w-10 h-10 text-matrix-green" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                        </svg>
-                      </div>
-                      {/* Pulse rings */}
-                      <div className="absolute inset-0 rounded-2xl border border-matrix-green/30 pulse-ring" />
-                    </div>
-
-                    {/* Matrix quote with typewriter style */}
-                    <div className="relative">
-                      <p className="text-sm sm:text-base text-matrix-green/80 italic font-mono leading-relaxed">
-                        &quot;I can only show you the door. You&apos;re the one that has to walk through it.&quot;
-                      </p>
-                      <div className="hidden sm:block absolute -bottom-3 left-1/2 -translate-x-1/2 w-16 h-px bg-gradient-to-r from-transparent via-matrix-green/50 to-transparent" />
-                    </div>
-
-                    {/* Steps - animated cards (hidden on mobile) */}
-                    <div className="hidden sm:grid sm:grid-cols-3 gap-3 text-left">
-                      {/* Step 1 */}
-                      <div className="group p-2 sm:p-3 rounded-lg bg-matrix-black/40 border border-matrix-green/20
-                                      hover:border-matrix-green/50 hover:bg-matrix-green/5
-                                      transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:shadow-matrix-green/10
-                                      slide-in-left" style={{ animationDelay: '100ms' }}>
-                        <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-matrix-green/20 border border-matrix-green/40
-                                        flex items-center justify-center mb-1.5 sm:mb-2 group-hover:scale-110 transition-transform">
-                          <span className="text-matrix-green font-mono font-bold text-[10px] sm:text-xs">1</span>
-                        </div>
-                        <p className="text-xs sm:text-sm text-matrix-white/90 font-mono">
-                          <span className="text-matrix-green font-semibold">Upload</span> your documents
-                        </p>
-                        <p className="text-[10px] sm:text-xs text-matrix-white/50 mt-0.5">PDF, DOCX, TXT, MD</p>
-                      </div>
-
-                      {/* Step 2 */}
-                      <div className="group p-2 sm:p-3 rounded-lg bg-matrix-black/40 border border-matrix-cyan/20
-                                      hover:border-matrix-cyan/50 hover:bg-matrix-cyan/5
-                                      transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:shadow-matrix-cyan/10
-                                      slide-in-left" style={{ animationDelay: '200ms' }}>
-                        <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-matrix-cyan/20 border border-matrix-cyan/40
-                                        flex items-center justify-center mb-1.5 sm:mb-2 group-hover:scale-110 transition-transform">
-                          <span className="text-matrix-cyan font-mono font-bold text-[10px] sm:text-xs">2</span>
-                        </div>
-                        <p className="text-xs sm:text-sm text-matrix-white/90 font-mono">
-                          <span className="text-matrix-cyan font-semibold">Ask</span> questions
-                        </p>
-                        <p className="text-[10px] sm:text-xs text-matrix-white/50 mt-0.5">Natural language queries</p>
-                      </div>
-
-                      {/* Step 3 */}
-                      <div className="group p-2 sm:p-3 rounded-lg bg-matrix-black/40 border border-matrix-green/20
-                                      hover:border-matrix-green/50 hover:bg-matrix-green/5
-                                      transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:shadow-matrix-green/10
-                                      slide-in-left" style={{ animationDelay: '300ms' }}>
-                        <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-matrix-green/20 border border-matrix-green/40
-                                        flex items-center justify-center mb-1.5 sm:mb-2 group-hover:scale-110 transition-transform">
-                          <span className="text-matrix-green font-mono font-bold text-[10px] sm:text-xs">3</span>
-                        </div>
-                        <p className="text-xs sm:text-sm text-matrix-white/90 font-mono">
-                          <span className="text-matrix-green font-semibold">Get</span> cited answers
-                        </p>
-                        <p className="text-[10px] sm:text-xs text-matrix-white/50 mt-0.5">With source references</p>
-                      </div>
-                    </div>
-
-                    {/* Example prompts - hidden on mobile */}
-                    <div className="hidden sm:block pt-3 border-t border-matrix-green/20">
-                      <p className="text-xs text-matrix-white/50 font-mono mb-2 flex items-center justify-center gap-1">
-                        <svg className="w-3 h-3 text-matrix-green" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                        </svg>
-                        Quick prompts
-                      </p>
-                      <div className="flex flex-wrap justify-center gap-2">
-                        <button
-                          onClick={() => {
-                            const textarea = inputRef.current;
-                            if (textarea) {
-                              textarea.value = "What is this document about?";
-                              textarea.dispatchEvent(new Event('input', { bubbles: true }));
-                              textarea.focus();
-                            }
-                          }}
-                          className="group/prompt px-2 py-0.5 sm:px-3 sm:py-1.5 rounded-full text-[10px] sm:text-xs font-mono
-                                     bg-matrix-green/10 hover:bg-matrix-green/20
-                                     text-matrix-green border border-matrix-green/30 hover:border-matrix-green/60
-                                     transition-all duration-200 hover:scale-105 hover:shadow-lg hover:shadow-matrix-green/20"
-                        >
-                          <span className="opacity-60 group-hover/prompt:opacity-100">&quot;</span>
-                          What is this document about?
-                          <span className="opacity-60 group-hover/prompt:opacity-100">&quot;</span>
-                        </button>
-                        <button
-                          onClick={() => {
-                            const textarea = inputRef.current;
-                            if (textarea) {
-                              textarea.value = "Summarize the key points";
-                              textarea.dispatchEvent(new Event('input', { bubbles: true }));
-                              textarea.focus();
-                            }
-                          }}
-                          className="group/prompt px-2 py-0.5 sm:px-3 sm:py-1.5 rounded-full text-[10px] sm:text-xs font-mono
-                                     bg-matrix-cyan/10 hover:bg-matrix-cyan/20
-                                     text-matrix-cyan border border-matrix-cyan/30 hover:border-matrix-cyan/60
-                                     transition-all duration-200 hover:scale-105 hover:shadow-lg hover:shadow-matrix-cyan/20"
-                        >
-                          <span className="opacity-60 group-hover/prompt:opacity-100">&quot;</span>
-                          Summarize the key points
-                          <span className="opacity-60 group-hover/prompt:opacity-100">&quot;</span>
-                        </button>
-                        <button
-                          onClick={() => {
-                            const textarea = inputRef.current;
-                            if (textarea) {
-                              textarea.value = "Find references to...";
-                              textarea.dispatchEvent(new Event('input', { bubbles: true }));
-                              textarea.focus();
-                            }
-                          }}
-                          className="group/prompt px-2 py-0.5 sm:px-3 sm:py-1.5 rounded-full text-[10px] sm:text-xs font-mono
-                                     bg-matrix-green/10 hover:bg-matrix-green/20
-                                     text-matrix-green border border-matrix-green/30 hover:border-matrix-green/60
-                                     transition-all duration-200 hover:scale-105 hover:shadow-lg hover:shadow-matrix-green/20"
-                        >
-                          <span className="opacity-60 group-hover/prompt:opacity-100">&quot;</span>
-                          Find references to...
-                          <span className="opacity-60 group-hover/prompt:opacity-100">&quot;</span>
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* Keyboard shortcuts hint (hidden on mobile) */}
-                    <div className="hidden sm:flex items-center justify-center gap-3 text-[10px] font-mono text-matrix-white/30">
-                      <span className="flex items-center gap-1">
-                        <kbd className="px-1 py-0.5 bg-matrix-green/10 rounded text-[10px] text-matrix-green border border-matrix-green/20">⌘K</kbd>
-                        <span>focus</span>
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <kbd className="px-1 py-0.5 bg-matrix-green/10 rounded text-[10px] text-matrix-green border border-matrix-green/20">⌘S</kbd>
-                        <span>save</span>
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <kbd className="px-1 py-0.5 bg-matrix-green/10 rounded text-[10px] text-matrix-green border border-matrix-green/20">Esc</kbd>
-                        <span>close</span>
-                      </span>
-                    </div>
-                  </div>
-                </div>
+              {messages.length === 0 ? (
+                <EmptyState onSelectPrompt={handlePromptSelect} />
+              ) : (
+                <MessageList messages={messages} />
               )}
-
-              <MessageList
-                messages={messages}
-              />
             </div>
 
             {/* Back to Top Button */}
@@ -620,58 +472,20 @@ export default function ChatInterface({ fillParent = false }: ChatInterfaceProps
               />
             )}
 
-            {/* Fixed Input Area */}
-            <div className="flex-shrink-0 pt-3 sm:pt-4 border-t border-matrix-green/20 bg-transparent">
+            {/* Composer (v2): controlled textarea + send button + char counter + kbd hints */}
+            <div className="flex-shrink-0 pt-3 sm:pt-4 border-t border-edge-subtle">
               {isLoading ? (
                 <ThinkingInputState />
               ) : (
-                <form onSubmit={handleSubmit} className="flex items-end gap-2 sm:gap-3">
-                  <div className="flex-1 relative group">
-                    <textarea
-                      ref={inputRef}
-                      value={input}
-                      onChange={handleInputChange}
-                      placeholder="Ask about your documents..."
-                      rows={1}
-                      maxLength={2000}
-                      className="matrix-input resize-none min-h-[44px] sm:min-h-[48px] max-h-[100px] sm:max-h-[120px] pr-14 sm:pr-16 w-full
-                                 focus:ring-2 focus:ring-matrix-green/40 focus:border-matrix-green
-                                 focus:shadow-[0_0_20px_rgba(0,255,0,0.15)]
-                                 transition-all duration-200 text-base"
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' && !e.shiftKey) {
-                          e.preventDefault();
-                          handleSubmit();
-                        }
-                      }}
-                      aria-label="Chat input"
-                    />
-                    <span className={`hidden sm:block absolute bottom-3 right-3 text-xs font-mono
-                                     group-focus-within:text-matrix-green/70 transition-colors ${charCountColor}`}>
-                      {input.length}/2000
-                      {input.length > 1800 && <span className="ml-1">⚠</span>}
-                    </span>
-                  </div>
-                  <button
-                    type="submit"
-                    disabled={!input.trim()}
-                    className="flex-shrink-0 px-4 sm:px-6 py-2.5 sm:py-3 bg-matrix-green text-matrix-black rounded-md
-                               font-mono text-sm font-bold uppercase tracking-wider
-                               hover:bg-matrix-cyan hover:shadow-[0_0_25px_rgba(0,255,255,0.4)]
-                               active:scale-95
-                               transition-all duration-200
-                               disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:shadow-none
-                               min-h-[44px] min-w-[44px]"
-                    aria-label="Send message"
-                  >
-                    <span className="flex items-center gap-2">
-                      <svg className="w-4 h-4 sm:hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-                      </svg>
-                      <span className="hidden sm:inline">Send</span>
-                    </span>
-                  </button>
-                </form>
+                <Composer
+                  ref={inputRef}
+                  input={input}
+                  handleInputChange={handleInputChange}
+                  handleSubmit={handleSubmit}
+                  isLoading={isLoading}
+                  mode={settings.ragMode}
+                  onOpenSettings={() => setShowSettings(true)}
+                />
               )}
             </div>
           </GlassPanel>
