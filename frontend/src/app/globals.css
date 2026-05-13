@@ -183,10 +183,16 @@ html.redesign-v2 body {
 
 .chat-col__messages {
   flex: 1;
-  min-height: 0;       /* CRITICAL — without this overflow-y: auto is dead */
-  overflow-y: auto;
+  min-height: 0;       /* CRITICAL — propagates the height constraint down
+                          to ChatInterface's inner messageContainerRef, which
+                          is the actual scroll container. */
   display: flex;
   flex-direction: column;
+  /* No overflow-y here: ChatInterface owns its own scroll container with
+     overflow-y: auto (see `messageContainerRef`). Nesting two scroll
+     containers caused wheel/touch events to land ambiguously and prevented
+     the user from scrolling up through long responses (Phase 5 user
+     report). Dropping this lets the inner scroll be the sole source. */
 }
 
 /* Mobile: rails collapse to drawers (drawer logic lands in Phase 7;
@@ -1105,5 +1111,25 @@ html.redesign-v2 body {
     @apply bg-gradient-to-r from-matrix-green via-matrix-cyan to-matrix-green bg-clip-text text-transparent;
     background-size: 200% auto;
     animation: gradient-shift 3s ease infinite;
+  }
+
+  /* v2 thinking dots — used by the calm ThinkingInputState replacement.
+     Three accent-coloured dots that bounce on a staggered delay. */
+  .thinking-dots span {
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    border-radius: 9999px;
+    background: var(--accent);
+    animation: thinking-bounce 1.4s ease-in-out infinite;
+    opacity: 0.4;
+  }
+  .thinking-dots span:nth-child(1) { animation-delay: 0s; }
+  .thinking-dots span:nth-child(2) { animation-delay: 0.15s; }
+  .thinking-dots span:nth-child(3) { animation-delay: 0.3s; }
+
+  @keyframes thinking-bounce {
+    0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+    30%           { transform: translateY(-3px); opacity: 1; }
   }
 }

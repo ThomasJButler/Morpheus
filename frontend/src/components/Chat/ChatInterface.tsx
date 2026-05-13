@@ -645,29 +645,16 @@ export default function ChatInterface({ fillParent = false }: ChatInterfaceProps
         )}
       </div>
 
-      {/* Guide Modal */}
-      {showGuide && (
-        <div
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="guide-title"
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm animate-fade-in p-2 sm:p-4"
-          onClick={() => setShowGuide(false)}
-        >
-          <div
-            className="max-w-4xl w-full max-h-[95vh] overflow-y-auto"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <QuickStartGuide
-              onDismiss={() => setShowGuide(false)}
-              onOpenSettings={() => {
-                setShowGuide(false);
-                setShowSettings(true);
-              }}
-            />
-          </div>
-        </div>
-      )}
+      {/* Guide Modal — QuickStartGuide now wraps itself in <Modal> (Phase 6),
+          so we just render it with isOpen instead of a manual overlay. */}
+      <QuickStartGuide
+        isOpen={showGuide}
+        onDismiss={() => setShowGuide(false)}
+        onOpenSettings={() => {
+          setShowGuide(false);
+          setShowSettings(true);
+        }}
+      />
 
       {/* Settings Modal */}
       <Settings isOpen={showSettings} onClose={() => setShowSettings(false)} />

@@ -145,18 +145,17 @@ export default function DocsSidebar() {
         </div>
       </footer>
 
-      {/* Reused legacy upload modal. Phase 6 restyles with the new Modal shell.
-          DocumentUploader dispatches the morpheus:documents-changed event on
-          success — our listener above catches it and refetches. */}
-      {isUploaderOpen && (
-        <DocumentUploader
-          onClose={() => setIsUploaderOpen(false)}
-          onUploadComplete={() => {
-            /* No-op: refresh is driven by the global event so the legacy
-               UploadButton in ChatInterface also keeps the sidebar in sync. */
-          }}
-        />
-      )}
+      {/* DocumentUploader is now Modal-shell wrapped (Phase 6). It self-renders
+          based on isOpen — no conditional mount needed. The
+          morpheus:documents-changed event still drives the sidebar refresh
+          (see Phase 4) so this onUploadComplete callback stays a no-op. */}
+      <DocumentUploader
+        isOpen={isUploaderOpen}
+        onClose={() => setIsUploaderOpen(false)}
+        onUploadComplete={() => {
+          /* No-op: refresh is driven by the global event. */
+        }}
+      />
     </aside>
   );
 }
