@@ -18,6 +18,7 @@ import FloatingInsightPanel from './FloatingInsightPanel';
 import ThinkingInputState from './ThinkingInputState';
 import { useSettings } from '@/lib/hooks/useSettings';
 import { useSession } from '@/lib/hooks/useSession';
+import { useBackendHealth } from '@/lib/hooks/useBackendHealth';
 import { apiClient } from '@/lib/api-client';
 import { DocumentUploadResponse, RAGMode, QueryAnalysis, EnhancedRetrievalMetrics } from '@/lib/types';
 
@@ -71,6 +72,7 @@ export default function ChatInterface({ fillParent = false }: ChatInterfaceProps
     error,
     setMessages,
     setInput,
+    append,
   } = useChat({
     api: '/api/chat', // Next.js BFF route (fetches context from FastAPI, streams from provider)
     headers: sessionId ? { 'X-Session-ID': sessionId } : {},
@@ -193,6 +195,33 @@ export default function ChatInterface({ fillParent = false }: ChatInterfaceProps
     setInput(text);
     inputRef.current?.focus();
   }, [setInput]);
+
+  // Cold-start message queue: when the backend isn't ready, intercept the
+  // submit, stash the input, and flush via useChat's append() the moment
+  // the health probe transitions to ready.
+  const health = useBackendHealth();
+  const [queuedMessage, setQueuedMessage] = useState<string | null>(null);
+
+  const handleSubmitWithQueue = useCallback(
+    (e?: React.FormEvent<HTMLFormElement>) => {
+      e?.preventDefault?.();
+      const text = input.trim();
+      if (!text || isLoading) return;
+      if (health.status !== 'ready') {
+        setQueuedMessage(text);
+        setInput('');
+        return;
+      }
+      handleSubmit(e);
+    },
+    [input, isLoading, health.status, handleSubmit, setInput],
+  );
+
+  useEffect(() => {
+    if (health.status !== 'ready' || !queuedMessage) return;
+    append({ role: 'user', content: queuedMessage });
+    setQueuedMessage(null);
+  }, [health.status, queuedMessage, append]);
 
   const handleUploadComplete = useCallback(async (response: DocumentUploadResponse) => {
     setUploadSuccess(`Uploaded "${response.document_id}" - ${response.chunks_created} chunks created`);
@@ -472,6 +501,28 @@ export default function ChatInterface({ fillParent = false }: ChatInterfaceProps
               />
             )}
 
+            {/* Queued-message indicator: shown when the user sent a message
+                while the backend was still warming. The message is held in
+                `queuedMessage` and flushed via useChat.append() the moment
+                health.status flips to 'ready'. */}
+            {queuedMessage && (
+              <div
+                role="status"
+                aria-live="polite"
+                className="flex-shrink-0 mt-2 flex items-start gap-2 rounded-v2-sm border border-edge-subtle bg-surface-card px-3 py-2 font-mono text-[11.5px] text-fg-secondary"
+              >
+                <span
+                  aria-hidden
+                  className="mt-1 w-1.5 h-1.5 rounded-full bg-mode-amber animate-pulse"
+                  style={{ boxShadow: '0 0 6px var(--v2-amber)' }}
+                />
+                <div className="flex-1 min-w-0">
+                  <div className="text-fg-primary">Message queued · sending when backend is ready</div>
+                  <div className="mt-0.5 truncate text-fg-muted">{queuedMessage}</div>
+                </div>
+              </div>
+            )}
+
             {/* Composer (v2): controlled textarea + send button + char counter + kbd hints */}
             <div className="flex-shrink-0 pt-3 sm:pt-4 border-t border-edge-subtle">
               {isLoading ? (
@@ -481,7 +532,7 @@ export default function ChatInterface({ fillParent = false }: ChatInterfaceProps
                   ref={inputRef}
                   input={input}
                   handleInputChange={handleInputChange}
-                  handleSubmit={handleSubmit}
+                  handleSubmit={handleSubmitWithQueue}
                   isLoading={isLoading}
                   mode={settings.ragMode}
                   onOpenSettings={() => setShowSettings(true)}

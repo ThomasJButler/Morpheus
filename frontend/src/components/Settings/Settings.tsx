@@ -338,7 +338,7 @@ export default function Settings({ isOpen, onClose }: SettingsProps) {
                 ))}
               </select>
               <p className="mt-2 text-xs text-matrix-white/40">
-                {ragMode === 'auto' && 'System analyzes query complexity and routes to optimal mode.'}
+                {ragMode === 'auto' && 'System analyses query complexity and routes to optimal mode.'}
                 {ragMode === 'simple' && 'Fastest option using semantic embeddings only.'}
                 {ragMode === 'hybrid' && 'Combines semantic + keyword search for better recall.'}
                 {ragMode === 'agentic' && 'AI agent that can search multiple times and refine results.'}
