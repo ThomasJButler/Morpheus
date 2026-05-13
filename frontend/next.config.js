@@ -1,6 +1,9 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  // Pin workspace root to this directory so Next.js doesn't pick a stray
+  // package-lock.json elsewhere on the machine (e.g. ~/package-lock.json).
+  outputFileTracingRoot: __dirname,
   eslint: {
     // Temporarily ignore ESLint errors during builds
     ignoreDuringBuilds: true,

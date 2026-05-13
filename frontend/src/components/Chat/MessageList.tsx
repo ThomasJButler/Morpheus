@@ -28,6 +28,7 @@ export default function MessageList({
       className={`
         p-1 sm:p-2 rounded-lg
         flex flex-col
+        min-h-0
         ${className}
       `}
     >

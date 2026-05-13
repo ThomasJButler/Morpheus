@@ -19,7 +19,17 @@ import { useSession } from '@/lib/hooks/useSession';
 import { apiClient } from '@/lib/api-client';
 import { DocumentUploadResponse, RAGMode, QueryAnalysis, EnhancedRetrievalMetrics } from '@/lib/types';
 
-export default function ChatInterface() {
+interface ChatInterfaceProps {
+  /**
+   * When true, the top wrapper uses `h-full` so the component fills its
+   * parent's height. Required when embedded inside the v2 AppShell, whose
+   * chat-col already constrains height via CSS grid. Defaults to false to
+   * preserve the legacy `100dvh - 60px` calc for the non-shell render path.
+   */
+  fillParent?: boolean;
+}
+
+export default function ChatInterface({ fillParent = false }: ChatInterfaceProps = {}) {
   const [showDocStats, setShowDocStats] = useState(false);
   const [uploadSuccess, setUploadSuccess] = useState<string | null>(null);
   const [showSettings, setShowSettings] = useState(false);
@@ -201,7 +211,7 @@ export default function ChatInterface() {
   const charCountColor = input.length > 1950 ? 'text-red-400' : input.length > 1800 ? 'text-yellow-400' : 'text-matrix-white/30';
 
   return (
-    <div className="flex flex-col h-[calc(100dvh-60px)] sm:h-[calc(100vh-120px)] overflow-hidden">
+    <div className={`flex flex-col ${fillParent ? 'h-full' : 'h-[calc(100dvh-60px)] sm:h-[calc(100vh-120px)]'} overflow-hidden`}>
       {/* Enhanced Toolbar */}
       <div className="flex-shrink-0 flex items-center justify-between px-1 py-1.5 gap-2">
         {/* Left side: Provider Badge + Message count */}
