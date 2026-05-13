@@ -15,8 +15,11 @@ export default function MessageList({
 }: MessageListProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Auto-scroll to bottom when new messages arrive
+  // Auto-scroll to bottom when new messages arrive.
+  // Guard against the empty-state path: calling scrollIntoView on an empty
+  // list pushes the welcome content off the top of the viewport.
   useEffect(() => {
+    if (messages.length === 0) return;
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
