@@ -110,6 +110,13 @@ export default function DocumentUploader({
       await new Promise(resolve => setTimeout(resolve, 2000)); // 2 second delay for Pinecone propagation
       setIsIndexing(false);
 
+      // Broadcast so v2 consumers (DocsSidebar, future System panel Sources
+      // tab) refetch without lifting state. Listeners use addEventListener
+      // on the 'morpheus:documents-changed' event name.
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('morpheus:documents-changed'));
+      }
+
       if (onUploadComplete) {
         onUploadComplete(response);
       }
