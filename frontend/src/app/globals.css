@@ -131,6 +131,72 @@
   --header-h: 48px;
 }
 
+/* ============================================================== */
+/* Morpheus v2 redesign — AppShell layout (Phase 1)                */
+/* Scoped via .redesign-v2 on <html> so the legacy path stays      */
+/* unaffected. The `min-height: 0` declarations on .app-body and   */
+/* .chat-col / .chat-col__messages are the canonical scroll-bug    */
+/* fix — without them, flex/grid children refuse to shrink below   */
+/* their content height and overflow-y: auto becomes useless.      */
+/* ============================================================== */
+
+html.redesign-v2,
+html.redesign-v2 body {
+  height: 100%;
+  overflow: hidden;
+}
+
+.app-shell {
+  display: grid;
+  grid-template-rows: var(--header-h) 1fr;
+  height: 100dvh;
+  overflow: hidden;
+  background: var(--bg-base);
+  color: var(--fg-primary);
+}
+
+.app-body {
+  display: grid;
+  grid-template-columns: var(--rail-w) 1fr var(--rail-w);
+  min-height: 0; /* CRITICAL — lets centre column shrink */
+}
+
+.docs-rail,
+.sys-rail {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow-y: auto;
+  border-color: var(--border-subtle);
+  background: var(--bg-elev);
+}
+.docs-rail { border-right: 1px solid var(--border-subtle); }
+.sys-rail  { border-left:  1px solid var(--border-subtle); }
+
+.chat-col {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;  /* CRITICAL */
+  min-width: 0;   /* CRITICAL — prevents pre/code from blowing out width */
+  background: var(--bg-base);
+}
+
+.chat-col__messages {
+  flex: 1;
+  min-height: 0;       /* CRITICAL — without this overflow-y: auto is dead */
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Mobile: rails collapse to drawers (drawer logic lands in Phase 7;
+   for now we simply collapse the grid to a single column). */
+@media (max-width: 920px) {
+  .app-body { grid-template-columns: 1fr; }
+  .docs-rail,
+  .sys-rail { display: none; }
+}
+
 @layer base {
   body {
     @apply bg-matrix-black text-matrix-white font-sans;

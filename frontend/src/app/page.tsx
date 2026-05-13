@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react';
 import ChatInterface from '@/components/Chat/ChatInterface';
 import MatrixRain from '@/components/UI/MatrixRain';
+import AppShell from '@/components/AppShell/AppShell';
+import { REDESIGN_V2 } from '@/lib/flags';
 
 // Matrix quotes for the loading screen
 const MATRIX_QUOTES = [
@@ -115,6 +117,12 @@ export default function Home() {
         </div>
       </div>
     );
+  }
+
+  // v2 redesign path: render the new three-pane AppShell.
+  // Legacy path below is unchanged when the flag is off.
+  if (REDESIGN_V2) {
+    return <AppShell showMatrixRain={showMatrixRain} />;
   }
 
   return (
