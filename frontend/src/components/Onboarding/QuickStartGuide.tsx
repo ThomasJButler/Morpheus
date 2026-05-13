@@ -1,32 +1,34 @@
 'use client';
 
-import GlassPanel from '../UI/GlassPanel';
+import Modal from '../UI/Modal';
 import Button from '../UI/Button';
 
 interface QuickStartGuideProps {
+  isOpen: boolean;
   onDismiss: () => void;
   onOpenSettings?: () => void;
 }
 
-export default function QuickStartGuide({ onDismiss, onOpenSettings }: QuickStartGuideProps) {
+export default function QuickStartGuide({ isOpen, onDismiss, onOpenSettings }: QuickStartGuideProps) {
   return (
-    <div className="animate-fade-in">
-      <GlassPanel className="max-w-3xl mx-auto overflow-hidden">
-        {/* Header with gradient */}
-        <div className="relative px-3 sm:px-6 pt-4 sm:pt-5 pb-3 sm:pb-4 border-b border-matrix-green/20">
-          <div className="absolute inset-0 bg-gradient-to-b from-matrix-green/5 to-transparent pointer-events-none" />
-          <div className="relative text-center">
-            <h2 className="text-xl sm:text-2xl font-mono font-bold text-matrix-green mb-1 sm:mb-2" style={{ textShadow: '0 0 30px rgba(0, 255, 0, 0.4)' }}>
-              Welcome to Morpheus
-            </h2>
-            <p className="text-matrix-white/60 text-xs sm:text-sm font-mono">
-              Your AI-powered document intelligence system
-            </p>
-          </div>
-        </div>
-
-        {/* Steps Grid */}
-        <div className="p-2 sm:p-5">
+    <Modal
+      isOpen={isOpen}
+      onClose={onDismiss}
+      title="Welcome to Morpheus"
+      size="xl"
+      icon={
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+          <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" />
+          <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
+        </svg>
+      }
+      footer={
+        <Button variant="primary" onClick={onDismiss}>
+          Got it, thanks!
+        </Button>
+      }
+    >
+      <div className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-2 sm:gap-3 mb-3 sm:mb-5">
             {/* Step 1: Add API Key */}
             <div className="group relative">
@@ -161,18 +163,7 @@ export default function QuickStartGuide({ onDismiss, onOpenSettings }: QuickStar
             </div>
           </div>
 
-          {/* Dismiss Button */}
-          <div className="flex justify-center">
-            <Button
-              variant="primary"
-              onClick={onDismiss}
-              className="px-4 sm:px-8 py-1.5 sm:py-2 text-xs sm:text-sm font-bold"
-            >
-              Got it, thanks!
-            </Button>
-          </div>
-        </div>
-      </GlassPanel>
-    </div>
+      </div>
+    </Modal>
   );
 }

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import GlassPanel from '../UI/GlassPanel';
+import Modal from '../UI/Modal';
 import Button from '../UI/Button';
 import { clsx } from 'clsx';
 import type { RAGMode } from '@/lib/types';
@@ -160,32 +160,39 @@ export default function Settings({ isOpen, onClose }: SettingsProps) {
   const currentModels = provider === 'anthropic' ? ANTHROPIC_MODELS : OPENAI_MODELS;
   const keyPlaceholder = provider === 'anthropic' ? 'sk-ant-...' : 'sk-...';
 
-  if (!isOpen) return null;
-
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
-      <GlassPanel className="w-full max-w-lg max-h-[90vh] overflow-y-auto animate-slide-up" noPadding>
-        <div className="p-6">
-          {/* Header */}
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-mono text-matrix-green matrix-glow flex items-center gap-2">
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-              </svg>
-              Settings
-            </h2>
-            <button
-              onClick={onClose}
-              className="p-2 rounded-lg text-matrix-white/60 hover:text-matrix-green hover:bg-matrix-green/10 transition-all duration-200"
-              aria-label="Close settings"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
-          </div>
-
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title="Settings"
+      size="md"
+      icon={
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+          <circle cx="12" cy="12" r="3" />
+          <path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1A1.7 1.7 0 0 0 4.6 9a1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z" />
+        </svg>
+      }
+      footer={
+        <>
+          <button
+            type="button"
+            onClick={handleClearSettings}
+            className="mr-auto px-3 py-1.5 text-[11px] font-mono text-mode-red hover:bg-mode-red/10 rounded-v2-sm transition-colors"
+          >
+            Clear all
+          </button>
+          <Button variant="secondary" onClick={onClose}>Cancel</Button>
+          <Button
+            variant="primary"
+            onClick={handleSave}
+            disabled={!apiKey && !anthropicApiKey}
+          >
+            Save
+          </Button>
+        </>
+      }
+    >
+      <div className="space-y-5">
           {/* Provider Tabs */}
           <div className="mb-6">
             <label className="block text-xs font-mono text-matrix-white/50 uppercase tracking-wider mb-3">
@@ -388,31 +395,7 @@ export default function Settings({ isOpen, onClose }: SettingsProps) {
             </div>
           </div>
 
-          <div className="matrix-divider" />
-
-          {/* Action Buttons */}
-          <div className="flex items-center justify-between">
-            <button
-              onClick={handleClearSettings}
-              className="px-3 py-2 text-xs font-mono text-red-400/70 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-all duration-200"
-            >
-              Clear All
-            </button>
-            <div className="flex gap-3">
-              <Button variant="secondary" onClick={onClose}>
-                Cancel
-              </Button>
-              <Button
-                variant="primary"
-                onClick={handleSave}
-                disabled={!apiKey && !anthropicApiKey}
-              >
-                Save
-              </Button>
-            </div>
-          </div>
-        </div>
-      </GlassPanel>
-    </div>
+      </div>
+    </Modal>
   );
 }

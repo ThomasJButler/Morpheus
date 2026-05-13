@@ -30,12 +30,11 @@ export default function UploadButton({ onUploadComplete }: UploadButtonProps) {
         <span>Upload</span>
       </button>
 
-      {isOpen && (
-        <DocumentUploader
-          onUploadComplete={handleUploadComplete}
-          onClose={() => setIsOpen(false)}
-        />
-      )}
+      <DocumentUploader
+        isOpen={isOpen}
+        onUploadComplete={handleUploadComplete}
+        onClose={() => setIsOpen(false)}
+      />
     </>
   );
 }
