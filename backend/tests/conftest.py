@@ -44,9 +44,7 @@ def sample_text_file() -> Generator[str, None, None]:
     Testing is crucial for ensuring the RAG pipeline works correctly.
     """
 
-    with tempfile.NamedTemporaryFile(
-        mode="w", suffix=".txt", delete=False
-    ) as f:
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".txt", delete=False) as f:
         f.write(content)
         temp_path = f.name
 
@@ -79,9 +77,7 @@ This is a **test** markdown document.
 This document tests the RAG system's ability to handle markdown.
 """
 
-    with tempfile.NamedTemporaryFile(
-        mode="w", suffix=".md", delete=False
-    ) as f:
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".md", delete=False) as f:
         f.write(content)
         temp_path = f.name
 
@@ -101,9 +97,7 @@ def mock_openai_embeddings():
         MagicMock: Mocked embeddings response
     """
     mock_response = MagicMock()
-    mock_response.data = [
-        MagicMock(embedding=[0.1] * 512) for _ in range(3)
-    ]
+    mock_response.data = [MagicMock(embedding=[0.1] * 512) for _ in range(3)]
     return mock_response
 
 
@@ -116,9 +110,7 @@ def mock_anthropic_response():
         MagicMock: Mocked Claude response
     """
     mock_response = MagicMock()
-    mock_response.content = [
-        MagicMock(text="This is a test response from Claude.")
-    ]
+    mock_response.content = [MagicMock(text="This is a test response from Claude.")]
     return mock_response
 
 
@@ -132,18 +124,14 @@ def mock_pinecone_index():
     """
     mock_index = MagicMock()
     mock_index.describe_index_stats.return_value = MagicMock(
-        total_vector_count=10,
-        dimension=512
+        total_vector_count=10, dimension=512
     )
     mock_index.query.return_value = {
         "matches": [
             {
                 "id": "test_1",
                 "score": 0.95,
-                "metadata": {
-                    "text": "This is test context.",
-                    "source": "test.txt"
-                }
+                "metadata": {"text": "This is test context.", "source": "test.txt"},
             }
         ]
     }
@@ -165,7 +153,7 @@ def sample_chat_message() -> dict:
         "message": "What is the main topic of the document?",
         "mode": "simple",
         "stream": False,
-        "session_id": "test-session-123"
+        "session_id": "test-session-123",
     }
 
 
@@ -181,18 +169,18 @@ def sample_chunks() -> list[dict]:
         {
             "text": "This is the first chunk of text.",
             "source": "test.txt",
-            "chunk_index": 0
+            "chunk_index": 0,
         },
         {
             "text": "This is the second chunk of text.",
             "source": "test.txt",
-            "chunk_index": 1
+            "chunk_index": 1,
         },
         {
             "text": "This is the third chunk of text.",
             "source": "test.txt",
-            "chunk_index": 2
-        }
+            "chunk_index": 2,
+        },
     ]
 
 
@@ -203,6 +191,7 @@ def reset_singleton():
     """
     # Reset Pinecone client singleton
     from app.core.pinecone_client import PineconeClient
+
     PineconeClient._instance = None
     PineconeClient._pc = None
     PineconeClient._index = None
@@ -220,12 +209,9 @@ def reset_singleton():
 # Mark all tests as asyncio
 def pytest_configure(config):
     """Configure pytest with custom markers."""
+    config.addinivalue_line("markers", "asyncio: mark test as requiring asyncio")
     config.addinivalue_line(
-        "markers", "asyncio: mark test as requiring asyncio"
+        "markers",
+        "integration: mark test as integration test (requires external services)",
     )
-    config.addinivalue_line(
-        "markers", "integration: mark test as integration test (requires external services)"
-    )
-    config.addinivalue_line(
-        "markers", "slow: mark test as slow running"
-    )
+    config.addinivalue_line("markers", "slow: mark test as slow running")

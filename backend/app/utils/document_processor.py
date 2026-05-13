@@ -30,7 +30,9 @@ class DocumentProcessor:
     def __init__(self):
         """Initialize document processor."""
         self.supported_types = settings.supported_file_types_list
-        logger.info(f"DocumentProcessor initialized. Supported types: {self.supported_types}")
+        logger.info(
+            f"DocumentProcessor initialized. Supported types: {self.supported_types}"
+        )
 
     def process_file(self, file_path: str) -> Dict:
         """
@@ -79,7 +81,9 @@ class DocumentProcessor:
             Dict with text and metadata
         """
         if PyPDF2 is None:
-            raise ImportError("PyPDF2 is required for PDF processing. Install with: pip install pypdf2")
+            raise ImportError(
+                "PyPDF2 is required for PDF processing. Install with: pip install pypdf2"
+            )
 
         path = Path(file_path)
         text_content = []
@@ -97,11 +101,13 @@ class DocumentProcessor:
                 for page_num, page in enumerate(pdf_reader.pages, 1):
                     text = page.extract_text()
                     if text.strip():
-                        text_content.append({
-                            "text": text,
-                            "page": page_num,
-                            "source": path.name,
-                        })
+                        text_content.append(
+                            {
+                                "text": text,
+                                "page": page_num,
+                                "source": path.name,
+                            }
+                        )
 
             logger.info(f"Extracted text from {metadata['pages']} pages in {path.name}")
 
@@ -141,10 +147,12 @@ class DocumentProcessor:
                 text = file.read()
 
             return {
-                "content": [{
-                    "text": text,
-                    "source": path.name,
-                }],
+                "content": [
+                    {
+                        "text": text,
+                        "source": path.name,
+                    }
+                ],
                 "metadata": metadata,
                 "success": True,
             }
@@ -220,20 +228,24 @@ class DocumentProcessor:
                         and paragraph.style.name.startswith("Heading")
                     ):
                         if current_text:
-                            text_content.append({
-                                "text": "\n".join(current_text),
-                                "source": path.name,
-                                "paragraph_index": paragraph_count,
-                            })
+                            text_content.append(
+                                {
+                                    "text": "\n".join(current_text),
+                                    "source": path.name,
+                                    "paragraph_index": paragraph_count,
+                                }
+                            )
                             current_text = []
 
             # Add any remaining text
             if current_text:
-                text_content.append({
-                    "text": "\n".join(current_text),
-                    "source": path.name,
-                    "paragraph_index": paragraph_count,
-                })
+                text_content.append(
+                    {
+                        "text": "\n".join(current_text),
+                        "source": path.name,
+                        "paragraph_index": paragraph_count,
+                    }
+                )
 
             metadata["paragraphs"] = paragraph_count
 
@@ -252,11 +264,13 @@ class DocumentProcessor:
 
                 if table_text:
                     table_count += 1
-                    text_content.append({
-                        "text": "\n".join(table_text),
-                        "source": path.name,
-                        "table_index": table_count,
-                    })
+                    text_content.append(
+                        {
+                            "text": "\n".join(table_text),
+                            "source": path.name,
+                            "table_index": table_count,
+                        }
+                    )
 
             metadata["tables"] = table_count
 

@@ -63,11 +63,13 @@ class TestInMemoryBM25:
     def test_score_higher_for_matching_terms(self):
         """Test documents with query terms score higher."""
         bm25 = InMemoryBM25()
-        bm25.fit([
-            "retrieval augmented generation is powerful",
-            "machine learning algorithms",
-            "vector embeddings for search"
-        ])
+        bm25.fit(
+            [
+                "retrieval augmented generation is powerful",
+                "machine learning algorithms",
+                "vector embeddings for search",
+            ]
+        )
 
         scores = bm25.score("retrieval augmented")
         # First doc should score highest (contains both query terms)
@@ -85,10 +87,7 @@ class TestInMemoryBM25:
     def test_score_term_frequency_matters(self):
         """Test documents with repeated terms score higher."""
         bm25 = InMemoryBM25()
-        bm25.fit([
-            "rag rag rag",
-            "rag is good"
-        ])
+        bm25.fit(["rag rag rag", "rag is good"])
 
         scores = bm25.score("rag")
         # First doc has 'rag' 3 times vs once
@@ -108,9 +107,9 @@ class TestHybridRAGInit:
 
     def test_initializes_clients(self):
         """Test HybridRAG initializes required clients."""
-        with patch('app.rag.hybrid.AsyncOpenAI') as mock_openai:
-            with patch('app.rag.hybrid.AsyncAnthropic') as mock_anthropic:
-                with patch('app.rag.hybrid.get_pinecone_client') as mock_pc:
+        with patch("app.rag.hybrid.AsyncOpenAI") as mock_openai:
+            with patch("app.rag.hybrid.AsyncAnthropic") as mock_anthropic:
+                with patch("app.rag.hybrid.get_pinecone_client") as mock_pc:
                     mock_pc.return_value.get_index.return_value = MagicMock()
 
                     rag = HybridRAG()
@@ -127,9 +126,9 @@ class TestHybridRAGEmbedding:
     @pytest.fixture
     def mock_hybrid_rag(self):
         """Create HybridRAG with mocked clients."""
-        with patch('app.rag.hybrid.AsyncOpenAI') as mock_openai:
-            with patch('app.rag.hybrid.AsyncAnthropic'):
-                with patch('app.rag.hybrid.get_pinecone_client') as mock_pc:
+        with patch("app.rag.hybrid.AsyncOpenAI") as mock_openai:
+            with patch("app.rag.hybrid.AsyncAnthropic"):
+                with patch("app.rag.hybrid.get_pinecone_client") as mock_pc:
                     mock_pc.return_value.get_index.return_value = MagicMock()
 
                     rag = HybridRAG()
@@ -165,9 +164,9 @@ class TestHybridRAGRetrieval:
     @pytest.fixture
     def mock_hybrid_rag(self):
         """Create HybridRAG with mocked retrieval."""
-        with patch('app.rag.hybrid.AsyncOpenAI') as mock_openai:
-            with patch('app.rag.hybrid.AsyncAnthropic'):
-                with patch('app.rag.hybrid.get_pinecone_client') as mock_pc:
+        with patch("app.rag.hybrid.AsyncOpenAI") as mock_openai:
+            with patch("app.rag.hybrid.AsyncAnthropic"):
+                with patch("app.rag.hybrid.get_pinecone_client") as mock_pc:
                     mock_index = MagicMock()
                     mock_pc.return_value.get_index.return_value = mock_index
 
@@ -186,7 +185,7 @@ class TestHybridRAGRetrieval:
                     mock_match1.score = 0.9
                     mock_match1.metadata = {
                         "text": "RAG is retrieval augmented generation",
-                        "source": "doc1.pdf"
+                        "source": "doc1.pdf",
                     }
 
                     mock_match2 = MagicMock()
@@ -194,7 +193,7 @@ class TestHybridRAGRetrieval:
                     mock_match2.score = 0.7
                     mock_match2.metadata = {
                         "text": "Machine learning algorithms",
-                        "source": "doc2.pdf"
+                        "source": "doc2.pdf",
                     }
 
                     mock_index.query.return_value = {
@@ -237,13 +236,9 @@ class TestHybridRAGRetrieval:
         mock_match = MagicMock()
         mock_match.id = "chunk1"
         mock_match.score = 0.8
-        mock_match.metadata = {
-            "text": "test",
-            "source": "doc.pdf",
-            "bm25_score": 0.6
-        }
+        mock_match.metadata = {"text": "test", "source": "doc.pdf", "bm25_score": 0.6}
 
-        with patch('app.rag.hybrid.settings') as mock_settings:
+        with patch("app.rag.hybrid.settings") as mock_settings:
             mock_settings.dense_weight = 0.7
             mock_settings.sparse_weight = 0.3
 
@@ -267,7 +262,7 @@ class TestHybridRAGRetrieval:
         mock_match2.score = 0.9
         mock_match2.metadata = {"bm25_score": 0.8}
 
-        with patch('app.rag.hybrid.settings') as mock_settings:
+        with patch("app.rag.hybrid.settings") as mock_settings:
             mock_settings.dense_weight = 0.5
             mock_settings.sparse_weight = 0.5
 
@@ -279,7 +274,7 @@ class TestHybridRAGRetrieval:
     @pytest.mark.asyncio
     async def test_retrieve_hybrid_returns_contexts_and_metrics(self, mock_hybrid_rag):
         """Test retrieve_hybrid returns contexts and metrics."""
-        with patch('app.rag.hybrid.settings') as mock_settings:
+        with patch("app.rag.hybrid.settings") as mock_settings:
             mock_settings.top_k_results = 10
             mock_settings.dense_weight = 0.7
             mock_settings.sparse_weight = 0.3
@@ -301,9 +296,9 @@ class TestHybridRAGCitations:
     @pytest.fixture
     def mock_hybrid_rag(self):
         """Create HybridRAG with mocked clients."""
-        with patch('app.rag.hybrid.AsyncOpenAI'):
-            with patch('app.rag.hybrid.AsyncAnthropic'):
-                with patch('app.rag.hybrid.get_pinecone_client') as mock_pc:
+        with patch("app.rag.hybrid.AsyncOpenAI"):
+            with patch("app.rag.hybrid.AsyncAnthropic"):
+                with patch("app.rag.hybrid.get_pinecone_client") as mock_pc:
                     mock_pc.return_value.get_index.return_value = MagicMock()
                     return HybridRAG()
 
@@ -315,7 +310,7 @@ class TestHybridRAGCitations:
                 "page": 5,
                 "chunk_id": "chunk1",
                 "score": 0.85,
-                "text": "This is sample text from the document."
+                "text": "This is sample text from the document.",
             }
         ]
 
@@ -343,7 +338,7 @@ class TestHybridRAGCitations:
                 "source": "doc1.pdf",
                 "page": 3,
                 "text": "Sample text",
-                "retrieval_source": "hybrid"
+                "retrieval_source": "hybrid",
             }
         ]
 
@@ -359,9 +354,9 @@ class TestHybridRAGStreaming:
     @pytest.fixture
     def mock_hybrid_rag(self):
         """Create HybridRAG with mocked streaming."""
-        with patch('app.rag.hybrid.AsyncOpenAI') as mock_openai:
-            with patch('app.rag.hybrid.AsyncAnthropic') as mock_anthropic:
-                with patch('app.rag.hybrid.get_pinecone_client') as mock_pc:
+        with patch("app.rag.hybrid.AsyncOpenAI") as mock_openai:
+            with patch("app.rag.hybrid.AsyncAnthropic") as mock_anthropic:
+                with patch("app.rag.hybrid.get_pinecone_client") as mock_pc:
                     mock_index = MagicMock()
                     mock_pc.return_value.get_index.return_value = mock_index
 
@@ -380,7 +375,7 @@ class TestHybridRAGStreaming:
                     mock_match.score = 0.9
                     mock_match.metadata = {
                         "text": "RAG is powerful",
-                        "source": "doc.pdf"
+                        "source": "doc.pdf",
                     }
                     mock_index.query.return_value = {"matches": [mock_match]}
 
@@ -403,7 +398,7 @@ class TestHybridRAGStreaming:
     @pytest.mark.asyncio
     async def test_process_query_streaming_yields_mode(self, mock_hybrid_rag):
         """Test streaming yields mode chunk first."""
-        with patch('app.rag.hybrid.settings') as mock_settings:
+        with patch("app.rag.hybrid.settings") as mock_settings:
             mock_settings.top_k_results = 5
             mock_settings.dense_weight = 0.7
             mock_settings.sparse_weight = 0.3
@@ -424,7 +419,7 @@ class TestHybridRAGStreaming:
     @pytest.mark.asyncio
     async def test_process_query_streaming_yields_citations(self, mock_hybrid_rag):
         """Test streaming yields citation chunks."""
-        with patch('app.rag.hybrid.settings') as mock_settings:
+        with patch("app.rag.hybrid.settings") as mock_settings:
             mock_settings.top_k_results = 5
             mock_settings.dense_weight = 0.7
             mock_settings.sparse_weight = 0.3
@@ -444,7 +439,7 @@ class TestHybridRAGStreaming:
     @pytest.mark.asyncio
     async def test_process_query_streaming_yields_tokens(self, mock_hybrid_rag):
         """Test streaming yields response tokens."""
-        with patch('app.rag.hybrid.settings') as mock_settings:
+        with patch("app.rag.hybrid.settings") as mock_settings:
             mock_settings.top_k_results = 5
             mock_settings.dense_weight = 0.7
             mock_settings.sparse_weight = 0.3
@@ -464,7 +459,7 @@ class TestHybridRAGStreaming:
     @pytest.mark.asyncio
     async def test_process_query_streaming_yields_done(self, mock_hybrid_rag):
         """Test streaming yields done chunk with metrics."""
-        with patch('app.rag.hybrid.settings') as mock_settings:
+        with patch("app.rag.hybrid.settings") as mock_settings:
             mock_settings.top_k_results = 5
             mock_settings.dense_weight = 0.7
             mock_settings.sparse_weight = 0.3
@@ -489,9 +484,9 @@ class TestHybridRAGErrorHandling:
     @pytest.fixture
     def error_hybrid_rag(self):
         """Create HybridRAG that throws errors."""
-        with patch('app.rag.hybrid.AsyncOpenAI') as mock_openai:
-            with patch('app.rag.hybrid.AsyncAnthropic'):
-                with patch('app.rag.hybrid.get_pinecone_client') as mock_pc:
+        with patch("app.rag.hybrid.AsyncOpenAI") as mock_openai:
+            with patch("app.rag.hybrid.AsyncAnthropic"):
+                with patch("app.rag.hybrid.get_pinecone_client") as mock_pc:
                     mock_pc.return_value.get_index.return_value = MagicMock()
 
                     rag = HybridRAG()
@@ -514,7 +509,7 @@ class TestHybridRAGErrorHandling:
     @pytest.mark.asyncio
     async def test_streaming_yields_error_chunk_on_failure(self, error_hybrid_rag):
         """Test streaming yields error chunk on failure."""
-        with patch('app.rag.hybrid.settings') as mock_settings:
+        with patch("app.rag.hybrid.settings") as mock_settings:
             mock_settings.embedding_model = "text-embedding-3-small"
 
             chunks = []

@@ -22,21 +22,20 @@ class TestDocumentUpload:
         test_client: TestClient,
         sample_text_file: str,
         mock_openai_embeddings,
-        mock_pinecone_index
+        mock_pinecone_index,
     ):
         """Test successful text file upload."""
         # Setup mocks
         mock_openai.embeddings.create = AsyncMock(return_value=mock_openai_embeddings)
         mock_pinecone.return_value.get_both_indexes.return_value = (
             mock_pinecone_index,
-            None
+            None,
         )
 
         # Upload file
         with open(sample_text_file, "rb") as f:
             response = test_client.post(
-                "/api/documents/upload",
-                files={"file": ("test.txt", f, "text/plain")}
+                "/api/documents/upload", files={"file": ("test.txt", f, "text/plain")}
             )
 
         # Assertions
@@ -56,21 +55,20 @@ class TestDocumentUpload:
         test_client: TestClient,
         sample_markdown_file: str,
         mock_openai_embeddings,
-        mock_pinecone_index
+        mock_pinecone_index,
     ):
         """Test successful markdown file upload."""
         # Setup mocks
         mock_openai.embeddings.create = AsyncMock(return_value=mock_openai_embeddings)
         mock_pinecone.return_value.get_both_indexes.return_value = (
             mock_pinecone_index,
-            None
+            None,
         )
 
         # Upload file
         with open(sample_markdown_file, "rb") as f:
             response = test_client.post(
-                "/api/documents/upload",
-                files={"file": ("test.md", f, "text/markdown")}
+                "/api/documents/upload", files={"file": ("test.md", f, "text/markdown")}
             )
 
         # Assertions
@@ -86,7 +84,7 @@ class TestDocumentUpload:
 
         response = test_client.post(
             "/api/documents/upload",
-            files={"file": ("test.xyz", fake_file, "application/octet-stream")}
+            files={"file": ("test.xyz", fake_file, "application/octet-stream")},
         )
 
         # Should return 400 Bad Request
@@ -103,24 +101,17 @@ class TestDocumentUpload:
     @patch("app.api.documents.get_pinecone_client")
     @patch("app.api.documents.openai_client")
     def test_upload_with_processing_error(
-        self,
-        mock_openai,
-        mock_pinecone,
-        test_client: TestClient,
-        sample_text_file: str
+        self, mock_openai, mock_pinecone, test_client: TestClient, sample_text_file: str
     ):
         """Test upload when processing fails."""
         # Mock processing to fail
         with patch("app.api.documents.document_processor.process_file") as mock_process:
-            mock_process.return_value = {
-                "success": False,
-                "error": "Processing failed"
-            }
+            mock_process.return_value = {"success": False, "error": "Processing failed"}
 
             with open(sample_text_file, "rb") as f:
                 response = test_client.post(
                     "/api/documents/upload",
-                    files={"file": ("test.txt", f, "text/plain")}
+                    files={"file": ("test.txt", f, "text/plain")},
                 )
 
             # Should return 422
@@ -133,19 +124,13 @@ class TestDocumentStats:
 
     @patch("app.api.documents.get_pinecone_client")
     def test_get_stats_success(
-        self,
-        mock_pinecone,
-        test_client: TestClient,
-        mock_pinecone_index
+        self, mock_pinecone, test_client: TestClient, mock_pinecone_index
     ):
         """Test successful retrieval of document stats."""
         # Setup mock
         mock_client = MagicMock()
         mock_client.index_stats.return_value = {
-            "dense": {
-                "total_vector_count": 42,
-                "dimension": 512
-            }
+            "dense": {"total_vector_count": 42, "dimension": 512}
         }
         mock_pinecone.return_value = mock_client
 
@@ -157,14 +142,12 @@ class TestDocumentStats:
         assert "stats" in data
 
     @patch("app.api.documents.get_pinecone_client")
-    def test_get_stats_error(
-        self,
-        mock_pinecone,
-        test_client: TestClient
-    ):
+    def test_get_stats_error(self, mock_pinecone, test_client: TestClient):
         """Test stats retrieval when Pinecone fails."""
         # Mock to raise exception
-        mock_pinecone.return_value.index_stats.side_effect = Exception("Connection error")
+        mock_pinecone.return_value.index_stats.side_effect = Exception(
+            "Connection error"
+        )
 
         response = test_client.get("/api/documents/stats")
 
@@ -176,11 +159,7 @@ class TestDeleteDocuments:
     """Tests for DELETE /api/documents/all endpoint."""
 
     @patch("app.api.documents.get_pinecone_client")
-    def test_delete_all_success(
-        self,
-        mock_pinecone,
-        test_client: TestClient
-    ):
+    def test_delete_all_success(self, mock_pinecone, test_client: TestClient):
         """Test successful deletion of all documents."""
         # Setup mock
         mock_client = MagicMock()
@@ -195,11 +174,7 @@ class TestDeleteDocuments:
         assert "deleted" in data["message"].lower()
 
     @patch("app.api.documents.get_pinecone_client")
-    def test_delete_all_failure(
-        self,
-        mock_pinecone,
-        test_client: TestClient
-    ):
+    def test_delete_all_failure(self, mock_pinecone, test_client: TestClient):
         """Test deletion failure."""
         # Setup mock to return failure
         mock_client = MagicMock()
@@ -212,11 +187,7 @@ class TestDeleteDocuments:
         assert "failed" in response.json()["detail"].lower()
 
     @patch("app.api.documents.get_pinecone_client")
-    def test_delete_all_error(
-        self,
-        mock_pinecone,
-        test_client: TestClient
-    ):
+    def test_delete_all_error(self, mock_pinecone, test_client: TestClient):
         """Test deletion when exception occurs."""
         # Mock to raise exception
         mock_client = MagicMock()
@@ -242,8 +213,7 @@ class TestDocumentUploadIntegration:
 
         with open(sample_text_file, "rb") as f:
             response = test_client.post(
-                "/api/documents/upload",
-                files={"file": ("test.txt", f, "text/plain")}
+                "/api/documents/upload", files={"file": ("test.txt", f, "text/plain")}
             )
 
         assert response.status_code == 200
