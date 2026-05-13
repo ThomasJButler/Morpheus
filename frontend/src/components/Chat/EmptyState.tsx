@@ -6,7 +6,7 @@ export interface EmptyStateProps {
 
 const QUICK_PROMPTS = [
   'What is this document about?',
-  'Summarize the key points',
+  'Summarise the key points',
   'Find references to…',
 ];
 

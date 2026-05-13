@@ -3,6 +3,7 @@
 import MatrixRain from '@/components/UI/MatrixRain';
 import Header from './Header';
 import Body from './Body';
+import ColdStart from './ColdStart';
 
 interface AppShellProps {
   showMatrixRain?: boolean;
@@ -18,6 +19,7 @@ export default function AppShell({ showMatrixRain = false }: AppShellProps) {
       )}
       <Header />
       <Body />
+      <ColdStart />
     </div>
   );
 }
