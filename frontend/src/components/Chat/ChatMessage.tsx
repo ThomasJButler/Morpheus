@@ -118,15 +118,16 @@ export default function ChatMessage({ message, index = 0 }: ChatMessageProps) {
         </div>
       </header>
 
-      {/* Copy button (absolute) */}
+      {/* Copy button (absolute) — always 44px on mobile (touch-friendly),
+          dimmed/expanded on desktop hover. */}
       <button
         onClick={handleCopy}
         className="
-          absolute top-2.5 right-2.5
+          absolute top-2 right-2
           opacity-60 sm:opacity-0 sm:group-hover:opacity-100
           transition-opacity
           inline-flex items-center justify-center
-          w-7 h-7 rounded-v2-sm
+          w-11 h-11 sm:w-9 sm:h-9 rounded-v2-sm
           border border-edge-subtle bg-surface-card
           text-fg-muted hover:text-accent hover:border-edge-default
         "

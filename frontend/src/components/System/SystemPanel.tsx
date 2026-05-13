@@ -3,9 +3,17 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useSearchParams, usePathname, useRouter } from 'next/navigation';
 import type { RAGMode, EnhancedRetrievalMetrics, QueryAnalysis, Citation } from '@/lib/types';
+import { useSwipeToClose } from '@/lib/hooks/useSwipeToClose';
 import StatusTab from './StatusTab';
 import SourcesTab from './SourcesTab';
 import SystemTab from './SystemTab';
+
+interface SystemPanelProps {
+  /** Mobile drawer open state (only meaningful below 920px). */
+  mobileOpen?: boolean;
+  /** Called when the user swipes the drawer closed. */
+  onMobileClose?: () => void;
+}
 
 /**
  * v2 right rail — replaces the Phase 1 sys-rail placeholder in Body.tsx.
@@ -40,10 +48,20 @@ function isValidTab(value: string | null): value is SystemPanelTab {
   return !!value && (VALID_TABS as string[]).includes(value);
 }
 
-export default function SystemPanel() {
+export default function SystemPanel({
+  mobileOpen = false,
+  onMobileClose,
+}: SystemPanelProps = {}) {
   const searchParams = useSearchParams();
   const pathname = usePathname();
   const router = useRouter();
+
+  // System rail is on the right, so swiping RIGHT closes it.
+  const swipe = useSwipeToClose({
+    direction: 'right',
+    enabled: mobileOpen,
+    onClose: onMobileClose ?? (() => {}),
+  });
 
   const urlTab = searchParams?.get('panel') ?? null;
   const initialTab: SystemPanelTab = isValidTab(urlTab) ? urlTab : DEFAULT_TAB;
@@ -94,7 +112,15 @@ export default function SystemPanel() {
   }, []);
 
   return (
-    <aside className="sys-rail" aria-label="System panel">
+    <aside
+      id="sys-rail"
+      className={`sys-rail${mobileOpen ? ' is-open' : ''}`}
+      aria-label="System panel"
+      aria-hidden={!mobileOpen && undefined}
+      onTouchStart={swipe.onTouchStart}
+      onTouchMove={swipe.onTouchMove}
+      onTouchEnd={swipe.onTouchEnd}
+    >
       <nav
         role="tablist"
         aria-label="System panel tabs"
@@ -157,7 +183,7 @@ function TabButton({ icon, label, active, glow, onClick }: TabButtonProps) {
       onClick={onClick}
       className={`
         inline-flex items-center gap-1.5
-        px-2.5 py-1.5 rounded-v2-sm
+        px-3 py-2 min-h-[44px] rounded-v2-sm
         font-mono text-[11px] tracking-wide
         transition-colors
         ${active
@@ -174,7 +200,7 @@ function TabButton({ icon, label, active, glow, onClick }: TabButtonProps) {
 
 function IconActivity() {
   return (
-    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
       <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
     </svg>
   );
@@ -182,7 +208,7 @@ function IconActivity() {
 
 function IconQuote() {
   return (
-    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
       <path d="M3 21c3 0 7-1 7-8V5c0-1.25-.756-2.017-2-2H4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2h2c0 4-1 5-3 5z" />
       <path d="M15 21c3 0 7-1 7-8V5c0-1.25-.757-2.017-2-2h-4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2h2c0 4-1 5-3 5z" />
     </svg>
@@ -191,7 +217,7 @@ function IconQuote() {
 
 function IconCpu() {
   return (
-    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
       <rect x="4" y="4" width="16" height="16" rx="2" />
       <rect x="9" y="9" width="6" height="6" />
       <path d="M9 1v3M15 1v3M9 20v3M15 20v3M1 9h3M1 15h3M20 9h3M20 15h3" />

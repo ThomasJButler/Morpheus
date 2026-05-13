@@ -12,7 +12,7 @@ Upload your private documents and ask questions in natural language. Morpheus le
 
 ## Why Morpheus
 
-- **Private by design** - Each session creates a fresh Pinecone vector namespace. When your session ends, your data is gone. Nothing is stored permanently.
+- **Private by design** - Each session creates a fresh Pinecone vector namespace. When your session ends, your documents and conversation are deleted. Nothing is stored permanently.
 - **Cost effective** - Pay only for the tokens you use instead of $20/month for AI Pro subscriptions.
 - **Unique insights** - Get answers derived specifically from your documents, not generic web results.
 
@@ -21,8 +21,19 @@ Upload your private documents and ask questions in natural language. Morpheus le
 1. Documents are chunked and embedded into vectors
 2. Stored in Pinecone under your session namespace
 3. Retrieved via semantic search when you ask questions
-4. Claude generates answers from the retrieved context
+4. Claude (or your chosen model) generates answers from the retrieved context
 5. New session = fresh start, no data carried over
+
+## Privacy & API keys
+
+Morpheus is built so your data stays yours.
+
+- **API keys live in your browser.** When you paste your Anthropic or OpenAI key into Settings it's saved to `localStorage` (or only `sessionStorage` if you turn off "Remember settings"). It never lands in a database we own.
+- **Where the key goes when you chat.** The browser POSTs your message to this app's own server route (a Next.js BFF), which then calls Anthropic or OpenAI on your behalf with the key you supplied. We don't log it, persist it, or share it with any third party. The server route is a thin pass-through — it exists so the key isn't exposed to other origins via CORS, not so we can collect it.
+- **Conversations aren't saved.** Chat history lives in your browser for the current session. When you click "Clear" or close the tab, it's gone. Nothing is persisted server-side.
+- **Documents are session-scoped.** Uploaded documents go into a per-session Pinecone namespace and are deleted when the session ends.
+
+In short: no analytics on your queries, no transcripts written to disk, no key telemetry. The only third parties involved are the ones you explicitly choose (Anthropic, OpenAI, Pinecone), called with credentials you supply.
 
 ## Tech Stack
 

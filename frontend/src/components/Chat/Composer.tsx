@@ -133,7 +133,7 @@ const Composer = forwardRef<HTMLTextAreaElement, ComposerProps>(function Compose
               type="button"
               onClick={onOpenSettings}
               className={`
-                inline-flex items-center gap-1 px-2 py-0.5
+                inline-flex items-center gap-1 px-2.5 min-h-[32px] sm:min-h-[28px]
                 rounded-full border border-edge-subtle
                 ${modeMeta.tone}
                 hover:border-edge-default hover:bg-surface-card-hover

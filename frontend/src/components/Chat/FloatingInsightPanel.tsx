@@ -66,20 +66,22 @@ export default function FloatingInsightPanel({
   return (
     <div
       className={`
-        flex-shrink-0 mx-2 mb-2
-        bg-surface-card border border-edge-subtle
-        rounded-v2-md
+        absolute left-2 right-2 bottom-2 z-10
+        bg-surface-elev border border-edge-subtle
+        rounded-v2-md shadow-glow-sm
+        flex flex-col overflow-hidden
         slide-up-fade
-        transition-all duration-300
-        ${isExpanded ? 'max-h-[300px] overflow-y-auto' : 'max-h-[48px] overflow-hidden'}
+        transition-[max-height] duration-300 ease-out
+        ${isExpanded ? 'max-h-[calc(100%-1rem)]' : 'max-h-[48px]'}
       `}
     >
-      {/* Collapsed Header - Always visible */}
+      {/* Collapsed Header - Always visible. min-h ensures the pill is a
+          touch-friendly tap target on mobile. */}
       <button
         onClick={() => setIsExpanded(!isExpanded)}
         className="
-          w-full flex items-center justify-between
-          px-3 py-2.5
+          flex-shrink-0 w-full flex items-center justify-between
+          px-3 py-2.5 min-h-[44px]
           hover:bg-surface-card-hover
           transition-colors duration-200
         "
@@ -134,12 +136,15 @@ export default function FloatingInsightPanel({
           )}
         </div>
 
-        {/* Toggle chevron */}
+        {/* Toggle chevron — points in the direction of motion: up when
+            collapsed (will expand upward), down when expanded (will
+            collapse downward). Same path, rotated 180° in the collapsed
+            state. */}
         <svg
           className={`
             w-4 h-4 text-fg-muted
             transition-transform duration-200
-            ${isExpanded ? 'rotate-180' : ''}
+            ${isExpanded ? '' : 'rotate-180'}
           `}
           fill="none"
           stroke="currentColor"
@@ -150,12 +155,14 @@ export default function FloatingInsightPanel({
         </svg>
       </button>
 
-      {/* Expanded Content */}
+      {/* Expanded Content — scrolls internally when content exceeds the
+          panel's expanded height. */}
       <div
         id="insight-panel-content"
         className={`
-          overflow-hidden transition-all duration-300 ease-out
-          ${isExpanded ? 'opacity-100' : 'opacity-0'}
+          flex-1 min-h-0 overflow-y-auto
+          transition-opacity duration-300 ease-out
+          ${isExpanded ? 'opacity-100' : 'opacity-0 pointer-events-none'}
         `}
       >
         <div className="px-2 pb-2">

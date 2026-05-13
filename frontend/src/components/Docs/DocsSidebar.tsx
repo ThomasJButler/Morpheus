@@ -3,8 +3,16 @@
 import { useState, useEffect, useCallback } from 'react';
 import { apiClient } from '@/lib/api-client';
 import { useBackendHealth } from '@/lib/hooks/useBackendHealth';
+import { useSwipeToClose } from '@/lib/hooks/useSwipeToClose';
 import DocumentUploader from '../Documents/DocumentUploader';
 import DocItem from './DocItem';
+
+interface DocsSidebarProps {
+  /** Mobile drawer open state (only meaningful below 920px). */
+  mobileOpen?: boolean;
+  /** Called when the user swipes the drawer closed. */
+  onMobileClose?: () => void;
+}
 
 /**
  * Custom event dispatched by DocumentUploader.tsx on successful upload.
@@ -21,7 +29,10 @@ const REFRESH_EVENT = 'morpheus:documents-changed';
  * (Phase 6 restyles it). Header "Toggle constructs" wires up in Phase 7
  * alongside the mobile drawer pattern.
  */
-export default function DocsSidebar() {
+export default function DocsSidebar({
+  mobileOpen = false,
+  onMobileClose,
+}: DocsSidebarProps = {}) {
   const health = useBackendHealth();
   const [docs, setDocs] = useState<string[]>([]);
   const [count, setCount] = useState(0);
@@ -29,6 +40,13 @@ export default function DocsSidebar() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isUploaderOpen, setIsUploaderOpen] = useState(false);
+
+  // Docs rail is on the left, so swiping LEFT closes it.
+  const swipe = useSwipeToClose({
+    direction: 'left',
+    enabled: mobileOpen,
+    onClose: onMobileClose ?? (() => {}),
+  });
 
   const fetchDocs = useCallback(async () => {
     setError(null);
@@ -63,7 +81,15 @@ export default function DocsSidebar() {
   }, [fetchDocs]);
 
   return (
-    <aside className="docs-rail" aria-label="Constructs (documents)">
+    <aside
+      id="docs-rail"
+      className={`docs-rail${mobileOpen ? ' is-open' : ''}`}
+      aria-label="Constructs (documents)"
+      aria-hidden={!mobileOpen && undefined}
+      onTouchStart={swipe.onTouchStart}
+      onTouchMove={swipe.onTouchMove}
+      onTouchEnd={swipe.onTouchEnd}
+    >
       <header className="flex items-center justify-between gap-2 px-3 py-3 border-b border-edge-subtle">
         <div className="flex items-center gap-2 min-w-0">
           <FolderIcon />

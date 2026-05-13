@@ -19,9 +19,9 @@ export interface UserSettings {
 
 const DEFAULT_SETTINGS: UserSettings = {
   openaiApiKey: '',
-  openaiModel: 'gpt-3.5-turbo',
+  openaiModel: 'gpt-5.4-mini',
   anthropicApiKey: '',
-  anthropicModel: 'claude-sonnet-4-20250514',
+  anthropicModel: 'claude-sonnet-4-6',
   provider: 'anthropic',
   saveApiKey: true,
   // Default to auto mode for intelligent routing

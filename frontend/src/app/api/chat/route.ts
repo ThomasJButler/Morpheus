@@ -88,7 +88,7 @@ export async function POST(req: Request) {
           { status: 401, headers: { 'Content-Type': 'application/json' } }
         );
       }
-      const model = openaiModel || 'gpt-3.5-turbo';
+      const model = openaiModel || 'gpt-5.4-mini';
       const openai = createOpenAI({ apiKey });
       aiModel = openai(model);
       console.log(`[BFF] Using OpenAI provider (model: ${model})`);
@@ -101,7 +101,7 @@ export async function POST(req: Request) {
           { status: 401, headers: { 'Content-Type': 'application/json' } }
         );
       }
-      const model = anthropicModel || 'claude-sonnet-4-20250514';
+      const model = anthropicModel || 'claude-sonnet-4-6';
       const anthropic = createAnthropic({ apiKey });
       aiModel = anthropic(model);
       console.log(`[BFF] Using Anthropic provider (model: ${model})`);
