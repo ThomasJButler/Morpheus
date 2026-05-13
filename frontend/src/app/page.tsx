@@ -74,7 +74,7 @@ export default function Home() {
               MORPHEUS
             </h1>
             <div className="flex items-center justify-center gap-2 text-matrix-green text-lg sm:text-xl font-mono">
-              <span className="text-matrix-green/70">Initializing</span>
+              <span className="text-matrix-green/70">Initialising</span>
               <span className="typing-indicator">
                 <span />
                 <span />

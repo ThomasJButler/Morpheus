@@ -582,7 +582,7 @@ export default function ChatInterface({ fillParent = false }: ChatInterfaceProps
         {!isInitialized && (
           <div className="p-2 bg-matrix-green/10 border border-matrix-green/30 rounded-md text-matrix-green text-xs font-mono flex items-center">
             <span className="animate-pulse mr-2">●</span>
-            <span>Initializing session...</span>
+            <span>Initialising session...</span>
           </div>
         )}
 
