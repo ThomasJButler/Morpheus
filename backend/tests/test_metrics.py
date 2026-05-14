@@ -15,10 +15,7 @@ class TestCompareEndpoint:
     @patch("app.api.metrics.SimpleRAG")
     @patch("app.api.metrics.HybridRAG")
     def test_compare_modes_without_agentic(
-        self,
-        mock_hybrid_class,
-        mock_simple_class,
-        test_client: TestClient
+        self, mock_hybrid_class, mock_simple_class, test_client: TestClient
     ):
         """Test RAG mode comparison without agentic mode."""
         # Setup simple RAG mock
@@ -27,7 +24,7 @@ class TestCompareEndpoint:
             return_value=(
                 "Simple response",
                 [{"text": "ctx", "source": "test.txt", "score": 0.9}],
-                MagicMock(query_time_ms=100.0, num_results=3)
+                MagicMock(query_time_ms=100.0, num_results=3),
             )
         )
         mock_simple_class.return_value = mock_simple
@@ -38,14 +35,14 @@ class TestCompareEndpoint:
             return_value=(
                 "Hybrid response",
                 [{"text": "ctx1", "source": "test.txt", "score": 0.95}],
-                MagicMock(query_time_ms=150.0, num_results=5)
+                MagicMock(query_time_ms=150.0, num_results=5),
             )
         )
         mock_hybrid_class.return_value = mock_hybrid
 
         response = test_client.get(
             "/api/metrics/compare",
-            params={"query": "test query", "include_agentic": False}
+            params={"query": "test query", "include_agentic": False},
         )
 
         assert response.status_code == 200
@@ -65,28 +62,28 @@ class TestCompareEndpoint:
         mock_hybrid_class,
         mock_simple_class,
         mock_agentic_class,
-        test_client: TestClient
+        test_client: TestClient,
     ):
         """Test RAG mode comparison including agentic mode."""
         # Setup mocks
         for mock_class, time_ms in [
             (mock_simple_class, 100.0),
             (mock_hybrid_class, 150.0),
-            (mock_agentic_class, 500.0)
+            (mock_agentic_class, 500.0),
         ]:
             mock_instance = MagicMock()
             mock_instance.process_query = AsyncMock(
                 return_value=(
                     "Response",
                     [],
-                    MagicMock(query_time_ms=time_ms, num_results=5)
+                    MagicMock(query_time_ms=time_ms, num_results=5),
                 )
             )
             mock_class.return_value = mock_instance
 
         response = test_client.get(
             "/api/metrics/compare",
-            params={"query": "test query", "include_agentic": True}
+            params={"query": "test query", "include_agentic": True},
         )
 
         assert response.status_code == 200
@@ -101,33 +98,23 @@ class TestCompareEndpoint:
     @patch("app.api.metrics.SimpleRAG")
     @patch("app.api.metrics.HybridRAG")
     def test_compare_handles_mode_failure(
-        self,
-        mock_hybrid_class,
-        mock_simple_class,
-        test_client: TestClient
+        self, mock_hybrid_class, mock_simple_class, test_client: TestClient
     ):
         """Test comparison when one mode fails."""
         # Simple succeeds
         mock_simple = MagicMock()
         mock_simple.process_query = AsyncMock(
-            return_value=(
-                "Response",
-                [],
-                MagicMock(query_time_ms=100.0, num_results=3)
-            )
+            return_value=("Response", [], MagicMock(query_time_ms=100.0, num_results=3))
         )
         mock_simple_class.return_value = mock_simple
 
         # Hybrid fails
         mock_hybrid = MagicMock()
-        mock_hybrid.process_query = AsyncMock(
-            side_effect=Exception("Hybrid failed")
-        )
+        mock_hybrid.process_query = AsyncMock(side_effect=Exception("Hybrid failed"))
         mock_hybrid_class.return_value = mock_hybrid
 
         response = test_client.get(
-            "/api/metrics/compare",
-            params={"query": "test query"}
+            "/api/metrics/compare", params={"query": "test query"}
         )
 
         assert response.status_code == 200
@@ -147,18 +134,14 @@ class TestSessionMetrics:
     """Tests for session management endpoints."""
 
     @patch("app.api.metrics.get_session_manager")
-    def test_get_session_metrics(
-        self,
-        mock_session_manager,
-        test_client: TestClient
-    ):
+    def test_get_session_metrics(self, mock_session_manager, test_client: TestClient):
         """Test GET /api/metrics/sessions endpoint."""
         # Setup mock
         mock_manager = MagicMock()
         mock_manager.get_session_stats.return_value = {
             "total_sessions": 10,
             "active_sessions": 7,
-            "expired_sessions": 3
+            "expired_sessions": 3,
         }
         mock_session_manager.return_value = mock_manager
 
@@ -171,11 +154,7 @@ class TestSessionMetrics:
         assert data["stats"]["total_sessions"] == 10
 
     @patch("app.api.metrics.get_session_manager")
-    def test_session_metrics_error(
-        self,
-        mock_session_manager,
-        test_client: TestClient
-    ):
+    def test_session_metrics_error(self, mock_session_manager, test_client: TestClient):
         """Test session metrics when manager fails."""
         mock_session_manager.side_effect = Exception("Manager error")
 
@@ -185,16 +164,14 @@ class TestSessionMetrics:
 
     @patch("app.api.metrics.get_session_manager")
     def test_cleanup_expired_sessions(
-        self,
-        mock_session_manager,
-        test_client: TestClient
+        self, mock_session_manager, test_client: TestClient
     ):
         """Test POST /api/metrics/sessions/cleanup endpoint."""
         # Setup mock
         mock_manager = MagicMock()
         mock_manager.get_session_stats.side_effect = [
             {"total_sessions": 15},  # Before cleanup
-            {"total_sessions": 10}   # After cleanup
+            {"total_sessions": 10},  # After cleanup
         ]
         mock_session_manager.return_value = mock_manager
 
@@ -212,11 +189,7 @@ class TestPerformanceEndpoint:
     """Tests for GET /api/metrics/performance endpoint."""
 
     @patch("app.api.metrics.HybridRAG")
-    def test_performance_benchmark(
-        self,
-        mock_hybrid_class,
-        test_client: TestClient
-    ):
+    def test_performance_benchmark(self, mock_hybrid_class, test_client: TestClient):
         """Test performance benchmarking."""
         # Setup mock to return varying times
         mock_hybrid = MagicMock()
@@ -228,15 +201,14 @@ class TestPerformanceEndpoint:
             return (
                 "Response",
                 [{"text": "ctx", "source": "test.txt"}],
-                MagicMock(query_time_ms=time_ms, num_results=5)
+                MagicMock(query_time_ms=time_ms, num_results=5),
             )
 
         mock_hybrid.process_query = mock_query
         mock_hybrid_class.return_value = mock_hybrid
 
         response = test_client.get(
-            "/api/metrics/performance",
-            params={"query": "test query", "iterations": 3}
+            "/api/metrics/performance", params={"query": "test query", "iterations": 3}
         )
 
         assert response.status_code == 200
@@ -252,16 +224,14 @@ class TestPerformanceEndpoint:
         """Test performance with invalid iteration count."""
         # Too many iterations
         response = test_client.get(
-            "/api/metrics/performance",
-            params={"query": "test", "iterations": 20}
+            "/api/metrics/performance", params={"query": "test", "iterations": 20}
         )
 
         assert response.status_code == 422  # Validation error
 
         # Zero iterations
         response = test_client.get(
-            "/api/metrics/performance",
-            params={"query": "test", "iterations": 0}
+            "/api/metrics/performance", params={"query": "test", "iterations": 0}
         )
 
         assert response.status_code == 422
@@ -278,7 +248,7 @@ class TestHealthDetailed:
         mock_simple_class,
         mock_pinecone,
         mock_session_manager,
-        test_client: TestClient
+        test_client: TestClient,
     ):
         """Test detailed health check when all services are healthy."""
         # Setup mocks
@@ -310,7 +280,7 @@ class TestHealthDetailed:
         mock_simple_class,
         mock_pinecone,
         mock_session_manager,
-        test_client: TestClient
+        test_client: TestClient,
     ):
         """Test detailed health check when a component fails."""
         # Pinecone fails
@@ -346,8 +316,7 @@ class TestMetricsIntegration:
         pytest.skip("Integration test - requires indexed documents")
 
         response = test_client.get(
-            "/api/metrics/compare",
-            params={"query": "What is machine learning?"}
+            "/api/metrics/compare", params={"query": "What is machine learning?"}
         )
 
         assert response.status_code == 200

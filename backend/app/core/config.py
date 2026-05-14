@@ -17,8 +17,13 @@ class Settings(BaseSettings):
     """
 
     # API Keys - Anthropic/OpenAI are optional since users provide via frontend
-    anthropic_api_key: Optional[str] = Field(default=None, description="Anthropic API key for Claude (optional - users provide via frontend)")
-    openai_api_key: Optional[str] = Field(default=None, description="OpenAI API key for embeddings")
+    anthropic_api_key: Optional[str] = Field(
+        default=None,
+        description="Anthropic API key for Claude (optional - users provide via frontend)",
+    )
+    openai_api_key: Optional[str] = Field(
+        default=None, description="OpenAI API key for embeddings"
+    )
     pinecone_api_key: str = Field(..., description="Pinecone API key")
 
     # Pinecone Configuration
@@ -32,7 +37,7 @@ class Settings(BaseSettings):
 
     # Model Configuration
     anthropic_model: str = Field(
-        default="claude-3-5-sonnet-20241022", description="Claude model to use"
+        default="claude-sonnet-4-6", description="Claude model to use"
     )
     embedding_model: str = Field(
         default="text-embedding-3-large", description="OpenAI embedding model"
@@ -48,15 +53,10 @@ class Settings(BaseSettings):
 
     # RAG Mode Configuration (Tiered RAG System)
     default_rag_mode: str = Field(
-        default="auto",
-        description="Default RAG mode: simple, hybrid, agentic, or auto"
+        default="auto", description="Default RAG mode: simple, hybrid, agentic, or auto"
     )
-    enable_hybrid_rag: bool = Field(
-        default=True, description="Enable HybridRAG tier"
-    )
-    enable_agentic_rag: bool = Field(
-        default=True, description="Enable AgenticRAG tier"
-    )
+    enable_hybrid_rag: bool = Field(default=True, description="Enable HybridRAG tier")
+    enable_agentic_rag: bool = Field(default=True, description="Enable AgenticRAG tier")
 
     # Hybrid RAG Settings (Dense + Sparse retrieval)
     dense_weight: float = Field(
@@ -103,9 +103,7 @@ class Settings(BaseSettings):
     supported_file_types: str = Field(
         default="pdf,txt,md,docx", description="Comma-separated supported file types"
     )
-    max_file_size_mb: int = Field(
-        default=50, description="Maximum file size in MB"
-    )
+    max_file_size_mb: int = Field(default=50, description="Maximum file size in MB")
 
     # API Configuration
     api_host: str = Field(default="0.0.0.0", description="API host")

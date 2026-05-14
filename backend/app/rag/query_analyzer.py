@@ -13,7 +13,7 @@ Features:
 
 import logging
 import re
-from typing import List, Optional, Tuple
+from typing import List, Tuple
 
 from anthropic import AsyncAnthropic
 from openai import AsyncOpenAI
@@ -111,17 +111,37 @@ class QueryAnalyzer:
 
         # Comparative/analytical terms
         analytical_terms = [
-            "vs", "versus", "compare", "contrast", "difference",
-            "similarities", "advantages", "disadvantages", "pros", "cons",
-            "better", "worse", "best", "optimal", "tradeoffs", "trade-offs"
+            "vs",
+            "versus",
+            "compare",
+            "contrast",
+            "difference",
+            "similarities",
+            "advantages",
+            "disadvantages",
+            "pros",
+            "cons",
+            "better",
+            "worse",
+            "best",
+            "optimal",
+            "tradeoffs",
+            "trade-offs",
         ]
         if any(term in query.lower() for term in analytical_terms):
             score += 0.25
 
         # Technical depth indicators
         technical_terms = [
-            "architecture", "implementation", "configuration", "integration",
-            "performance", "optimization", "algorithm", "pattern", "design"
+            "architecture",
+            "implementation",
+            "configuration",
+            "integration",
+            "performance",
+            "optimization",
+            "algorithm",
+            "pattern",
+            "design",
         ]
         technical_count = sum(1 for term in technical_terms if term in query.lower())
         score += min(technical_count * 0.1, 0.2)
@@ -148,13 +168,20 @@ class QueryAnalyzer:
             return QueryType.COMPARATIVE
 
         # Procedural queries (how-to)
-        if query_lower.startswith(("how do", "how to", "how can", "steps to", "process for")):
+        if query_lower.startswith(
+            ("how do", "how to", "how can", "steps to", "process for")
+        ):
             return QueryType.PROCEDURAL
 
         # Exploratory queries
         exploratory_starters = [
-            "what are the best", "what are some", "tell me about",
-            "explain", "describe", "overview", "introduction"
+            "what are the best",
+            "what are some",
+            "tell me about",
+            "explain",
+            "describe",
+            "overview",
+            "introduction",
         ]
         if any(query_lower.startswith(starter) for starter in exploratory_starters):
             return QueryType.EXPLORATORY
@@ -200,22 +227,115 @@ class QueryAnalyzer:
         """
         # Remove common stop words
         stop_words = {
-            "a", "an", "the", "is", "are", "was", "were", "be", "been", "being",
-            "have", "has", "had", "do", "does", "did", "will", "would", "could",
-            "should", "may", "might", "must", "shall", "can", "need", "dare",
-            "ought", "used", "to", "of", "in", "for", "on", "with", "at", "by",
-            "from", "up", "about", "into", "over", "after", "i", "me", "my",
-            "myself", "we", "our", "ours", "you", "your", "he", "him", "his",
-            "she", "her", "it", "its", "they", "them", "their", "what", "which",
-            "who", "whom", "this", "that", "these", "those", "am", "and", "but",
-            "if", "or", "because", "as", "until", "while", "how", "why", "when",
-            "where", "all", "each", "every", "both", "few", "more", "most",
-            "other", "some", "such", "no", "nor", "not", "only", "own", "same",
-            "so", "than", "too", "very", "just", "also"
+            "a",
+            "an",
+            "the",
+            "is",
+            "are",
+            "was",
+            "were",
+            "be",
+            "been",
+            "being",
+            "have",
+            "has",
+            "had",
+            "do",
+            "does",
+            "did",
+            "will",
+            "would",
+            "could",
+            "should",
+            "may",
+            "might",
+            "must",
+            "shall",
+            "can",
+            "need",
+            "dare",
+            "ought",
+            "used",
+            "to",
+            "of",
+            "in",
+            "for",
+            "on",
+            "with",
+            "at",
+            "by",
+            "from",
+            "up",
+            "about",
+            "into",
+            "over",
+            "after",
+            "i",
+            "me",
+            "my",
+            "myself",
+            "we",
+            "our",
+            "ours",
+            "you",
+            "your",
+            "he",
+            "him",
+            "his",
+            "she",
+            "her",
+            "it",
+            "its",
+            "they",
+            "them",
+            "their",
+            "what",
+            "which",
+            "who",
+            "whom",
+            "this",
+            "that",
+            "these",
+            "those",
+            "am",
+            "and",
+            "but",
+            "if",
+            "or",
+            "because",
+            "as",
+            "until",
+            "while",
+            "how",
+            "why",
+            "when",
+            "where",
+            "all",
+            "each",
+            "every",
+            "both",
+            "few",
+            "more",
+            "most",
+            "other",
+            "some",
+            "such",
+            "no",
+            "nor",
+            "not",
+            "only",
+            "own",
+            "same",
+            "so",
+            "than",
+            "too",
+            "very",
+            "just",
+            "also",
         }
 
         # Tokenize and filter
-        words = re.findall(r'\b[a-zA-Z]+\b', query.lower())
+        words = re.findall(r"\b[a-zA-Z]+\b", query.lower())
         keywords = [w for w in words if w not in stop_words and len(w) > 2]
 
         # Remove duplicates while preserving order
@@ -229,10 +349,7 @@ class QueryAnalyzer:
         return unique_keywords[:10]  # Limit to top 10
 
     def _recommend_mode(
-        self,
-        complexity: float,
-        query_type: QueryType,
-        is_ambiguous: bool
+        self, complexity: float, query_type: QueryType, is_ambiguous: bool
     ) -> RAGMode:
         """
         Recommend RAG mode based on analysis.
@@ -264,7 +381,7 @@ class QueryAnalyzer:
         complexity: float,
         query_type: QueryType,
         is_ambiguous: bool,
-        suggested_mode: RAGMode
+        suggested_mode: RAGMode,
     ) -> str:
         """
         Generate human-readable reasoning for mode selection.
@@ -354,10 +471,7 @@ Do NOT include phrases like "According to..." or "The answer is...". Just write 
         # Embed the HyDE document instead of the query
         try:
             dimensions = 512 if "small" in settings.embedding_model else None
-            embedding_params = {
-                "model": settings.embedding_model,
-                "input": hyde_doc
-            }
+            embedding_params = {"model": settings.embedding_model, "input": hyde_doc}
             if dimensions:
                 embedding_params["dimensions"] = dimensions
 
@@ -392,7 +506,9 @@ Do NOT include phrases like "According to..." or "The answer is...". Just write 
 
         try:
             # Format contexts for analysis
-            context_texts = [ctx.get("text", "")[:300] for ctx in retrieved_contexts[:5]]
+            context_texts = [
+                ctx.get("text", "")[:300] for ctx in retrieved_contexts[:5]
+            ]
             context_summary = "\n---\n".join(context_texts)
 
             system_prompt = """You are an information completeness analyzer.
@@ -414,14 +530,17 @@ Respond in JSON format:
                 model=settings.anthropic_model,
                 max_tokens=300,
                 system=system_prompt,
-                messages=[{
-                    "role": "user",
-                    "content": f"Question: {query}\n\nRetrieved Context:\n{context_summary}"
-                }],
+                messages=[
+                    {
+                        "role": "user",
+                        "content": f"Question: {query}\n\nRetrieved Context:\n{context_summary}",
+                    }
+                ],
             )
 
             # Parse response
             import json
+
             result_text = response.content[0].text.strip()
             # Try to extract JSON from response
             try:
@@ -429,7 +548,8 @@ Respond in JSON format:
             except json.JSONDecodeError:
                 # If not valid JSON, try to find JSON in text
                 import re
-                json_match = re.search(r'\{[^}]+\}', result_text, re.DOTALL)
+
+                json_match = re.search(r"\{[^}]+\}", result_text, re.DOTALL)
                 if json_match:
                     result = json.loads(json_match.group())
                 else:
@@ -440,7 +560,9 @@ Respond in JSON format:
             supplementary = result.get("supplementary_queries", [])
 
             if has_gaps:
-                logger.info(f"Detected information gaps: {result.get('missing_aspects', [])}")
+                logger.info(
+                    f"Detected information gaps: {result.get('missing_aspects', [])}"
+                )
 
             return has_gaps, supplementary
 

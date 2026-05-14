@@ -2,7 +2,6 @@
 Tests for document chunking utilities.
 """
 
-import pytest
 from app.utils.chunking import DocumentChunker, chunk_text
 
 
