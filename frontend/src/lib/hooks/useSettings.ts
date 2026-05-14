@@ -29,6 +29,40 @@ const DEFAULT_SETTINGS: UserSettings = {
   deepMode: false,
 };
 
+// Model IDs that have been retired upstream OR dropped from the current
+// Settings dropdown. Loading these from localStorage would either 404 the
+// API call (retired models) or leave the dropdown in a confused no-selection
+// state (dropped options). Migrate them on load to the current default.
+const RETIRED_ANTHROPIC_MODELS = new Set([
+  'claude-opus-4-7',              // Dropped 2026-05-14 (tier-gating issues)
+  'claude-3-5-sonnet-20241022',   // Anthropic retired 2025-10-28
+  'claude-3-opus-20240229',       // Anthropic retired (same wave)
+  'claude-3-haiku-20240307',      // Anthropic retired (same wave)
+]);
+
+// OpenAI's `gpt-5.5` snapshot only resolves under its dated form. We were
+// shipping the un-dated string briefly; migrate so beta testers don't have
+// to re-Save Settings to fix the 4xx.
+const OPENAI_ID_FIXUPS: Record<string, string> = {
+  'gpt-5.5': 'gpt-5.5-2026-04-23',
+};
+
+function migrateModelIds(parsed: Partial<UserSettings>): boolean {
+  let migrated = false;
+  if (parsed.openaiModel && OPENAI_ID_FIXUPS[parsed.openaiModel]) {
+    parsed.openaiModel = OPENAI_ID_FIXUPS[parsed.openaiModel];
+    migrated = true;
+  }
+  if (parsed.anthropicModel && RETIRED_ANTHROPIC_MODELS.has(parsed.anthropicModel)) {
+    parsed.anthropicModel = DEFAULT_SETTINGS.anthropicModel;
+    migrated = true;
+  }
+  if (migrated) {
+    console.info('[useSettings] Migrated stale model IDs to current defaults');
+  }
+  return migrated;
+}
+
 export function useSettings() {
   const [settings, setSettings] = useState<UserSettings>(DEFAULT_SETTINGS);
   const [isLoaded, setIsLoaded] = useState(false);
@@ -41,8 +75,14 @@ export function useSettings() {
       if (savedSettings) {
         try {
           const parsed = JSON.parse(savedSettings);
+          const migrated = migrateModelIds(parsed);
           // Merge with defaults to handle new fields added over time
-          setSettings({ ...DEFAULT_SETTINGS, ...parsed });
+          const merged = { ...DEFAULT_SETTINGS, ...parsed };
+          setSettings(merged);
+          // Persist the migration so we only do this work once
+          if (migrated) {
+            localStorage.setItem('userSettings', JSON.stringify(merged));
+          }
           setIsLoaded(true);
           return;
         } catch (e) {
@@ -55,8 +95,12 @@ export function useSettings() {
       if (sessionSettings) {
         try {
           const parsed = JSON.parse(sessionSettings);
-          // Merge with defaults to handle new fields added over time
-          setSettings({ ...DEFAULT_SETTINGS, ...parsed });
+          const migrated = migrateModelIds(parsed);
+          const merged = { ...DEFAULT_SETTINGS, ...parsed };
+          setSettings(merged);
+          if (migrated) {
+            sessionStorage.setItem('userSettings', JSON.stringify(merged));
+          }
           setIsLoaded(true);
           return;
         } catch (e) {

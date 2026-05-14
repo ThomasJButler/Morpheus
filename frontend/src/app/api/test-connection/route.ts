@@ -46,7 +46,11 @@ export async function POST(req: NextRequest) {
           'content-type': 'application/json',
         },
         body: JSON.stringify({
-          model: 'claude-3-haiku-20240307',
+          // Use a current Claude 4.x Haiku snapshot. The previous
+          // claude-3-haiku-20240307 was retired by Anthropic on 2025-10-28,
+          // so the connection test was silently 404-ing for users with
+          // valid keys.
+          model: 'claude-haiku-4-5-20251001',
           max_tokens: 1,
           messages: [{ role: 'user', content: 'Hi' }],
         }),
