@@ -19,7 +19,7 @@ export interface ColdStartStage {
 
 export const COLD_START_STAGES: ColdStartStage[] = [
   { id: 'wake',    label: 'Initialising',             hint: 'Backend cold start, ~60s on free tier',     durMs: 18_000 },
-  { id: 'model',   label: 'Loading model weights',    hint: 'Claude Sonnet 4 · Anthropic',               durMs: 14_000 },
+  { id: 'model',   label: 'Loading model weights',    hint: 'Claude Sonnet 4.6 · Anthropic',             durMs: 14_000 },
   { id: 'vectors', label: 'Connecting Pinecone index', hint: 'Vector DB · embedding dimension 1536',     durMs: 16_000 },
   { id: 'warm',    label: 'Warming retrieval cache',  hint: 'Hybrid retrieval · BM25 + dense',           durMs:  8_000 },
   { id: 'ready',   label: 'The Matrix has you',       hint: 'Ready — follow the white rabbit',           durMs:  4_000 },
