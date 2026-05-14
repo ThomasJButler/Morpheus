@@ -13,18 +13,17 @@ interface SettingsProps {
 }
 
 const OPENAI_MODELS = [
-  { value: 'gpt-5.5', label: 'GPT-5.5', description: 'Frontier — complex reasoning & coding' },
+  { value: 'gpt-5.5-2026-04-23', label: 'GPT-5.5', description: 'Frontier — complex reasoning & coding' },
   { value: 'gpt-5.4', label: 'GPT-5.4', description: 'Most capable mainline' },
   { value: 'gpt-5.4-mini', label: 'GPT-5.4 mini', description: 'Fast and cost-effective' },
   { value: 'gpt-5.4-nano', label: 'GPT-5.4 nano', description: 'Lowest latency / cheapest' },
 ];
 
 const ANTHROPIC_MODELS = [
-  { value: 'claude-opus-4-7', label: 'Claude Opus 4.7', description: 'Top of the line' },
+  { value: 'claude-opus-4-7', label: 'Claude Opus 4.7', description: 'Top of the line — may require Anthropic Pro/Team tier' },
   { value: 'claude-sonnet-4-6', label: 'Claude Sonnet 4.6', description: 'Balanced default' },
   { value: 'claude-haiku-4-5-20251001', label: 'Claude Haiku 4.5', description: 'Fastest, cost-effective' },
   { value: 'claude-sonnet-4-20250514', label: 'Claude Sonnet 4', description: 'Previous generation' },
-  { value: 'claude-3-5-sonnet-20241022', label: 'Claude 3.5 Sonnet', description: 'Legacy fallback' },
 ];
 
 // RAG modes for intelligent document retrieval
