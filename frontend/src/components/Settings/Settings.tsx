@@ -20,7 +20,6 @@ const OPENAI_MODELS = [
 ];
 
 const ANTHROPIC_MODELS = [
-  { value: 'claude-opus-4-7', label: 'Claude Opus 4.7', description: 'Top of the line — may require Anthropic Pro/Team tier' },
   { value: 'claude-sonnet-4-6', label: 'Claude Sonnet 4.6', description: 'Balanced default' },
   { value: 'claude-haiku-4-5-20251001', label: 'Claude Haiku 4.5', description: 'Fastest, cost-effective' },
   { value: 'claude-sonnet-4-20250514', label: 'Claude Sonnet 4', description: 'Previous generation' },
