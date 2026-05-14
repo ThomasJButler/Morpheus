@@ -15,9 +15,9 @@ class TestAgenticRAGInit:
 
     def test_initializes_clients(self):
         """Test AgenticRAG initializes required clients."""
-        with patch("app.rag.agentic.AsyncAnthropic") as mock_anthropic:
-            with patch("app.rag.agentic.AsyncOpenAI") as mock_openai:
-                with patch("app.rag.agentic.get_pinecone_client") as mock_pc:
+        with patch('app.rag.agentic.AsyncAnthropic') as mock_anthropic:
+            with patch('app.rag.agentic.AsyncOpenAI') as mock_openai:
+                with patch('app.rag.agentic.get_pinecone_client') as mock_pc:
                     mock_pc.return_value.get_index.return_value = MagicMock()
 
                     rag = AgenticRAG()
@@ -29,9 +29,9 @@ class TestAgenticRAGInit:
 
     def test_defines_search_tools(self):
         """Test AgenticRAG defines search tools correctly."""
-        with patch("app.rag.agentic.AsyncAnthropic"):
-            with patch("app.rag.agentic.AsyncOpenAI"):
-                with patch("app.rag.agentic.get_pinecone_client") as mock_pc:
+        with patch('app.rag.agentic.AsyncAnthropic'):
+            with patch('app.rag.agentic.AsyncOpenAI'):
+                with patch('app.rag.agentic.get_pinecone_client') as mock_pc:
                     mock_pc.return_value.get_index.return_value = MagicMock()
 
                     rag = AgenticRAG()
@@ -43,9 +43,9 @@ class TestAgenticRAGInit:
 
     def test_search_tool_has_correct_schema(self):
         """Test search_knowledge_base tool has correct schema."""
-        with patch("app.rag.agentic.AsyncAnthropic"):
-            with patch("app.rag.agentic.AsyncOpenAI"):
-                with patch("app.rag.agentic.get_pinecone_client") as mock_pc:
+        with patch('app.rag.agentic.AsyncAnthropic'):
+            with patch('app.rag.agentic.AsyncOpenAI'):
+                with patch('app.rag.agentic.get_pinecone_client') as mock_pc:
                     mock_pc.return_value.get_index.return_value = MagicMock()
 
                     rag = AgenticRAG()
@@ -64,9 +64,9 @@ class TestAgenticRAGToolExecution:
     @pytest.fixture
     def mock_agentic_rag(self):
         """Create AgenticRAG with mocked clients."""
-        with patch("app.rag.agentic.AsyncAnthropic"):
-            with patch("app.rag.agentic.AsyncOpenAI") as mock_openai:
-                with patch("app.rag.agentic.get_pinecone_client") as mock_pc:
+        with patch('app.rag.agentic.AsyncAnthropic'):
+            with patch('app.rag.agentic.AsyncOpenAI') as mock_openai:
+                with patch('app.rag.agentic.get_pinecone_client') as mock_pc:
                     mock_index = MagicMock()
                     mock_pc.return_value.get_index.return_value = mock_index
 
@@ -86,7 +86,7 @@ class TestAgenticRAGToolExecution:
                     mock_match.metadata = {
                         "text": "RAG is retrieval augmented generation",
                         "source": "doc.pdf",
-                        "page": 5,
+                        "page": 5
                     }
                     mock_index.query.return_value = {"matches": [mock_match]}
 
@@ -98,7 +98,7 @@ class TestAgenticRAGToolExecution:
         result = await mock_agentic_rag._execute_tool(
             "search_knowledge_base",
             {"query": "What is RAG?", "top_k": 5},
-            namespace="test",
+            namespace="test"
         )
 
         assert result["success"] is True
@@ -114,9 +114,9 @@ class TestAgenticRAGToolExecution:
             {
                 "original_query": "what is that?",
                 "rewritten_query": "What is RAG?",
-                "reasoning": "Made query more specific",
+                "reasoning": "Made query more specific"
             },
-            namespace="test",
+            namespace="test"
         )
 
         assert result["success"] is True
@@ -127,7 +127,9 @@ class TestAgenticRAGToolExecution:
     async def test_execute_unknown_tool(self, mock_agentic_rag):
         """Test unknown tool returns error."""
         result = await mock_agentic_rag._execute_tool(
-            "unknown_tool", {}, namespace="test"
+            "unknown_tool",
+            {},
+            namespace="test"
         )
 
         assert result["success"] is False
@@ -140,9 +142,9 @@ class TestAgenticRAGFormatting:
     @pytest.fixture
     def mock_agentic_rag(self):
         """Create AgenticRAG with mocked clients."""
-        with patch("app.rag.agentic.AsyncAnthropic"):
-            with patch("app.rag.agentic.AsyncOpenAI"):
-                with patch("app.rag.agentic.get_pinecone_client") as mock_pc:
+        with patch('app.rag.agentic.AsyncAnthropic'):
+            with patch('app.rag.agentic.AsyncOpenAI'):
+                with patch('app.rag.agentic.get_pinecone_client') as mock_pc:
                     mock_pc.return_value.get_index.return_value = MagicMock()
                     return AgenticRAG()
 
@@ -153,8 +155,13 @@ class TestAgenticRAGFormatting:
             "query": "test",
             "num_results": 1,
             "results": [
-                {"text": "Sample text", "source": "doc.pdf", "page": 3, "score": 0.85}
-            ],
+                {
+                    "text": "Sample text",
+                    "source": "doc.pdf",
+                    "page": 3,
+                    "score": 0.85
+                }
+            ]
         }
 
         formatted = mock_agentic_rag._format_tool_result(tool_result)
@@ -170,7 +177,7 @@ class TestAgenticRAGFormatting:
             "success": True,
             "query": "test",
             "num_results": 0,
-            "results": [],
+            "results": []
         }
 
         formatted = mock_agentic_rag._format_tool_result(tool_result)
@@ -181,7 +188,7 @@ class TestAgenticRAGFormatting:
         tool_result = {
             "success": True,
             "original_query": "what is it?",
-            "rewritten_query": "What is RAG?",
+            "rewritten_query": "What is RAG?"
         }
 
         formatted = mock_agentic_rag._format_tool_result(tool_result)
@@ -191,7 +198,10 @@ class TestAgenticRAGFormatting:
 
     def test_format_failed_result(self, mock_agentic_rag):
         """Test formatting of failed tool result."""
-        tool_result = {"success": False, "error": "Something went wrong"}
+        tool_result = {
+            "success": False,
+            "error": "Something went wrong"
+        }
 
         formatted = mock_agentic_rag._format_tool_result(tool_result)
         assert "failed" in formatted
@@ -204,9 +214,9 @@ class TestAgenticRAGCitations:
     @pytest.fixture
     def mock_agentic_rag(self):
         """Create AgenticRAG with mocked clients."""
-        with patch("app.rag.agentic.AsyncAnthropic"):
-            with patch("app.rag.agentic.AsyncOpenAI"):
-                with patch("app.rag.agentic.get_pinecone_client") as mock_pc:
+        with patch('app.rag.agentic.AsyncAnthropic'):
+            with patch('app.rag.agentic.AsyncOpenAI'):
+                with patch('app.rag.agentic.get_pinecone_client') as mock_pc:
                     mock_pc.return_value.get_index.return_value = MagicMock()
                     return AgenticRAG()
 
@@ -221,9 +231,9 @@ class TestAgenticRAGCitations:
                         "page": 5,
                         "chunk_id": "chunk1",
                         "score": 0.9,
-                        "text": "This is sample text from the document.",
+                        "text": "This is sample text from the document."
                     }
-                ],
+                ]
             }
         ]
 
@@ -241,19 +251,9 @@ class TestAgenticRAGCitations:
             {
                 "success": True,
                 "results": [
-                    {
-                        "source": "doc.pdf",
-                        "chunk_id": "chunk1",
-                        "score": 0.9,
-                        "text": "...",
-                    },
-                    {
-                        "source": "doc.pdf",
-                        "chunk_id": "chunk1",
-                        "score": 0.85,
-                        "text": "...",
-                    },
-                ],
+                    {"source": "doc.pdf", "chunk_id": "chunk1", "score": 0.9, "text": "..."},
+                    {"source": "doc.pdf", "chunk_id": "chunk1", "score": 0.85, "text": "..."},
+                ]
             }
         ]
 
@@ -268,25 +268,15 @@ class TestAgenticRAGCitations:
             {
                 "success": True,
                 "results": [
-                    {
-                        "source": "doc1.pdf",
-                        "chunk_id": "chunk1",
-                        "score": 0.9,
-                        "text": "...",
-                    }
-                ],
+                    {"source": "doc1.pdf", "chunk_id": "chunk1", "score": 0.9, "text": "..."}
+                ]
             },
             {
                 "success": True,
                 "results": [
-                    {
-                        "source": "doc2.pdf",
-                        "chunk_id": "chunk2",
-                        "score": 0.8,
-                        "text": "...",
-                    }
-                ],
-            },
+                    {"source": "doc2.pdf", "chunk_id": "chunk2", "score": 0.8, "text": "..."}
+                ]
+            }
         ]
 
         citations = mock_agentic_rag._extract_citations(search_results)
@@ -305,9 +295,9 @@ class TestAgenticRAGStreaming:
     @pytest.fixture
     def mock_agentic_rag(self):
         """Create AgenticRAG with mocked streaming."""
-        with patch("app.rag.agentic.AsyncAnthropic") as mock_anthropic:
-            with patch("app.rag.agentic.AsyncOpenAI") as mock_openai:
-                with patch("app.rag.agentic.get_pinecone_client") as mock_pc:
+        with patch('app.rag.agentic.AsyncAnthropic') as mock_anthropic:
+            with patch('app.rag.agentic.AsyncOpenAI') as mock_openai:
+                with patch('app.rag.agentic.get_pinecone_client') as mock_pc:
                     mock_index = MagicMock()
                     mock_pc.return_value.get_index.return_value = mock_index
 
@@ -324,7 +314,10 @@ class TestAgenticRAGStreaming:
                     mock_match = MagicMock()
                     mock_match.id = "chunk1"
                     mock_match.score = 0.85
-                    mock_match.metadata = {"text": "RAG content", "source": "doc.pdf"}
+                    mock_match.metadata = {
+                        "text": "RAG content",
+                        "source": "doc.pdf"
+                    }
                     mock_index.query.return_value = {"matches": [mock_match]}
 
                     # Mock simple Claude response (no tool use)
@@ -340,25 +333,21 @@ class TestAgenticRAGStreaming:
                     mock_final_message = MagicMock()
                     mock_final_message.content = [mock_text_block]
 
-                    mock_stream.get_final_message = AsyncMock(
-                        return_value=mock_final_message
-                    )
+                    mock_stream.get_final_message = AsyncMock(return_value=mock_final_message)
 
                     async def mock_text_stream():
                         yield "Response "
                         yield "text"
 
                     mock_stream.text_stream = mock_text_stream()
-                    rag.anthropic_client.messages.stream = MagicMock(
-                        return_value=mock_stream
-                    )
+                    rag.anthropic_client.messages.stream = MagicMock(return_value=mock_stream)
 
                     return rag
 
     @pytest.mark.asyncio
     async def test_process_query_streaming_yields_mode(self, mock_agentic_rag):
         """Test streaming yields mode chunk first."""
-        with patch("app.rag.agentic.settings") as mock_settings:
+        with patch('app.rag.agentic.settings') as mock_settings:
             mock_settings.agentic_timeout_seconds = 30
             mock_settings.agentic_max_tool_calls = 5
             mock_settings.anthropic_model = "claude-3-haiku"
@@ -377,7 +366,7 @@ class TestAgenticRAGStreaming:
     @pytest.mark.asyncio
     async def test_process_query_streaming_yields_tokens(self, mock_agentic_rag):
         """Test streaming yields response tokens."""
-        with patch("app.rag.agentic.settings") as mock_settings:
+        with patch('app.rag.agentic.settings') as mock_settings:
             mock_settings.agentic_timeout_seconds = 30
             mock_settings.agentic_max_tool_calls = 5
             mock_settings.anthropic_model = "claude-3-haiku"
@@ -395,7 +384,7 @@ class TestAgenticRAGStreaming:
     @pytest.mark.asyncio
     async def test_process_query_streaming_yields_done(self, mock_agentic_rag):
         """Test streaming yields done chunk with metrics."""
-        with patch("app.rag.agentic.settings") as mock_settings:
+        with patch('app.rag.agentic.settings') as mock_settings:
             mock_settings.agentic_timeout_seconds = 30
             mock_settings.agentic_max_tool_calls = 5
             mock_settings.anthropic_model = "claude-3-haiku"
@@ -422,9 +411,9 @@ class TestAgenticRAGWithToolUse:
     @pytest.fixture
     def mock_agentic_rag(self):
         """Create AgenticRAG with mocked clients."""
-        with patch("app.rag.agentic.AsyncAnthropic"):
-            with patch("app.rag.agentic.AsyncOpenAI") as mock_openai:
-                with patch("app.rag.agentic.get_pinecone_client") as mock_pc:
+        with patch('app.rag.agentic.AsyncAnthropic'):
+            with patch('app.rag.agentic.AsyncOpenAI') as mock_openai:
+                with patch('app.rag.agentic.get_pinecone_client') as mock_pc:
                     mock_index = MagicMock()
                     mock_pc.return_value.get_index.return_value = mock_index
 
@@ -443,7 +432,7 @@ class TestAgenticRAGWithToolUse:
                     mock_match.score = 0.85
                     mock_match.metadata = {
                         "text": "RAG is powerful",
-                        "source": "doc.pdf",
+                        "source": "doc.pdf"
                     }
                     mock_index.query.return_value = {"matches": [mock_match]}
 
@@ -473,7 +462,7 @@ class TestAgenticRAGWithToolUse:
         result = await mock_agentic_rag._execute_tool(
             "search_knowledge_base",
             {"query": "What is RAG?", "top_k": 5},
-            namespace="test",
+            namespace="test"
         )
 
         assert result["success"] is True
@@ -489,9 +478,9 @@ class TestAgenticRAGWithToolUse:
             {
                 "original_query": "what?",
                 "rewritten_query": "What is RAG?",
-                "reasoning": "Made more specific",
+                "reasoning": "Made more specific"
             },
-            namespace="test",
+            namespace="test"
         )
 
         assert result["success"] is True
@@ -504,28 +493,24 @@ class TestAgenticRAGErrorHandling:
     @pytest.fixture
     def error_agentic_rag(self):
         """Create AgenticRAG that throws errors."""
-        with patch("app.rag.agentic.AsyncAnthropic") as mock_anthropic:
-            with patch("app.rag.agentic.AsyncOpenAI"):
-                with patch("app.rag.agentic.get_pinecone_client") as mock_pc:
+        with patch('app.rag.agentic.AsyncAnthropic') as mock_anthropic:
+            with patch('app.rag.agentic.AsyncOpenAI'):
+                with patch('app.rag.agentic.get_pinecone_client') as mock_pc:
                     mock_pc.return_value.get_index.return_value = MagicMock()
 
                     rag = AgenticRAG()
 
                     # Make stream fail
                     mock_stream = MagicMock()
-                    mock_stream.__aenter__ = AsyncMock(
-                        side_effect=Exception("API Error")
-                    )
-                    rag.anthropic_client.messages.stream = MagicMock(
-                        return_value=mock_stream
-                    )
+                    mock_stream.__aenter__ = AsyncMock(side_effect=Exception("API Error"))
+                    rag.anthropic_client.messages.stream = MagicMock(return_value=mock_stream)
 
                     return rag
 
     @pytest.mark.asyncio
     async def test_streaming_yields_error_chunk_on_failure(self, error_agentic_rag):
         """Test streaming yields error chunk on failure."""
-        with patch("app.rag.agentic.settings") as mock_settings:
+        with patch('app.rag.agentic.settings') as mock_settings:
             mock_settings.agentic_timeout_seconds = 30
             mock_settings.anthropic_model = "claude-3-haiku"
 
@@ -543,9 +528,9 @@ class TestAgenticRAGNonStreaming:
     @pytest.fixture
     def mock_agentic_rag(self):
         """Create AgenticRAG for non-streaming tests."""
-        with patch("app.rag.agentic.AsyncAnthropic") as mock_anthropic:
-            with patch("app.rag.agentic.AsyncOpenAI"):
-                with patch("app.rag.agentic.get_pinecone_client") as mock_pc:
+        with patch('app.rag.agentic.AsyncAnthropic') as mock_anthropic:
+            with patch('app.rag.agentic.AsyncOpenAI'):
+                with patch('app.rag.agentic.get_pinecone_client') as mock_pc:
                     mock_pc.return_value.get_index.return_value = MagicMock()
 
                     rag = AgenticRAG()
@@ -562,21 +547,17 @@ class TestAgenticRAGNonStreaming:
                     mock_final_message = MagicMock()
                     mock_final_message.content = [mock_text_block]
 
-                    mock_stream.get_final_message = AsyncMock(
-                        return_value=mock_final_message
-                    )
+                    mock_stream.get_final_message = AsyncMock(return_value=mock_final_message)
                     mock_stream.text_stream = AsyncMock()
 
-                    rag.anthropic_client.messages.stream = MagicMock(
-                        return_value=mock_stream
-                    )
+                    rag.anthropic_client.messages.stream = MagicMock(return_value=mock_stream)
 
                     return rag
 
     @pytest.mark.asyncio
     async def test_process_query_returns_tuple(self, mock_agentic_rag):
         """Test non-streaming returns (response, citations, metrics) tuple."""
-        with patch("app.rag.agentic.settings") as mock_settings:
+        with patch('app.rag.agentic.settings') as mock_settings:
             mock_settings.agentic_timeout_seconds = 30
             mock_settings.agentic_max_tool_calls = 5
             mock_settings.anthropic_model = "claude-3-haiku"
@@ -600,9 +581,9 @@ class TestAgenticRAGReflection:
     @pytest.fixture
     def mock_agentic_rag_with_reflection(self):
         """Create AgenticRAG with mocked reflection capability."""
-        with patch("app.rag.agentic.AsyncAnthropic") as mock_anthropic:
-            with patch("app.rag.agentic.AsyncOpenAI"):
-                with patch("app.rag.agentic.get_pinecone_client") as mock_pc:
+        with patch('app.rag.agentic.AsyncAnthropic') as mock_anthropic:
+            with patch('app.rag.agentic.AsyncOpenAI'):
+                with patch('app.rag.agentic.get_pinecone_client') as mock_pc:
                     mock_pc.return_value.get_index.return_value = MagicMock()
 
                     rag = AgenticRAG()
@@ -610,7 +591,7 @@ class TestAgenticRAGReflection:
                     # Mock reflection response
                     mock_response = MagicMock()
                     mock_text_block = MagicMock()
-                    mock_text_block.text = """{
+                    mock_text_block.text = '''{
                         "answered_query": true,
                         "confidence_score": 0.85,
                         "citations_accurate": true,
@@ -618,7 +599,7 @@ class TestAgenticRAGReflection:
                         "suggested_followup_queries": [],
                         "issues_found": [],
                         "reasoning": "Response fully addresses the query with accurate citations."
-                    }"""
+                    }'''
                     mock_response.content = [mock_text_block]
                     rag.anthropic_client.messages.create = AsyncMock(
                         return_value=mock_response
@@ -627,16 +608,14 @@ class TestAgenticRAGReflection:
                     return rag
 
     @pytest.mark.asyncio
-    async def test_reflect_on_response_returns_result(
-        self, mock_agentic_rag_with_reflection
-    ):
+    async def test_reflect_on_response_returns_result(self, mock_agentic_rag_with_reflection):
         """Test reflection returns ReflectionResult."""
         from app.models.chat import ReflectionResult
 
         result = await mock_agentic_rag_with_reflection.reflect_on_response(
             query="What is RAG?",
             response="RAG stands for Retrieval-Augmented Generation...",
-            contexts=[{"source": "doc.pdf", "score": 0.9, "text": "RAG content"}],
+            contexts=[{"source": "doc.pdf", "score": 0.9, "text": "RAG content"}]
         )
 
         assert isinstance(result, ReflectionResult)
@@ -650,9 +629,9 @@ class TestAgenticRAGReflection:
         """Test reflection detects when response has low confidence."""
         from app.models.chat import ReflectionResult
 
-        with patch("app.rag.agentic.AsyncAnthropic") as mock_anthropic:
-            with patch("app.rag.agentic.AsyncOpenAI"):
-                with patch("app.rag.agentic.get_pinecone_client") as mock_pc:
+        with patch('app.rag.agentic.AsyncAnthropic') as mock_anthropic:
+            with patch('app.rag.agentic.AsyncOpenAI'):
+                with patch('app.rag.agentic.get_pinecone_client') as mock_pc:
                     mock_pc.return_value.get_index.return_value = MagicMock()
 
                     rag = AgenticRAG()
@@ -660,7 +639,7 @@ class TestAgenticRAGReflection:
                     # Mock low confidence response
                     mock_response = MagicMock()
                     mock_text_block = MagicMock()
-                    mock_text_block.text = """{
+                    mock_text_block.text = '''{
                         "answered_query": false,
                         "confidence_score": 0.3,
                         "citations_accurate": false,
@@ -668,7 +647,7 @@ class TestAgenticRAGReflection:
                         "suggested_followup_queries": ["specific RAG implementation details"],
                         "issues_found": ["Response lacks specific details", "Citations don't support claims"],
                         "reasoning": "The response is too general and doesn't directly answer the question."
-                    }"""
+                    }'''
                     mock_response.content = [mock_text_block]
                     rag.anthropic_client.messages.create = AsyncMock(
                         return_value=mock_response
@@ -677,7 +656,7 @@ class TestAgenticRAGReflection:
                     result = await rag.reflect_on_response(
                         query="How does chunking work in RAG?",
                         response="RAG is a technique...",
-                        contexts=[],
+                        contexts=[]
                     )
 
         assert result.answered_query is False
@@ -691,9 +670,9 @@ class TestAgenticRAGReflection:
         """Test reflection handles malformed JSON gracefully."""
         from app.models.chat import ReflectionResult
 
-        with patch("app.rag.agentic.AsyncAnthropic") as mock_anthropic:
-            with patch("app.rag.agentic.AsyncOpenAI"):
-                with patch("app.rag.agentic.get_pinecone_client") as mock_pc:
+        with patch('app.rag.agentic.AsyncAnthropic') as mock_anthropic:
+            with patch('app.rag.agentic.AsyncOpenAI'):
+                with patch('app.rag.agentic.get_pinecone_client') as mock_pc:
                     mock_pc.return_value.get_index.return_value = MagicMock()
 
                     rag = AgenticRAG()
@@ -708,7 +687,9 @@ class TestAgenticRAGReflection:
                     )
 
                     result = await rag.reflect_on_response(
-                        query="test", response="test response", contexts=[]
+                        query="test",
+                        response="test response",
+                        contexts=[]
                     )
 
         # Should return conservative defaults
@@ -721,9 +702,9 @@ class TestAgenticRAGReflection:
         """Test reflection handles API errors gracefully."""
         from app.models.chat import ReflectionResult
 
-        with patch("app.rag.agentic.AsyncAnthropic") as mock_anthropic:
-            with patch("app.rag.agentic.AsyncOpenAI"):
-                with patch("app.rag.agentic.get_pinecone_client") as mock_pc:
+        with patch('app.rag.agentic.AsyncAnthropic') as mock_anthropic:
+            with patch('app.rag.agentic.AsyncOpenAI'):
+                with patch('app.rag.agentic.get_pinecone_client') as mock_pc:
                     mock_pc.return_value.get_index.return_value = MagicMock()
 
                     rag = AgenticRAG()
@@ -734,7 +715,9 @@ class TestAgenticRAGReflection:
                     )
 
                     result = await rag.reflect_on_response(
-                        query="test", response="test response", contexts=[]
+                        query="test",
+                        response="test response",
+                        contexts=[]
                     )
 
         assert isinstance(result, ReflectionResult)
@@ -746,9 +729,9 @@ class TestAgenticRAGReflection:
         """Test reflection handles JSON wrapped in markdown code blocks."""
         from app.models.chat import ReflectionResult
 
-        with patch("app.rag.agentic.AsyncAnthropic") as mock_anthropic:
-            with patch("app.rag.agentic.AsyncOpenAI"):
-                with patch("app.rag.agentic.get_pinecone_client") as mock_pc:
+        with patch('app.rag.agentic.AsyncAnthropic') as mock_anthropic:
+            with patch('app.rag.agentic.AsyncOpenAI'):
+                with patch('app.rag.agentic.get_pinecone_client') as mock_pc:
                     mock_pc.return_value.get_index.return_value = MagicMock()
 
                     rag = AgenticRAG()
@@ -756,7 +739,7 @@ class TestAgenticRAGReflection:
                     # Mock response with markdown code block
                     mock_response = MagicMock()
                     mock_text_block = MagicMock()
-                    mock_text_block.text = """```json
+                    mock_text_block.text = '''```json
 {
     "answered_query": true,
     "confidence_score": 0.9,
@@ -766,14 +749,16 @@ class TestAgenticRAGReflection:
     "issues_found": [],
     "reasoning": "Good response"
 }
-```"""
+```'''
                     mock_response.content = [mock_text_block]
                     rag.anthropic_client.messages.create = AsyncMock(
                         return_value=mock_response
                     )
 
                     result = await rag.reflect_on_response(
-                        query="test", response="test response", contexts=[]
+                        query="test",
+                        response="test response",
+                        contexts=[]
                     )
 
         assert result.confidence_score == 0.9
@@ -784,9 +769,9 @@ class TestAgenticRAGReflection:
         """Test reflection clamps confidence score to 0-1 range."""
         from app.models.chat import ReflectionResult
 
-        with patch("app.rag.agentic.AsyncAnthropic") as mock_anthropic:
-            with patch("app.rag.agentic.AsyncOpenAI"):
-                with patch("app.rag.agentic.get_pinecone_client") as mock_pc:
+        with patch('app.rag.agentic.AsyncAnthropic') as mock_anthropic:
+            with patch('app.rag.agentic.AsyncOpenAI'):
+                with patch('app.rag.agentic.get_pinecone_client') as mock_pc:
                     mock_pc.return_value.get_index.return_value = MagicMock()
 
                     rag = AgenticRAG()
@@ -794,7 +779,7 @@ class TestAgenticRAGReflection:
                     # Mock response with out-of-range confidence
                     mock_response = MagicMock()
                     mock_text_block = MagicMock()
-                    mock_text_block.text = """{
+                    mock_text_block.text = '''{
                         "answered_query": true,
                         "confidence_score": 1.5,
                         "citations_accurate": true,
@@ -802,14 +787,16 @@ class TestAgenticRAGReflection:
                         "suggested_followup_queries": [],
                         "issues_found": [],
                         "reasoning": "Too confident"
-                    }"""
+                    }'''
                     mock_response.content = [mock_text_block]
                     rag.anthropic_client.messages.create = AsyncMock(
                         return_value=mock_response
                     )
 
                     result = await rag.reflect_on_response(
-                        query="test", response="test response", contexts=[]
+                        query="test",
+                        response="test response",
+                        contexts=[]
                     )
 
         # Should clamp to 1.0
@@ -822,9 +809,9 @@ class TestAgenticRAGProcessWithReflection:
     @pytest.fixture
     def mock_agentic_rag_full(self):
         """Create AgenticRAG with full mocking for reflection loop tests."""
-        with patch("app.rag.agentic.AsyncAnthropic") as mock_anthropic:
-            with patch("app.rag.agentic.AsyncOpenAI"):
-                with patch("app.rag.agentic.get_pinecone_client") as mock_pc:
+        with patch('app.rag.agentic.AsyncAnthropic') as mock_anthropic:
+            with patch('app.rag.agentic.AsyncOpenAI'):
+                with patch('app.rag.agentic.get_pinecone_client') as mock_pc:
                     mock_pc.return_value.get_index.return_value = MagicMock()
 
                     rag = AgenticRAG()
@@ -841,17 +828,13 @@ class TestAgenticRAGProcessWithReflection:
                     mock_final_message = MagicMock()
                     mock_final_message.content = [mock_text_block]
 
-                    mock_stream.get_final_message = AsyncMock(
-                        return_value=mock_final_message
-                    )
-                    rag.anthropic_client.messages.stream = MagicMock(
-                        return_value=mock_stream
-                    )
+                    mock_stream.get_final_message = AsyncMock(return_value=mock_final_message)
+                    rag.anthropic_client.messages.stream = MagicMock(return_value=mock_stream)
 
                     # Mock reflection response (high confidence)
                     mock_reflect_response = MagicMock()
                     mock_reflect_text = MagicMock()
-                    mock_reflect_text.text = """{
+                    mock_reflect_text.text = '''{
                         "answered_query": true,
                         "confidence_score": 0.85,
                         "citations_accurate": true,
@@ -859,7 +842,7 @@ class TestAgenticRAGProcessWithReflection:
                         "suggested_followup_queries": [],
                         "issues_found": [],
                         "reasoning": "Good response"
-                    }"""
+                    }'''
                     mock_reflect_response.content = [mock_reflect_text]
                     rag.anthropic_client.messages.create = AsyncMock(
                         return_value=mock_reflect_response
@@ -868,21 +851,18 @@ class TestAgenticRAGProcessWithReflection:
                     return rag
 
     @pytest.mark.asyncio
-    async def test_process_with_reflection_returns_four_tuple(
-        self, mock_agentic_rag_full
-    ):
+    async def test_process_with_reflection_returns_four_tuple(self, mock_agentic_rag_full):
         """Test process_query_with_reflection returns (response, citations, metrics, reflection)."""
         from app.models.chat import ReflectionResult
 
-        with patch("app.rag.agentic.settings") as mock_settings:
+        with patch('app.rag.agentic.settings') as mock_settings:
             mock_settings.agentic_timeout_seconds = 30
             mock_settings.agentic_max_tool_calls = 5
             mock_settings.anthropic_model = "claude-3-haiku"
 
-            response, citations, metrics, reflection = (
-                await mock_agentic_rag_full.process_query_with_reflection(
-                    query="What is RAG?", namespace="test"
-                )
+            response, citations, metrics, reflection = await mock_agentic_rag_full.process_query_with_reflection(
+                query="What is RAG?",
+                namespace="test"
             )
 
         assert isinstance(response, str)
@@ -892,21 +872,19 @@ class TestAgenticRAGProcessWithReflection:
         assert reflection.confidence_score >= 0.6  # Above min threshold
 
     @pytest.mark.asyncio
-    async def test_process_with_reflection_accepts_good_confidence(
-        self, mock_agentic_rag_full
-    ):
+    async def test_process_with_reflection_accepts_good_confidence(self, mock_agentic_rag_full):
         """Test process_query_with_reflection accepts response with good confidence."""
         from app.models.chat import ReflectionResult
 
-        with patch("app.rag.agentic.settings") as mock_settings:
+        with patch('app.rag.agentic.settings') as mock_settings:
             mock_settings.agentic_timeout_seconds = 30
             mock_settings.agentic_max_tool_calls = 5
             mock_settings.anthropic_model = "claude-3-haiku"
 
-            _, _, _, reflection = (
-                await mock_agentic_rag_full.process_query_with_reflection(
-                    query="What is RAG?", namespace="test", min_confidence=0.6
-                )
+            _, _, _, reflection = await mock_agentic_rag_full.process_query_with_reflection(
+                query="What is RAG?",
+                namespace="test",
+                min_confidence=0.6
             )
 
         # 0.85 is above 0.6 threshold, so should accept
@@ -917,9 +895,9 @@ class TestAgenticRAGProcessWithReflection:
         """Test process_query_with_reflection doesn't loop forever."""
         from app.models.chat import ReflectionResult
 
-        with patch("app.rag.agentic.AsyncAnthropic") as mock_anthropic:
-            with patch("app.rag.agentic.AsyncOpenAI"):
-                with patch("app.rag.agentic.get_pinecone_client") as mock_pc:
+        with patch('app.rag.agentic.AsyncAnthropic') as mock_anthropic:
+            with patch('app.rag.agentic.AsyncOpenAI'):
+                with patch('app.rag.agentic.get_pinecone_client') as mock_pc:
                     mock_pc.return_value.get_index.return_value = MagicMock()
 
                     rag = AgenticRAG()
@@ -936,17 +914,13 @@ class TestAgenticRAGProcessWithReflection:
                     mock_final_message = MagicMock()
                     mock_final_message.content = [mock_text_block]
 
-                    mock_stream.get_final_message = AsyncMock(
-                        return_value=mock_final_message
-                    )
-                    rag.anthropic_client.messages.stream = MagicMock(
-                        return_value=mock_stream
-                    )
+                    mock_stream.get_final_message = AsyncMock(return_value=mock_final_message)
+                    rag.anthropic_client.messages.stream = MagicMock(return_value=mock_stream)
 
                     # Mock ALWAYS low confidence reflection
                     mock_reflect_response = MagicMock()
                     mock_reflect_text = MagicMock()
-                    mock_reflect_text.text = """{
+                    mock_reflect_text.text = '''{
                         "answered_query": false,
                         "confidence_score": 0.2,
                         "citations_accurate": false,
@@ -954,13 +928,13 @@ class TestAgenticRAGProcessWithReflection:
                         "suggested_followup_queries": ["More info needed"],
                         "issues_found": ["Low quality"],
                         "reasoning": "Bad response"
-                    }"""
+                    }'''
                     mock_reflect_response.content = [mock_reflect_text]
                     rag.anthropic_client.messages.create = AsyncMock(
                         return_value=mock_reflect_response
                     )
 
-                    with patch("app.rag.agentic.settings") as mock_settings:
+                    with patch('app.rag.agentic.settings') as mock_settings:
                         mock_settings.agentic_timeout_seconds = 30
                         mock_settings.agentic_max_tool_calls = 5
                         mock_settings.anthropic_model = "claude-3-haiku"
@@ -969,7 +943,7 @@ class TestAgenticRAGProcessWithReflection:
                         _, _, _, reflection = await rag.process_query_with_reflection(
                             query="test",
                             namespace="test",
-                            min_confidence=0.9,  # Very high threshold
+                            min_confidence=0.9  # Very high threshold
                         )
 
         # Should return even though confidence is low

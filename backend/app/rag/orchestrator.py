@@ -197,7 +197,7 @@ class RAGOrchestrator:
                 yield StreamChunk(
                     type="mode",
                     mode=RAGMode.HYBRID,
-                    content="Escalating for better results...",
+                    content="Escalating for better results..."
                 )
 
                 response_parts = []
@@ -228,7 +228,7 @@ class RAGOrchestrator:
                     yield StreamChunk(
                         type="mode",
                         mode=RAGMode.AGENTIC,
-                        content="Deep diving for comprehensive answer...",
+                        content="Deep diving for comprehensive answer..."
                     )
 
                     response_parts = []
@@ -251,7 +251,9 @@ class RAGOrchestrator:
         yield StreamChunk(type="done", metrics=metrics)
 
     def _evaluate_confidence(
-        self, metrics: RetrievalMetrics, citations: List[Citation]
+        self,
+        metrics: RetrievalMetrics,
+        citations: List[Citation]
     ) -> float:
         """
         Evaluate retrieval confidence based on metrics.
@@ -332,9 +334,7 @@ class RAGOrchestrator:
             StreamChunk objects including reflection results
         """
         namespace = namespace or "default"
-        confidence_threshold = (
-            confidence_threshold or settings.reflection_min_confidence
-        )
+        confidence_threshold = confidence_threshold or settings.reflection_min_confidence
 
         # Determine mode
         analysis = None
@@ -352,12 +352,10 @@ class RAGOrchestrator:
             yield StreamChunk(type="mode", mode=RAGMode.AGENTIC)
 
             # Use AgenticRAG with reflection
-            response, citations, metrics, reflection = (
-                await self.agentic_rag.process_query_with_reflection(
-                    query=query,
-                    namespace=namespace,
-                    min_confidence=confidence_threshold,
-                )
+            response, citations, metrics, reflection = await self.agentic_rag.process_query_with_reflection(
+                query=query,
+                namespace=namespace,
+                min_confidence=confidence_threshold,
             )
 
             # Yield citations
@@ -430,9 +428,7 @@ class RAGOrchestrator:
         # Cap initial mode at HYBRID if we want escalation potential
         if current_mode == RAGMode.AGENTIC and not initial_mode:
             # Start lower to allow escalation
-            current_mode = (
-                RAGMode.SIMPLE if analysis.complexity_score < 0.5 else RAGMode.HYBRID
-            )
+            current_mode = RAGMode.SIMPLE if analysis.complexity_score < 0.5 else RAGMode.HYBRID
 
         escalation_path.append(current_mode)
         yield StreamChunk(type="analysis", analysis=analysis)
@@ -444,9 +440,7 @@ class RAGOrchestrator:
         metrics = None
 
         if current_mode == RAGMode.SIMPLE:
-            async for chunk in self.simple_rag.process_query_streaming(
-                query, namespace=namespace
-            ):
+            async for chunk in self.simple_rag.process_query_streaming(query, namespace=namespace):
                 if chunk.type == "token":
                     response_parts.append(chunk.content)
                     yield chunk
@@ -456,9 +450,7 @@ class RAGOrchestrator:
                 elif chunk.type == "done":
                     metrics = chunk.metrics
         elif current_mode == RAGMode.HYBRID:
-            async for chunk in self.hybrid_rag.process_query_streaming(
-                query, namespace=namespace
-            ):
+            async for chunk in self.hybrid_rag.process_query_streaming(query, namespace=namespace):
                 if chunk.type == "token":
                     response_parts.append(chunk.content)
                     yield chunk
@@ -472,10 +464,7 @@ class RAGOrchestrator:
         confidence = self._evaluate_confidence(metrics, citations) if metrics else 0.0
 
         # Escalate if needed
-        if (
-            confidence < settings.reflection_min_confidence
-            and current_mode != RAGMode.AGENTIC
-        ):
+        if confidence < settings.reflection_min_confidence and current_mode != RAGMode.AGENTIC:
             # Try next tier
             if current_mode == RAGMode.SIMPLE:
                 next_mode = RAGMode.HYBRID
@@ -491,7 +480,7 @@ class RAGOrchestrator:
             yield StreamChunk(
                 type="mode",
                 mode=next_mode,
-                content=f"Escalating from {current_mode.value} for better results...",
+                content=f"Escalating from {current_mode.value} for better results..."
             )
 
             # Clear and retry
@@ -499,9 +488,7 @@ class RAGOrchestrator:
             citations = []
 
             if next_mode == RAGMode.HYBRID:
-                async for chunk in self.hybrid_rag.process_query_streaming(
-                    query, namespace=namespace
-                ):
+                async for chunk in self.hybrid_rag.process_query_streaming(query, namespace=namespace):
                     if chunk.type == "token":
                         response_parts.append(chunk.content)
                         yield chunk
@@ -513,11 +500,9 @@ class RAGOrchestrator:
                         current_mode = next_mode
             else:
                 # AgenticRAG with reflection
-                response, citations_list, metrics, reflection = (
-                    await self.agentic_rag.process_query_with_reflection(
-                        query=query,
-                        namespace=namespace,
-                    )
+                response, citations_list, metrics, reflection = await self.agentic_rag.process_query_with_reflection(
+                    query=query,
+                    namespace=namespace,
                 )
                 for citation in citations_list:
                     citations.append(citation)
@@ -544,9 +529,7 @@ class RAGOrchestrator:
             mode_used=current_mode,
             mode_confidence=confidence,
             escalated_from=escalation_path[0] if len(escalation_path) > 1 else None,
-            escalation_reason=(
-                f"Confidence below threshold" if len(escalation_path) > 1 else None
-            ),
+            escalation_reason=f"Confidence below threshold" if len(escalation_path) > 1 else None,
         )
 
         yield StreamChunk(type="done", metrics=final_metrics)

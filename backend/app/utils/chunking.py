@@ -91,7 +91,9 @@ class DocumentChunker:
             logger.error(f"Error chunking text: {e}", exc_info=True)
             raise
 
-    def chunk_documents(self, documents: List[dict]) -> List[dict]:
+    def chunk_documents(
+        self, documents: List[dict]
+    ) -> List[dict]:
         """
         Chunk multiple documents with their metadata.
 

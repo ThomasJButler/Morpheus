@@ -82,7 +82,7 @@ async def stream_response(
 @router.post("/chat", response_model=ChatResponse)
 async def chat(
     request: ChatRequest,
-    x_session_id: Optional[str] = Header(None, alias="X-Session-ID"),
+    x_session_id: Optional[str] = Header(None, alias="X-Session-ID")
 ):
     """
     Chat endpoint with optional streaming and RAG mode selection.
@@ -191,7 +191,8 @@ async def chat(
 
 @router.post("/context")
 async def get_context(
-    request: dict, x_session_id: Optional[str] = Header(None, alias="X-Session-ID")
+    request: dict,
+    x_session_id: Optional[str] = Header(None, alias="X-Session-ID")
 ):
     """
     Get RAG context and citations for a query.
@@ -248,9 +249,7 @@ async def get_context(
         # Run analysis if requested (for frontend QueryInsight visualization)
         if return_analysis:
             analysis = await query_analyzer.analyze(query)
-            logger.info(
-                f"Query analysis: type={analysis.query_type}, complexity={analysis.complexity_score:.2f}"
-            )
+            logger.info(f"Query analysis: type={analysis.query_type}, complexity={analysis.complexity_score:.2f}")
 
         # For AUTO mode, use analysis to determine actual mode
         if mode == RAGMode.AUTO:
@@ -291,9 +290,7 @@ async def get_context(
         # Create citations
         citations = rag.create_citations(contexts)
 
-        logger.info(
-            f"Context retrieved: {len(citations)} citations, mode_used: {mode_used.value}"
-        )
+        logger.info(f"Context retrieved: {len(citations)} citations, mode_used: {mode_used.value}")
 
         return {
             "context": formatted_context,
