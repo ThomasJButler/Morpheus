@@ -12,8 +12,8 @@ export default function BackToTopButton({ show, onClick }: BackToTopButtonProps)
     <button
       onClick={onClick}
       className="
-        absolute bottom-20 right-4 z-10
-        w-10 h-10 rounded-full
+        absolute bottom-20 right-4 z-20
+        w-11 h-11 rounded-full
         bg-matrix-green/20 border border-matrix-green/50
         text-matrix-green
         flex items-center justify-center

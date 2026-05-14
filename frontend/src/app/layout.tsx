@@ -1,8 +1,10 @@
 import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
+import { GeistSans } from 'geist/font/sans'
 import './globals.css'
 import '@/styles/matrix.css'
 import { WithErrorBoundary } from '@/components/ErrorBoundary'
+import { REDESIGN_V2 } from '@/lib/flags'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -24,7 +26,12 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en" className="dark">
+    <html
+      lang="en"
+      className={`dark ${GeistSans.variable}${REDESIGN_V2 ? ' redesign-v2' : ''}`}
+      data-accent="green"
+      data-density="comfortable"
+    >
       <body className={`${inter.className} antialiased`}>
         <div className="min-h-screen bg-matrix-black">
           {/* Matrix grid background pattern */}

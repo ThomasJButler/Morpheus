@@ -29,6 +29,231 @@
   --glow-green: 0 0 10px rgba(0, 255, 0, 0.5);
   --glow-cyan: 0 0 10px rgba(0, 255, 255, 0.5);
   --glow-intense: 0 0 20px rgba(0, 255, 0, 0.8);
+
+  /* ============================================================== */
+  /* Morpheus v2 redesign tokens (REDESIGN_V2 flag)                  */
+  /* Source: frontend/Morpheus-Redesign/morpheus/tokens.css          */
+  /* These coexist with the legacy --matrix-* vars above. New v2     */
+  /* components consume these; the legacy UI is unaffected.          */
+  /* ============================================================== */
+
+  /* v2 backgrounds — near-black, very slightly green-tinted */
+  --bg-base: #050805;
+  --bg-elev: #0a0f0a;
+  --bg-panel: #0d130d;
+  --bg-input: #070b07;
+  --bg-card: rgba(0, 255, 65, 0.02);
+  --bg-card-hover: rgba(0, 255, 65, 0.04);
+  --bg-overlay: rgba(0, 0, 0, 0.72);
+
+  /* v2 borders — green hairlines */
+  --border-faint: rgba(0, 255, 65, 0.06);
+  --border-subtle: rgba(0, 255, 65, 0.10);
+  --border-default: rgba(0, 255, 65, 0.18);
+  --border-strong: rgba(0, 255, 65, 0.32);
+  --border-focus: rgba(0, 255, 65, 0.55);
+
+  /* v2 foregrounds — toned-down greens for long-session readability */
+  --fg-primary: #e0ffe0;
+  --fg-secondary: #a8d8a8;
+  --fg-muted: #6a8a6a;
+  --fg-dim: #43603f;
+  --fg-faint: #2a3a2a;
+
+  /* v2 accent — single-source hue via --accent-h, OKLch derivatives */
+  --accent-h: 130;
+  --accent-s: 100%;
+  --accent: oklch(0.85 0.25 var(--accent-h));
+  --accent-bright: oklch(0.92 0.27 var(--accent-h));
+  --accent-dim: oklch(0.65 0.18 var(--accent-h));
+  --accent-faint: oklch(0.5 0.12 var(--accent-h));
+
+  /* v2 mode palette — fixed colours for mode pill badges */
+  --v2-cyan: #00e6e6;
+  --v2-cyan-dim: #008b8b;
+  --v2-amber: #f0b429;
+  --v2-amber-dim: #a37a18;
+  --v2-purple: #b266ff;
+  --v2-red: #ff3355;
+  --v2-red-dim: #8a1f33;
+
+  /* v2 typography — referenced by Tailwind `font-geist` and `font-mono-v2` */
+  --font-mono-v2: 'JetBrains Mono', 'Fira Code', ui-monospace, monospace;
+  --font-sans-v2: var(--font-geist-sans), 'Geist', 'Inter', system-ui, -apple-system, sans-serif;
+  --font-display-v2: 'JetBrains Mono', monospace;
+
+  /* v2 spacing — 4px base */
+  --v2-space-1: 4px;
+  --v2-space-2: 8px;
+  --v2-space-3: 12px;
+  --v2-space-4: 16px;
+  --v2-space-5: 20px;
+  --v2-space-6: 24px;
+  --v2-space-8: 32px;
+  --v2-space-10: 40px;
+  --v2-space-12: 48px;
+
+  /* v2 radius (shadcn-leaning) */
+  --r-xs: 4px;
+  --r-sm: 6px;
+  --r-md: 8px;
+  --r-lg: 10px;
+  --r-xl: 14px;
+
+  /* v2 glow shadows — accent-only */
+  --glow-sm: 0 0 12px rgba(0, 255, 65, 0.15);
+  --glow-md: 0 0 24px rgba(0, 255, 65, 0.22);
+  --glow-lg: 0 0 40px rgba(0, 255, 65, 0.30);
+
+  /* v2 layout sizing */
+  --header-h: 56px;
+  --rail-w: 264px;
+  --rail-w-collapsed: 0px;
+}
+
+/* v2 narrow-desktop adjustment for rail width */
+@media (max-width: 1180px) {
+  :root { --rail-w: 232px; }
+}
+
+/* v2 accent variants — drive hue from a single --accent-h */
+[data-accent="green"]  { --accent-h: 130; }
+[data-accent="amber"]  { --accent-h: 80; }
+[data-accent="cyan"]   { --accent-h: 190; }
+
+/* v2 density — compact tightens spacing and header height */
+[data-density="compact"] {
+  --v2-space-3: 8px;
+  --v2-space-4: 12px;
+  --v2-space-5: 16px;
+  --v2-space-6: 18px;
+  --v2-space-8: 22px;
+  --header-h: 48px;
+}
+
+/* ============================================================== */
+/* Morpheus v2 redesign — AppShell layout (Phase 1)                */
+/* Scoped via .redesign-v2 on <html> so the legacy path stays      */
+/* unaffected. The `min-height: 0` declarations on .app-body and   */
+/* .chat-col / .chat-col__messages are the canonical scroll-bug    */
+/* fix — without them, flex/grid children refuse to shrink below   */
+/* their content height and overflow-y: auto becomes useless.      */
+/* ============================================================== */
+
+html.redesign-v2,
+html.redesign-v2 body {
+  height: 100%;
+  overflow: hidden;
+}
+
+.app-shell {
+  display: grid;
+  grid-template-rows: var(--header-h) 1fr;
+  height: 100dvh;
+  overflow: hidden;
+  background: var(--bg-base);
+  color: var(--fg-primary);
+}
+
+.app-body {
+  display: grid;
+  grid-template-columns: var(--rail-w) 1fr var(--rail-w);
+  min-height: 0; /* CRITICAL — lets centre column shrink */
+}
+
+.docs-rail,
+.sys-rail {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow-y: auto;
+  border-color: var(--border-subtle);
+  background: var(--bg-elev);
+}
+.docs-rail { border-right: 1px solid var(--border-subtle); }
+.sys-rail  { border-left:  1px solid var(--border-subtle); }
+
+.chat-col {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;  /* CRITICAL */
+  min-width: 0;   /* CRITICAL — prevents pre/code from blowing out width */
+  background: var(--bg-base);
+}
+
+.chat-col__messages {
+  flex: 1;
+  min-height: 0;       /* CRITICAL — propagates the height constraint down
+                          to ChatInterface's inner messageContainerRef, which
+                          is the actual scroll container. */
+  display: flex;
+  flex-direction: column;
+  /* No overflow-y here: ChatInterface owns its own scroll container with
+     overflow-y: auto (see `messageContainerRef`). Nesting two scroll
+     containers caused wheel/touch events to land ambiguously and prevented
+     the user from scrolling up through long responses (Phase 5 user
+     report). Dropping this lets the inner scroll be the sole source. */
+}
+
+/* Mobile: rails become slide-in drawers below 920px.
+   - .app-body collapses to a single column for the chat content.
+   - Each rail leaves grid flow and becomes position:fixed, anchored below
+     the header, translated off-screen by default. The `.is-open` class
+     (set by AppShell drawer state via DocsSidebar / SystemPanel) brings
+     them back into view with a 250ms transform transition.
+   - Touch swipe-to-close is wired on the rails themselves via
+     useSwipeToClose; the scrim handles tap-to-close. */
+@media (max-width: 920px) {
+  .app-body { grid-template-columns: 1fr; }
+
+  .docs-rail,
+  .sys-rail {
+    position: fixed;
+    top: var(--header-h);
+    bottom: 0;
+    width: 280px;
+    max-width: 85vw;
+    z-index: 50;
+    background: var(--bg-elev);
+    transition: transform 0.25s ease;
+    overscroll-behavior: contain;
+    box-shadow: 0 0 40px rgba(0, 0, 0, 0.5);
+  }
+  .docs-rail {
+    left: 0;
+    border-right: 1px solid var(--border-default);
+    transform: translateX(-100%);
+  }
+  .sys-rail {
+    right: 0;
+    border-left: 1px solid var(--border-default);
+    transform: translateX(100%);
+  }
+  .docs-rail.is-open,
+  .sys-rail.is-open {
+    transform: translateX(0);
+  }
+}
+
+/* Mobile scrim — dim layer behind the open drawer (z-40, below drawer z-50,
+   below header z-30 on desktop; header is z-30 always so it stays clickable). */
+.mobile-scrim {
+  position: fixed;
+  inset: var(--header-h) 0 0 0;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+  z-index: 40;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+}
+.mobile-scrim.is-open {
+  opacity: 1;
+  pointer-events: auto;
+}
+@media (min-width: 921px) {
+  .mobile-scrim { display: none; }
 }
 
 @layer base {
@@ -417,9 +642,16 @@
       @apply bg-matrix-green/10 border-matrix-green/30;
     }
 
-    /* Larger touch targets for buttons */
+    /* Larger touch targets for icon-only buttons.
+       `min-h` covers vertical, `min-w` ensures square icon buttons (w-X h-X
+       with X < 11) get bumped horizontally too. Skip text buttons by
+       scoping to buttons whose only child is an SVG. */
     button {
       @apply min-h-[44px];
+    }
+    button:has(> svg:only-child),
+    a[aria-label]:has(> svg:only-child) {
+      min-width: 44px;
     }
 
     /* Better scrolling on touch */
@@ -435,10 +667,27 @@
     -webkit-overflow-scrolling: touch;
   }
 
-  /* Custom scrollbar for message container */
+  /* Custom scrollbar for message container — auto-hide.
+     Thumb is transparent by default; becomes visible on hover (desktop) or
+     while the `is-scrolling` class is set by the useAutoHideScrollbar hook.
+     The class is added on scroll and removed 1s after the last scroll event.
+     Result: bar fades out when idle, reappears on motion or hover. On touch
+     devices (no hover) the bar is only visible during active scroll. */
   .scrollbar-matrix {
     -webkit-overflow-scrolling: touch;
     scroll-behavior: smooth;
+    /* Firefox: thin overlay, transparent by default */
+    scrollbar-width: thin;
+    scrollbar-color: transparent transparent;
+    transition: scrollbar-color 0.3s ease;
+  }
+  .scrollbar-matrix.is-scrolling {
+    scrollbar-color: rgba(0, 255, 65, 0.35) transparent;
+  }
+  @media (hover: hover) {
+    .scrollbar-matrix:hover {
+      scrollbar-color: rgba(0, 255, 65, 0.35) transparent;
+    }
   }
 
   .scrollbar-matrix::-webkit-scrollbar {
@@ -450,11 +699,23 @@
   }
 
   .scrollbar-matrix::-webkit-scrollbar-thumb {
-    @apply bg-matrix-green/30 rounded-full;
+    background: rgba(0, 255, 65, 0);
+    border-radius: 9999px;
+    transition: background-color 0.3s ease;
   }
-
-  .scrollbar-matrix::-webkit-scrollbar-thumb:hover {
-    @apply bg-matrix-green/50;
+  .scrollbar-matrix.is-scrolling::-webkit-scrollbar-thumb {
+    background: rgba(0, 255, 65, 0.35);
+  }
+  @media (hover: hover) {
+    .scrollbar-matrix:hover::-webkit-scrollbar-thumb {
+      background: rgba(0, 255, 65, 0.35);
+    }
+    .scrollbar-matrix:hover::-webkit-scrollbar-thumb:hover {
+      background: rgba(0, 255, 65, 0.55);
+    }
+    .scrollbar-matrix.is-scrolling:hover::-webkit-scrollbar-thumb {
+      background: rgba(0, 255, 65, 0.55);
+    }
   }
 
   /* Fade in animation */
@@ -939,5 +1200,25 @@
     @apply bg-gradient-to-r from-matrix-green via-matrix-cyan to-matrix-green bg-clip-text text-transparent;
     background-size: 200% auto;
     animation: gradient-shift 3s ease infinite;
+  }
+
+  /* v2 thinking dots — used by the calm ThinkingInputState replacement.
+     Three accent-coloured dots that bounce on a staggered delay. */
+  .thinking-dots span {
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    border-radius: 9999px;
+    background: var(--accent);
+    animation: thinking-bounce 1.4s ease-in-out infinite;
+    opacity: 0.4;
+  }
+  .thinking-dots span:nth-child(1) { animation-delay: 0s; }
+  .thinking-dots span:nth-child(2) { animation-delay: 0.15s; }
+  .thinking-dots span:nth-child(3) { animation-delay: 0.3s; }
+
+  @keyframes thinking-bounce {
+    0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+    30%           { transform: translateY(-3px); opacity: 1; }
   }
 }

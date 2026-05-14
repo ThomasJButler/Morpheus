@@ -62,7 +62,8 @@ async def cleanup_expired_sessions():
             "success": True,
             "sessions_before": stats_before["total_sessions"],
             "sessions_after": stats_after["total_sessions"],
-            "sessions_removed": stats_before["total_sessions"] - stats_after["total_sessions"],
+            "sessions_removed": stats_before["total_sessions"]
+            - stats_after["total_sessions"],
         }
 
     except Exception as e:
@@ -119,9 +120,10 @@ async def detailed_health_check():
         }
         health["overall_status"] = "degraded"
 
-    # Check RAG pipelines
+    # Check RAG pipelines — instantiating SimpleRAG raises if its
+    # dependencies can't init; the bare-call side effect is the health check.
     try:
-        simple_rag = SimpleRAG()
+        SimpleRAG()
         health["components"]["rag_simple"] = {
             "status": "healthy",
         }

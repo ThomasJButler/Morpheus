@@ -101,8 +101,6 @@ export default function RAGModeIndicator({
   isProcessing = false,
   compact = false,
 }: RAGModeIndicatorProps) {
-  const config = MODE_CONFIG[mode];
-
   // Use actual mode from metrics if available (for AUTO routing)
   const actualMode = metrics?.mode_used || mode;
   const actualConfig = MODE_CONFIG[actualMode];

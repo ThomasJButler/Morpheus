@@ -282,7 +282,9 @@ Clarify any ambiguities:"""
             clarified = response.content[0].text.strip()
 
             if clarified != query:
-                logger.info(f"Query clarified: '{query[:30]}...' → '{clarified[:30]}...'")
+                logger.info(
+                    f"Query clarified: '{query[:30]}...' → '{clarified[:30]}...'"
+                )
 
             return clarified
 

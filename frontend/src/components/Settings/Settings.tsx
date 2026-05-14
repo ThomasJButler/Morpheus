@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import GlassPanel from '../UI/GlassPanel';
+import Modal from '../UI/Modal';
 import Button from '../UI/Button';
 import { clsx } from 'clsx';
 import type { RAGMode } from '@/lib/types';
@@ -13,17 +13,16 @@ interface SettingsProps {
 }
 
 const OPENAI_MODELS = [
-  { value: 'gpt-4-turbo-preview', label: 'GPT-4 Turbo', description: 'Most capable, higher cost' },
-  { value: 'gpt-4', label: 'GPT-4', description: 'Most capable, standard' },
-  { value: 'gpt-3.5-turbo', label: 'GPT-3.5 Turbo', description: 'Fast and cost-effective' },
-  { value: 'gpt-3.5-turbo-16k', label: 'GPT-3.5 Turbo 16K', description: 'Larger context window' },
+  { value: 'gpt-5.5-2026-04-23', label: 'GPT-5.5', description: 'Frontier — complex reasoning & coding' },
+  { value: 'gpt-5.4', label: 'GPT-5.4', description: 'Most capable mainline' },
+  { value: 'gpt-5.4-mini', label: 'GPT-5.4 mini', description: 'Fast and cost-effective' },
+  { value: 'gpt-5.4-nano', label: 'GPT-5.4 nano', description: 'Lowest latency / cheapest' },
 ];
 
 const ANTHROPIC_MODELS = [
-  { value: 'claude-sonnet-4-20250514', label: 'Claude Sonnet 4', description: 'Latest, balanced' },
-  { value: 'claude-3-5-sonnet-20241022', label: 'Claude 3.5 Sonnet', description: 'Fast and capable' },
-  { value: 'claude-3-opus-20240229', label: 'Claude 3 Opus', description: 'Most capable' },
-  { value: 'claude-3-haiku-20240307', label: 'Claude 3 Haiku', description: 'Fastest, cost-effective' },
+  { value: 'claude-sonnet-4-6', label: 'Claude Sonnet 4.6', description: 'Balanced default' },
+  { value: 'claude-haiku-4-5-20251001', label: 'Claude Haiku 4.5', description: 'Fastest, cost-effective' },
+  { value: 'claude-sonnet-4-20250514', label: 'Claude Sonnet 4', description: 'Previous generation' },
 ];
 
 // RAG modes for intelligent document retrieval
@@ -37,14 +36,14 @@ const RAG_MODES: { value: RAGMode; label: string; description: string; latency: 
 export default function Settings({ isOpen, onClose }: SettingsProps) {
   // OpenAI settings
   const [apiKey, setApiKey] = useState('');
-  const [model, setModel] = useState('gpt-3.5-turbo');
+  const [model, setModel] = useState('gpt-5.4-mini');
   const [showKey, setShowKey] = useState(false);
   const [testingConnection, setTestingConnection] = useState(false);
   const [testResult, setTestResult] = useState<'success' | 'error' | null>(null);
 
   // Anthropic settings
   const [anthropicApiKey, setAnthropicApiKey] = useState('');
-  const [anthropicModel, setAnthropicModel] = useState('claude-sonnet-4-20250514');
+  const [anthropicModel, setAnthropicModel] = useState('claude-sonnet-4-6');
   const [showAnthropicKey, setShowAnthropicKey] = useState(false);
   const [testingAnthropicConnection, setTestingAnthropicConnection] = useState(false);
   const [anthropicTestResult, setAnthropicTestResult] = useState<'success' | 'error' | null>(null);
@@ -66,9 +65,9 @@ export default function Settings({ isOpen, onClose }: SettingsProps) {
       try {
         const settings: UserSettings = JSON.parse(savedSettings);
         setApiKey(settings.openaiApiKey || '');
-        setModel(settings.openaiModel || 'gpt-3.5-turbo');
+        setModel(settings.openaiModel || 'gpt-5.4-mini');
         setAnthropicApiKey(settings.anthropicApiKey || '');
-        setAnthropicModel(settings.anthropicModel || 'claude-sonnet-4-20250514');
+        setAnthropicModel(settings.anthropicModel || 'claude-sonnet-4-6');
         setProvider(settings.provider || 'anthropic');
         setSaveKey(settings.saveApiKey ?? true);
         // Load RAG mode settings with defaults for backwards compatibility
@@ -135,9 +134,9 @@ export default function Settings({ isOpen, onClose }: SettingsProps) {
 
   const handleClearSettings = () => {
     setApiKey('');
-    setModel('gpt-3.5-turbo');
+    setModel('gpt-5.4-mini');
     setAnthropicApiKey('');
-    setAnthropicModel('claude-sonnet-4-20250514');
+    setAnthropicModel('claude-sonnet-4-6');
     setProvider('anthropic');
     setSaveKey(true);
     setRagMode('auto');
@@ -160,32 +159,39 @@ export default function Settings({ isOpen, onClose }: SettingsProps) {
   const currentModels = provider === 'anthropic' ? ANTHROPIC_MODELS : OPENAI_MODELS;
   const keyPlaceholder = provider === 'anthropic' ? 'sk-ant-...' : 'sk-...';
 
-  if (!isOpen) return null;
-
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
-      <GlassPanel className="w-full max-w-lg max-h-[90vh] overflow-y-auto animate-slide-up" noPadding>
-        <div className="p-6">
-          {/* Header */}
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-mono text-matrix-green matrix-glow flex items-center gap-2">
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-              </svg>
-              Settings
-            </h2>
-            <button
-              onClick={onClose}
-              className="p-2 rounded-lg text-matrix-white/60 hover:text-matrix-green hover:bg-matrix-green/10 transition-all duration-200"
-              aria-label="Close settings"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
-          </div>
-
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title="Settings"
+      size="md"
+      icon={
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+          <circle cx="12" cy="12" r="3" />
+          <path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1A1.7 1.7 0 0 0 4.6 9a1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z" />
+        </svg>
+      }
+      footer={
+        <>
+          <button
+            type="button"
+            onClick={handleClearSettings}
+            className="mr-auto px-3 py-1.5 text-[11px] font-mono text-mode-red hover:bg-mode-red/10 rounded-v2-sm transition-colors"
+          >
+            Clear all
+          </button>
+          <Button variant="secondary" onClick={onClose}>Cancel</Button>
+          <Button
+            variant="primary"
+            onClick={handleSave}
+            disabled={!apiKey && !anthropicApiKey}
+          >
+            Save
+          </Button>
+        </>
+      }
+    >
+      <div className="space-y-5">
           {/* Provider Tabs */}
           <div className="mb-6">
             <label className="block text-xs font-mono text-matrix-white/50 uppercase tracking-wider mb-3">
@@ -338,7 +344,7 @@ export default function Settings({ isOpen, onClose }: SettingsProps) {
                 ))}
               </select>
               <p className="mt-2 text-xs text-matrix-white/40">
-                {ragMode === 'auto' && 'System analyzes query complexity and routes to optimal mode.'}
+                {ragMode === 'auto' && 'System analyses query complexity and routes to optimal mode.'}
                 {ragMode === 'simple' && 'Fastest option using semantic embeddings only.'}
                 {ragMode === 'hybrid' && 'Combines semantic + keyword search for better recall.'}
                 {ragMode === 'agentic' && 'AI agent that can search multiple times and refine results.'}
@@ -380,39 +386,18 @@ export default function Settings({ isOpen, onClose }: SettingsProps) {
               </span>
             </label>
 
-            {/* Security Note */}
-            <div className="p-3 bg-matrix-green/5 border border-matrix-green/20 rounded-lg">
+            {/* Privacy Note */}
+            <div className="p-3 bg-matrix-green/5 border border-matrix-green/20 rounded-lg space-y-1.5">
+              <p className="text-xs text-matrix-white/60 leading-relaxed">
+                <span className="text-matrix-green font-medium">Privacy:</span> API keys are stored locally in your browser (or only in this session if &ldquo;Remember settings&rdquo; is off). They&rsquo;re used to authenticate requests to {provider === 'anthropic' ? 'Anthropic' : 'OpenAI'} on your behalf via this app&rsquo;s server route — they&rsquo;re never persisted server-side and never shared with third parties.
+              </p>
               <p className="text-xs text-matrix-white/50 leading-relaxed">
-                <span className="text-matrix-green font-medium">Security:</span> API keys are stored locally and only sent directly to {provider === 'anthropic' ? 'Anthropic' : 'OpenAI'}.
+                <span className="text-matrix-green font-medium">No data retention:</span> Conversations and uploaded documents are scoped to your session and deleted when the session ends. Nothing is stored long-term on the server.
               </p>
             </div>
           </div>
 
-          <div className="matrix-divider" />
-
-          {/* Action Buttons */}
-          <div className="flex items-center justify-between">
-            <button
-              onClick={handleClearSettings}
-              className="px-3 py-2 text-xs font-mono text-red-400/70 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-all duration-200"
-            >
-              Clear All
-            </button>
-            <div className="flex gap-3">
-              <Button variant="secondary" onClick={onClose}>
-                Cancel
-              </Button>
-              <Button
-                variant="primary"
-                onClick={handleSave}
-                disabled={!apiKey && !anthropicApiKey}
-              >
-                Save
-              </Button>
-            </div>
-          </div>
-        </div>
-      </GlassPanel>
-    </div>
+      </div>
+    </Modal>
   );
 }

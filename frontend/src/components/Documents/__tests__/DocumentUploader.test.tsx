@@ -61,17 +61,17 @@ describe('DocumentUploader', () => {
 
   it('renders upload dropzone', () => {
     render(
-      <DocumentUploader onClose={mockOnClose} onUploadComplete={mockOnUploadComplete} />
+      <DocumentUploader isOpen={true} onClose={mockOnClose} onUploadComplete={mockOnUploadComplete} />
     );
 
-    expect(screen.getByText('Upload Document')).toBeInTheDocument();
+    expect(screen.getByText(/Upload document/i)).toBeInTheDocument();
     expect(screen.getByText('Drag and drop your document here')).toBeInTheDocument();
     expect(screen.getByText('Browse Files')).toBeInTheDocument();
   });
 
   it('validates file type - accepts PDF', async () => {
     render(
-      <DocumentUploader onClose={mockOnClose} onUploadComplete={mockOnUploadComplete} />
+      <DocumentUploader isOpen={true} onClose={mockOnClose} onUploadComplete={mockOnUploadComplete} />
     );
 
     const file = new File(['test content'], 'test.pdf', { type: 'application/pdf' });
@@ -85,7 +85,7 @@ describe('DocumentUploader', () => {
 
   it('validates file type - accepts TXT', async () => {
     render(
-      <DocumentUploader onClose={mockOnClose} onUploadComplete={mockOnUploadComplete} />
+      <DocumentUploader isOpen={true} onClose={mockOnClose} onUploadComplete={mockOnUploadComplete} />
     );
 
     const file = new File(['test content'], 'test.txt', { type: 'text/plain' });
@@ -98,7 +98,7 @@ describe('DocumentUploader', () => {
 
   it('validates file type - accepts MD', async () => {
     render(
-      <DocumentUploader onClose={mockOnClose} onUploadComplete={mockOnUploadComplete} />
+      <DocumentUploader isOpen={true} onClose={mockOnClose} onUploadComplete={mockOnUploadComplete} />
     );
 
     const file = new File(['# Test'], 'test.md', { type: 'text/markdown' });
@@ -111,7 +111,7 @@ describe('DocumentUploader', () => {
 
   it('validates file type - accepts DOCX', async () => {
     render(
-      <DocumentUploader onClose={mockOnClose} onUploadComplete={mockOnUploadComplete} />
+      <DocumentUploader isOpen={true} onClose={mockOnClose} onUploadComplete={mockOnUploadComplete} />
     );
 
     const file = new File(['test'], 'test.docx', {
@@ -126,7 +126,7 @@ describe('DocumentUploader', () => {
 
   it('rejects unsupported file types via drag and drop', async () => {
     render(
-      <DocumentUploader onClose={mockOnClose} onUploadComplete={mockOnUploadComplete} />
+      <DocumentUploader isOpen={true} onClose={mockOnClose} onUploadComplete={mockOnUploadComplete} />
     );
 
     // Use drag-and-drop to bypass the input accept attribute
@@ -144,7 +144,7 @@ describe('DocumentUploader', () => {
 
   it('rejects files over 10MB', async () => {
     render(
-      <DocumentUploader onClose={mockOnClose} onUploadComplete={mockOnUploadComplete} />
+      <DocumentUploader isOpen={true} onClose={mockOnClose} onUploadComplete={mockOnUploadComplete} />
     );
 
     // Create a file > 10MB
@@ -163,7 +163,7 @@ describe('DocumentUploader', () => {
     );
 
     render(
-      <DocumentUploader onClose={mockOnClose} onUploadComplete={mockOnUploadComplete} />
+      <DocumentUploader isOpen={true} onClose={mockOnClose} onUploadComplete={mockOnUploadComplete} />
     );
 
     // Select a file
@@ -185,7 +185,7 @@ describe('DocumentUploader', () => {
     (apiClient.uploadDocument as jest.Mock).mockRejectedValue(new Error('Network error'));
 
     render(
-      <DocumentUploader onClose={mockOnClose} onUploadComplete={mockOnUploadComplete} />
+      <DocumentUploader isOpen={true} onClose={mockOnClose} onUploadComplete={mockOnUploadComplete} />
     );
 
     // Select a file
@@ -208,7 +208,7 @@ describe('DocumentUploader', () => {
     (apiClient.uploadDocument as jest.Mock).mockResolvedValue(mockResponse);
 
     render(
-      <DocumentUploader onClose={mockOnClose} onUploadComplete={mockOnUploadComplete} />
+      <DocumentUploader isOpen={true} onClose={mockOnClose} onUploadComplete={mockOnUploadComplete} />
     );
 
     // Select a file
@@ -228,7 +228,7 @@ describe('DocumentUploader', () => {
 
   it('calls onClose when cancel button is clicked', () => {
     render(
-      <DocumentUploader onClose={mockOnClose} onUploadComplete={mockOnUploadComplete} />
+      <DocumentUploader isOpen={true} onClose={mockOnClose} onUploadComplete={mockOnUploadComplete} />
     );
 
     const cancelButton = screen.getByText('Cancel');
@@ -239,10 +239,10 @@ describe('DocumentUploader', () => {
 
   it('calls onClose when X button is clicked', () => {
     render(
-      <DocumentUploader onClose={mockOnClose} onUploadComplete={mockOnUploadComplete} />
+      <DocumentUploader isOpen={true} onClose={mockOnClose} onUploadComplete={mockOnUploadComplete} />
     );
 
-    const closeButton = screen.getByText('✕');
+    const closeButton = screen.getByRole('button', { name: /close/i });
     fireEvent.click(closeButton);
 
     expect(mockOnClose).toHaveBeenCalled();
@@ -250,7 +250,7 @@ describe('DocumentUploader', () => {
 
   it('displays file size correctly', async () => {
     render(
-      <DocumentUploader onClose={mockOnClose} onUploadComplete={mockOnUploadComplete} />
+      <DocumentUploader isOpen={true} onClose={mockOnClose} onUploadComplete={mockOnUploadComplete} />
     );
 
     // Create a 1.5 KB file
@@ -265,7 +265,7 @@ describe('DocumentUploader', () => {
 
   it('allows selecting different file after initial selection', async () => {
     render(
-      <DocumentUploader onClose={mockOnClose} onUploadComplete={mockOnUploadComplete} />
+      <DocumentUploader isOpen={true} onClose={mockOnClose} onUploadComplete={mockOnUploadComplete} />
     );
 
     // Select first file
@@ -285,7 +285,7 @@ describe('DocumentUploader', () => {
     (apiClient.uploadDocument as jest.Mock).mockResolvedValue(mockResponse);
 
     render(
-      <DocumentUploader onClose={mockOnClose} onUploadComplete={mockOnUploadComplete} />
+      <DocumentUploader isOpen={true} onClose={mockOnClose} onUploadComplete={mockOnUploadComplete} />
     );
 
     // Select and upload

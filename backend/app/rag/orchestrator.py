@@ -5,18 +5,15 @@ Manages routing between SimpleRAG, HybridRAG, and AgenticRAG based on
 query analysis, with support for auto-escalation and evaluation loops.
 """
 
-import asyncio
 import logging
 import time
-from typing import AsyncGenerator, List, Optional, Tuple
+from typing import AsyncGenerator, List, Optional
 
 from app.core.config import settings
 from app.models.chat import (
     Citation,
     EnhancedRetrievalMetrics,
-    QueryAnalysis,
     RAGMode,
-    ReflectionResult,
     RetrievalMetrics,
     StreamChunk,
 )
@@ -71,7 +68,6 @@ class RAGOrchestrator:
         Yields:
             StreamChunk objects
         """
-        start_time = time.time()
         namespace = namespace or "default"
         analysis = None
 
@@ -162,7 +158,6 @@ class RAGOrchestrator:
             StreamChunk objects
         """
         namespace = namespace or "default"
-        current_mode = RAGMode.SIMPLE
 
         # Try SimpleRAG first
         yield StreamChunk(type="mode", mode=RAGMode.SIMPLE)
@@ -197,7 +192,7 @@ class RAGOrchestrator:
                 yield StreamChunk(
                     type="mode",
                     mode=RAGMode.HYBRID,
-                    content="Escalating for better results..."
+                    content="Escalating for better results...",
                 )
 
                 response_parts = []
@@ -214,7 +209,6 @@ class RAGOrchestrator:
                         yield chunk
                     elif chunk.type == "done":
                         metrics = chunk.metrics
-                        current_mode = RAGMode.HYBRID
 
                 # Re-evaluate
                 confidence = self._evaluate_confidence(metrics, citations)
@@ -228,7 +222,7 @@ class RAGOrchestrator:
                     yield StreamChunk(
                         type="mode",
                         mode=RAGMode.AGENTIC,
-                        content="Deep diving for comprehensive answer..."
+                        content="Deep diving for comprehensive answer...",
                     )
 
                     response_parts = []
@@ -245,15 +239,12 @@ class RAGOrchestrator:
                             yield chunk
                         elif chunk.type == "done":
                             metrics = chunk.metrics
-                            current_mode = RAGMode.AGENTIC
 
         # Send final done with escalation info
         yield StreamChunk(type="done", metrics=metrics)
 
     def _evaluate_confidence(
-        self,
-        metrics: RetrievalMetrics,
-        citations: List[Citation]
+        self, metrics: RetrievalMetrics, citations: List[Citation]
     ) -> float:
         """
         Evaluate retrieval confidence based on metrics.
@@ -334,7 +325,9 @@ class RAGOrchestrator:
             StreamChunk objects including reflection results
         """
         namespace = namespace or "default"
-        confidence_threshold = confidence_threshold or settings.reflection_min_confidence
+        confidence_threshold = (
+            confidence_threshold or settings.reflection_min_confidence
+        )
 
         # Determine mode
         analysis = None
@@ -352,10 +345,12 @@ class RAGOrchestrator:
             yield StreamChunk(type="mode", mode=RAGMode.AGENTIC)
 
             # Use AgenticRAG with reflection
-            response, citations, metrics, reflection = await self.agentic_rag.process_query_with_reflection(
-                query=query,
-                namespace=namespace,
-                min_confidence=confidence_threshold,
+            response, citations, metrics, reflection = (
+                await self.agentic_rag.process_query_with_reflection(
+                    query=query,
+                    namespace=namespace,
+                    min_confidence=confidence_threshold,
+                )
             )
 
             # Yield citations
@@ -428,7 +423,9 @@ class RAGOrchestrator:
         # Cap initial mode at HYBRID if we want escalation potential
         if current_mode == RAGMode.AGENTIC and not initial_mode:
             # Start lower to allow escalation
-            current_mode = RAGMode.SIMPLE if analysis.complexity_score < 0.5 else RAGMode.HYBRID
+            current_mode = (
+                RAGMode.SIMPLE if analysis.complexity_score < 0.5 else RAGMode.HYBRID
+            )
 
         escalation_path.append(current_mode)
         yield StreamChunk(type="analysis", analysis=analysis)
@@ -440,7 +437,9 @@ class RAGOrchestrator:
         metrics = None
 
         if current_mode == RAGMode.SIMPLE:
-            async for chunk in self.simple_rag.process_query_streaming(query, namespace=namespace):
+            async for chunk in self.simple_rag.process_query_streaming(
+                query, namespace=namespace
+            ):
                 if chunk.type == "token":
                     response_parts.append(chunk.content)
                     yield chunk
@@ -450,7 +449,9 @@ class RAGOrchestrator:
                 elif chunk.type == "done":
                     metrics = chunk.metrics
         elif current_mode == RAGMode.HYBRID:
-            async for chunk in self.hybrid_rag.process_query_streaming(query, namespace=namespace):
+            async for chunk in self.hybrid_rag.process_query_streaming(
+                query, namespace=namespace
+            ):
                 if chunk.type == "token":
                     response_parts.append(chunk.content)
                     yield chunk
@@ -464,7 +465,10 @@ class RAGOrchestrator:
         confidence = self._evaluate_confidence(metrics, citations) if metrics else 0.0
 
         # Escalate if needed
-        if confidence < settings.reflection_min_confidence and current_mode != RAGMode.AGENTIC:
+        if (
+            confidence < settings.reflection_min_confidence
+            and current_mode != RAGMode.AGENTIC
+        ):
             # Try next tier
             if current_mode == RAGMode.SIMPLE:
                 next_mode = RAGMode.HYBRID
@@ -480,7 +484,7 @@ class RAGOrchestrator:
             yield StreamChunk(
                 type="mode",
                 mode=next_mode,
-                content=f"Escalating from {current_mode.value} for better results..."
+                content=f"Escalating from {current_mode.value} for better results...",
             )
 
             # Clear and retry
@@ -488,7 +492,9 @@ class RAGOrchestrator:
             citations = []
 
             if next_mode == RAGMode.HYBRID:
-                async for chunk in self.hybrid_rag.process_query_streaming(query, namespace=namespace):
+                async for chunk in self.hybrid_rag.process_query_streaming(
+                    query, namespace=namespace
+                ):
                     if chunk.type == "token":
                         response_parts.append(chunk.content)
                         yield chunk
@@ -500,9 +506,11 @@ class RAGOrchestrator:
                         current_mode = next_mode
             else:
                 # AgenticRAG with reflection
-                response, citations_list, metrics, reflection = await self.agentic_rag.process_query_with_reflection(
-                    query=query,
-                    namespace=namespace,
+                response, citations_list, metrics, reflection = (
+                    await self.agentic_rag.process_query_with_reflection(
+                        query=query,
+                        namespace=namespace,
+                    )
                 )
                 for citation in citations_list:
                     citations.append(citation)
@@ -529,7 +537,9 @@ class RAGOrchestrator:
             mode_used=current_mode,
             mode_confidence=confidence,
             escalated_from=escalation_path[0] if len(escalation_path) > 1 else None,
-            escalation_reason=f"Confidence below threshold" if len(escalation_path) > 1 else None,
+            escalation_reason=(
+                "Confidence below threshold" if len(escalation_path) > 1 else None
+            ),
         )
 
         yield StreamChunk(type="done", metrics=final_metrics)

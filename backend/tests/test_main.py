@@ -56,7 +56,7 @@ class TestCORSConfiguration:
             headers={
                 "Origin": "http://localhost:3000",
                 "Access-Control-Request-Method": "POST",
-            }
+            },
         )
 
         # Should return 200 with CORS headers
@@ -66,8 +66,7 @@ class TestCORSConfiguration:
     def test_cors_actual_request(self, test_client: TestClient):
         """Test CORS on actual request."""
         response = test_client.get(
-            "/api/health",
-            headers={"Origin": "http://localhost:3000"}
+            "/api/health", headers={"Origin": "http://localhost:3000"}
         )
 
         assert "access-control-allow-origin" in response.headers
@@ -90,11 +89,7 @@ class TestErrorHandling:
         assert response.status_code == 405
 
     @patch("app.main.get_pinecone_client")
-    def test_global_exception_handler(
-        self,
-        mock_pinecone,
-        test_client: TestClient
-    ):
+    def test_global_exception_handler(self, mock_pinecone, test_client: TestClient):
         """Test global exception handler catches unhandled errors."""
         # This is hard to test directly since FastAPI handles most errors
         # But we can verify the handler exists
@@ -111,7 +106,10 @@ class TestOpenAPIDocumentation:
         response = test_client.get("/docs")
 
         assert response.status_code == 200
-        assert b"swagger" in response.content.lower() or b"openapi" in response.content.lower()
+        assert (
+            b"swagger" in response.content.lower()
+            or b"openapi" in response.content.lower()
+        )
 
     def test_redoc_endpoint_accessible(self, test_client: TestClient):
         """Test /redoc endpoint is accessible."""
@@ -139,7 +137,7 @@ class TestAppLifecycle:
     def test_startup_initializes_pinecone(self, mock_pinecone):
         """Test that startup event initializes Pinecone."""
         # Create a new test client to trigger startup
-        with TestClient(app) as client:
+        with TestClient(app):
             # Verify Pinecone client was called during startup
             mock_pinecone.assert_called()
 
@@ -153,7 +151,7 @@ class TestAppLifecycle:
 
         # App should raise exception during startup
         with pytest.raises(Exception):
-            with TestClient(app) as client:
+            with TestClient(app):
                 pass
 
 
@@ -190,7 +188,7 @@ class TestRateLimiting:
         """
         # Make many requests quickly
         for _ in range(20):
-            response = test_client.get("/api/health")
+            test_client.get("/api/health")
 
         # Eventually should hit rate limit
         # assert response.status_code == 429
@@ -217,5 +215,5 @@ class TestEndToEndFlow:
         pass
 
 
-# Import app for lifecycle tests
-from app.main import app
+# Import app for lifecycle tests (deferred so test-time mocks land first)
+from app.main import app  # noqa: E402

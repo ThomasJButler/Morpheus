@@ -3,11 +3,12 @@
 import { useState, useCallback, useRef } from 'react';
 import { apiClient } from '@/lib/api-client';
 import { DocumentUploadResponse } from '@/lib/types';
-import GlassPanel from '../UI/GlassPanel';
+import Modal from '../UI/Modal';
 import Button from '../UI/Button';
 import UploadProgress from './UploadProgress';
 
 interface DocumentUploaderProps {
+  isOpen: boolean;
   onUploadComplete?: (response: DocumentUploadResponse) => void;
   onClose: () => void;
 }
@@ -35,6 +36,7 @@ const validateFile = (file: File): string | null => {
 };
 
 export default function DocumentUploader({
+  isOpen,
   onUploadComplete,
   onClose,
 }: DocumentUploaderProps) {
@@ -110,6 +112,13 @@ export default function DocumentUploader({
       await new Promise(resolve => setTimeout(resolve, 2000)); // 2 second delay for Pinecone propagation
       setIsIndexing(false);
 
+      // Broadcast so v2 consumers (DocsSidebar, future System panel Sources
+      // tab) refetch without lifting state. Listeners use addEventListener
+      // on the 'morpheus:documents-changed' event name.
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('morpheus:documents-changed'));
+      }
+
       if (onUploadComplete) {
         onUploadComplete(response);
       }
@@ -137,21 +146,35 @@ export default function DocumentUploader({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm">
-      <GlassPanel className="w-full max-w-2xl p-6 m-4">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl font-mono text-matrix-green">
-            Upload Document
-          </h2>
-          <button
-            onClick={onClose}
-            className="text-matrix-white/60 hover:text-matrix-green transition-colors"
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title="Upload document"
+      size="lg"
+      icon={
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+          <polyline points="17 8 12 3 7 8" />
+          <line x1="12" y1="3" x2="12" y2="15" />
+        </svg>
+      }
+      footer={
+        <>
+          <Button onClick={onClose} variant="ghost" disabled={isUploading}>
+            Cancel
+          </Button>
+          <Button
+            onClick={handleUpload}
+            variant="primary"
+            disabled={!selectedFile || isUploading || !!success}
+            isLoading={isUploading}
           >
-            ✕
-          </button>
-        </div>
-
+            {success ? 'Uploaded' : 'Upload'}
+          </Button>
+        </>
+      }
+    >
+      <div className="space-y-4">
         {/* Drop Zone */}
         <div
           onDragOver={handleDragOver}
@@ -248,25 +271,7 @@ export default function DocumentUploader({
           </div>
         )}
 
-        {/* Action Buttons */}
-        <div className="flex justify-end space-x-3 mt-6">
-          <Button
-            onClick={onClose}
-            variant="ghost"
-            disabled={isUploading}
-          >
-            Cancel
-          </Button>
-          <Button
-            onClick={handleUpload}
-            variant="primary"
-            disabled={!selectedFile || isUploading || !!success}
-            isLoading={isUploading}
-          >
-            {success ? 'Uploaded' : 'Upload'}
-          </Button>
-        </div>
-      </GlassPanel>
-    </div>
+      </div>
+    </Modal>
   );
 }
