@@ -75,9 +75,7 @@ class PineconeClient:
                     )
                     logger.info("Index created successfully")
                 else:
-                    logger.info(
-                        f"Using existing index: {settings.pinecone_index_name}"
-                    )
+                    logger.info(f"Using existing index: {settings.pinecone_index_name}")
 
                 self._index = self._pc.Index(settings.pinecone_index_name)
 
@@ -140,7 +138,7 @@ class PineconeClient:
                         "total_vector_count": namespace_stats.get("vector_count", 0),
                         "dimension": dense_stats.dimension,
                         "namespace": namespace,
-                        "namespaces": {namespace: namespace_stats}
+                        "namespaces": {namespace: namespace_stats},
                     }
                 }
             else:
@@ -148,7 +146,7 @@ class PineconeClient:
                     "dense": {
                         "total_vector_count": dense_stats.total_vector_count,
                         "dimension": dense_stats.dimension,
-                        "namespaces": namespaces_dict
+                        "namespaces": namespaces_dict,
                     }
                 }
 

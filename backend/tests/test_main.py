@@ -56,7 +56,7 @@ class TestCORSConfiguration:
             headers={
                 "Origin": "http://localhost:3000",
                 "Access-Control-Request-Method": "POST",
-            }
+            },
         )
 
         # Should return 200 with CORS headers
@@ -66,8 +66,7 @@ class TestCORSConfiguration:
     def test_cors_actual_request(self, test_client: TestClient):
         """Test CORS on actual request."""
         response = test_client.get(
-            "/api/health",
-            headers={"Origin": "http://localhost:3000"}
+            "/api/health", headers={"Origin": "http://localhost:3000"}
         )
 
         assert "access-control-allow-origin" in response.headers
@@ -90,11 +89,7 @@ class TestErrorHandling:
         assert response.status_code == 405
 
     @patch("app.main.get_pinecone_client")
-    def test_global_exception_handler(
-        self,
-        mock_pinecone,
-        test_client: TestClient
-    ):
+    def test_global_exception_handler(self, mock_pinecone, test_client: TestClient):
         """Test global exception handler catches unhandled errors."""
         # This is hard to test directly since FastAPI handles most errors
         # But we can verify the handler exists
@@ -111,7 +106,10 @@ class TestOpenAPIDocumentation:
         response = test_client.get("/docs")
 
         assert response.status_code == 200
-        assert b"swagger" in response.content.lower() or b"openapi" in response.content.lower()
+        assert (
+            b"swagger" in response.content.lower()
+            or b"openapi" in response.content.lower()
+        )
 
     def test_redoc_endpoint_accessible(self, test_client: TestClient):
         """Test /redoc endpoint is accessible."""

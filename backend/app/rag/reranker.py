@@ -165,7 +165,8 @@ class Reranker:
 
         # Calculate how much the order changed
         changes = sum(
-            1 for i, (orig, new) in enumerate(zip(original_order, reranked_order))
+            1
+            for i, (orig, new) in enumerate(zip(original_order, reranked_order))
             if orig != new
         )
 
@@ -176,7 +177,9 @@ class Reranker:
             "model": self.model,
         }
 
-        logger.info(f"Reranking metrics: {changes} position changes out of {len(reranked_contexts)}")
+        logger.info(
+            f"Reranking metrics: {changes} position changes out of {len(reranked_contexts)}"
+        )
 
         return reranked_contexts, metrics
 

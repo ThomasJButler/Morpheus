@@ -120,7 +120,7 @@ async def preflight_handler(rest_of_path: str):
             "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
             "Access-Control-Allow-Headers": "*",
             "Access-Control-Max-Age": "86400",  # Cache preflight for 24 hours
-        }
+        },
     )
 
 
