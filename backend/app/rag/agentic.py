@@ -123,7 +123,10 @@ class AgenticRAG:
         try:
             # For text-embedding-3-small, explicitly set dimensions to 512
             dimensions = 512 if "small" in settings.embedding_model else None
-            embedding_params = {"model": settings.embedding_model, "input": query}
+            embedding_params = {
+                "model": settings.embedding_model,
+                "input": query
+            }
             if dimensions:
                 embedding_params["dimensions"] = dimensions
 
@@ -164,15 +167,13 @@ class AgenticRAG:
             # Format results
             contexts = []
             for match in results.get("matches", []):
-                contexts.append(
-                    {
-                        "text": match.metadata.get("text", ""),
-                        "source": match.metadata.get("source", "Unknown"),
-                        "page": match.metadata.get("page"),
-                        "chunk_id": match.id,
-                        "score": match.score,
-                    }
-                )
+                contexts.append({
+                    "text": match.metadata.get("text", ""),
+                    "source": match.metadata.get("source", "Unknown"),
+                    "page": match.metadata.get("page"),
+                    "chunk_id": match.id,
+                    "score": match.score,
+                })
 
             logger.info(f"Retrieved {len(contexts)} results for query: {query[:50]}...")
             return contexts
@@ -213,9 +214,7 @@ class AgenticRAG:
             rewritten = tool_input.get("rewritten_query", "")
             reasoning = tool_input.get("reasoning", "")
 
-            logger.info(
-                f"Query rewritten: '{original[:30]}...' → '{rewritten[:30]}...' ({reasoning})"
-            )
+            logger.info(f"Query rewritten: '{original[:30]}...' → '{rewritten[:30]}...' ({reasoning})")
 
             return {
                 "success": True,
@@ -365,13 +364,11 @@ Be intelligent about when to search - not every question requires retrieval."""
                         if hasattr(block, "text"):
                             text_content.append(block.text)
                         elif hasattr(block, "type") and block.type == "tool_use":
-                            tool_uses.append(
-                                {
-                                    "id": block.id,
-                                    "name": block.name,
-                                    "input": block.input,
-                                }
-                            )
+                            tool_uses.append({
+                                "id": block.id,
+                                "name": block.name,
+                                "input": block.input,
+                            })
 
                     # Yield any initial text
                     for text in text_content:
@@ -382,15 +379,11 @@ Be intelligent about when to search - not every question requires retrieval."""
                     if tool_uses:
                         for tool_use in tool_uses:
                             if tool_calls_count >= settings.agentic_max_tool_calls:
-                                logger.warning(
-                                    f"Max tool calls ({settings.agentic_max_tool_calls}) reached"
-                                )
+                                logger.warning(f"Max tool calls ({settings.agentic_max_tool_calls}) reached")
                                 break
 
                             tool_calls_count += 1
-                            logger.info(
-                                f"Executing tool: {tool_use['name']} (call {tool_calls_count})"
-                            )
+                            logger.info(f"Executing tool: {tool_use['name']} (call {tool_calls_count})")
 
                             # Yield tool call info
                             yield StreamChunk(
@@ -411,38 +404,26 @@ Be intelligent about when to search - not every question requires retrieval."""
                             if "results" in tool_result:
                                 citations = self._extract_citations([tool_result])
                                 for citation in citations:
-                                    yield StreamChunk(
-                                        type="citation", citation=citation
-                                    )
+                                    yield StreamChunk(type="citation", citation=citation)
 
                             # Continue conversation with tool result
-                            messages.append(
-                                {
-                                    "role": "assistant",
-                                    "content": [
-                                        {
-                                            "type": "tool_use",
-                                            "id": tool_use["id"],
-                                            "name": tool_use["name"],
-                                            "input": tool_use["input"],
-                                        }
-                                    ],
-                                }
-                            )
-                            messages.append(
-                                {
-                                    "role": "user",
-                                    "content": [
-                                        {
-                                            "type": "tool_result",
-                                            "tool_use_id": tool_use["id"],
-                                            "content": self._format_tool_result(
-                                                tool_result
-                                            ),
-                                        }
-                                    ],
-                                }
-                            )
+                            messages.append({
+                                "role": "assistant",
+                                "content": [{
+                                    "type": "tool_use",
+                                    "id": tool_use["id"],
+                                    "name": tool_use["name"],
+                                    "input": tool_use["input"],
+                                }],
+                            })
+                            messages.append({
+                                "role": "user",
+                                "content": [{
+                                    "type": "tool_result",
+                                    "tool_use_id": tool_use["id"],
+                                    "content": self._format_tool_result(tool_result),
+                                }],
+                            })
 
                         # Stream final response after tool use
                         async with self.anthropic_client.messages.stream(
@@ -461,7 +442,9 @@ Be intelligent about when to search - not every question requires retrieval."""
 
             # Send completion metrics
             query_time = (time.time() - start_time) * 1000
-            total_results = sum(len(r.get("results", [])) for r in search_results)
+            total_results = sum(
+                len(r.get("results", [])) for r in search_results
+            )
 
             metrics = RetrievalMetrics(
                 query_time_ms=query_time,
@@ -476,7 +459,8 @@ Be intelligent about when to search - not every question requires retrieval."""
         except asyncio.TimeoutError:
             logger.warning(f"Agentic processing timed out after {timeout}s")
             yield StreamChunk(
-                type="error", content=f"Processing timed out after {timeout} seconds"
+                type="error",
+                content=f"Processing timed out after {timeout} seconds"
             )
         except Exception as e:
             logger.error(f"Agentic RAG processing failed: {e}", exc_info=True)
@@ -512,10 +496,8 @@ Be intelligent about when to search - not every question requires retrieval."""
                 metrics = chunk.metrics
 
         response = "".join(response_parts)
-        return (
-            response,
-            citations,
-            metrics or RetrievalMetrics(query_time_ms=0, num_results=0, reranked=False),
+        return response, citations, metrics or RetrievalMetrics(
+            query_time_ms=0, num_results=0, reranked=False
         )
 
     async def reflect_on_response(
@@ -554,9 +536,7 @@ Be intelligent about when to search - not every question requires retrieval."""
                 f"[{i}] Source: {source} (score: {score:.2f})\n{text_preview}..."
             )
 
-        context_str = (
-            "\n".join(context_summary) if context_summary else "No context retrieved"
-        )
+        context_str = "\n".join(context_summary) if context_summary else "No context retrieved"
 
         reflection_prompt = f"""You are a critical evaluator assessing the quality of a RAG response.
 
@@ -605,14 +585,10 @@ Respond ONLY with the JSON object, no other text."""
             # Validate and create ReflectionResult
             result = ReflectionResult(
                 answered_query=reflection_data.get("answered_query", False),
-                confidence_score=min(
-                    1.0, max(0.0, reflection_data.get("confidence_score", 0.5))
-                ),
+                confidence_score=min(1.0, max(0.0, reflection_data.get("confidence_score", 0.5))),
                 citations_accurate=reflection_data.get("citations_accurate", True),
                 needs_more_search=reflection_data.get("needs_more_search", False),
-                suggested_followup_queries=reflection_data.get(
-                    "suggested_followup_queries", []
-                ),
+                suggested_followup_queries=reflection_data.get("suggested_followup_queries", []),
                 issues_found=reflection_data.get("issues_found", []),
                 reasoning=reflection_data.get("reasoning", "Reflection completed"),
             )
@@ -693,10 +669,7 @@ Respond ONLY with the JSON object, no other text."""
             reflection = await self.reflect_on_response(query, response, contexts)
 
             # If confidence is good enough or we've exhausted retries, return
-            if (
-                reflection.confidence_score >= min_confidence
-                or attempt >= max_reflection_loops
-            ):
+            if reflection.confidence_score >= min_confidence or attempt >= max_reflection_loops:
                 if attempt > 0:
                     logger.info(
                         f"Reflection loop completed after {attempt + 1} attempts, "

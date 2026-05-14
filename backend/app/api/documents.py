@@ -34,7 +34,7 @@ DEFAULT_NAMESPACE = "default"
 @router.post("/upload")
 async def upload_document(
     file: UploadFile = File(...),
-    x_session_id: Optional[str] = Header(None, alias="X-Session-ID"),
+    x_session_id: Optional[str] = Header(None, alias="X-Session-ID")
 ):
     """
     Upload and process a document.
@@ -195,16 +195,8 @@ async def index_chunks(chunks: List[dict], namespace: str = DEFAULT_NAMESPACE) -
             if sparse_index and i < len(sparse_embeddings):
                 sparse_vec = sparse_embeddings[i]
                 # Convert to list if numpy array, otherwise use as-is
-                indices = (
-                    sparse_vec["indices"].tolist()
-                    if hasattr(sparse_vec["indices"], "tolist")
-                    else sparse_vec["indices"]
-                )
-                values = (
-                    sparse_vec["values"].tolist()
-                    if hasattr(sparse_vec["values"], "tolist")
-                    else sparse_vec["values"]
-                )
+                indices = sparse_vec["indices"].tolist() if hasattr(sparse_vec["indices"], "tolist") else sparse_vec["indices"]
+                values = sparse_vec["values"].tolist() if hasattr(sparse_vec["values"], "tolist") else sparse_vec["values"]
 
                 # Build sparse metadata without null values
                 sparse_metadata = {
@@ -226,9 +218,7 @@ async def index_chunks(chunks: List[dict], namespace: str = DEFAULT_NAMESPACE) -
                 )
 
         # Upsert to dense index (within namespace)
-        logger.info(
-            f"Upserting {len(dense_vectors)} vectors to dense index (namespace: {namespace})"
-        )
+        logger.info(f"Upserting {len(dense_vectors)} vectors to dense index (namespace: {namespace})")
         dense_index.upsert(vectors=dense_vectors, namespace=namespace)
 
         # Note: Sparse index implementation would go here for true hybrid search
@@ -298,7 +288,6 @@ async def get_document_stats(
 
         # Return structure matching frontend DocumentStats type
         from datetime import datetime
-
         return {
             "total_documents": total_documents,
             "total_chunks": total_chunks,
@@ -311,19 +300,18 @@ async def get_document_stats(
         logger.error(f"Error getting stats: {e}", exc_info=True)
         # Return JSONResponse with explicit CORS headers on error
         from fastapi.responses import JSONResponse
-
         return JSONResponse(
             status_code=500,
             content={
                 "success": False,
                 "error": str(e),
-                "detail": f"Failed to fetch document statistics: {str(e)}",
+                "detail": f"Failed to fetch document statistics: {str(e)}"
             },
             headers={
                 "Access-Control-Allow-Origin": "*",
                 "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
                 "Access-Control-Allow-Headers": "*",
-            },
+            }
         )
 
 
@@ -341,7 +329,7 @@ async def delete_all_documents(
         dict: Deletion status
     """
     namespace = x_session_id or DEFAULT_NAMESPACE
-
+    
     try:
         pinecone_client = get_pinecone_client()
         success = pinecone_client.delete_all_vectors(namespace=namespace)
@@ -375,20 +363,18 @@ async def cleanup_session(
         dict: Cleanup status
     """
     namespace = x_session_id or DEFAULT_NAMESPACE
-
+    
     try:
         pinecone_client = get_pinecone_client()
-
+        
         # Check if namespace has any vectors first
         stats = pinecone_client.index_stats(namespace=namespace)
         vector_count = stats.get("dense", {}).get("total_vector_count", 0)
-
+        
         if vector_count > 0:
             success = pinecone_client.delete_namespace(namespace)
             if success:
-                logger.info(
-                    f"Cleaned up namespace: {namespace} ({vector_count} vectors deleted)"
-                )
+                logger.info(f"Cleaned up namespace: {namespace} ({vector_count} vectors deleted)")
                 return {
                     "success": True,
                     "message": f"Namespace cleaned up: {vector_count} vectors deleted",
@@ -427,23 +413,23 @@ async def list_documents(
         dict: List of document sources
     """
     namespace = x_session_id or DEFAULT_NAMESPACE
-
+    
     try:
         pinecone_client = get_pinecone_client()
         index = pinecone_client.get_index()
-
+        
         # Query with a dummy vector to get all metadata
         # Using a zero vector with top_k to fetch samples
         stats = pinecone_client.index_stats(namespace=namespace)
         vector_count = stats.get("dense", {}).get("total_vector_count", 0)
-
+        
         if vector_count == 0:
             return {
                 "success": True,
                 "documents": [],
                 "namespace": namespace,
             }
-
+        
         # Use list operation if available, otherwise query with metadata
         # Pinecone doesn't have a direct list-unique-sources, so we query
         # and extract unique sources from metadata
@@ -452,21 +438,21 @@ async def list_documents(
             # Using a large top_k to get representative sample
             dimension = stats.get("dense", {}).get("dimension", 1536)
             dummy_vector = [0.0] * dimension
-
+            
             results = index.query(
                 vector=dummy_vector,
                 top_k=min(100, vector_count),  # Get up to 100 vectors
                 include_metadata=True,
                 namespace=namespace,
             )
-
+            
             # Extract unique sources
             sources = set()
             for match in results.get("matches", []):
                 source = match.get("metadata", {}).get("source")
                 if source:
                     sources.add(source)
-
+            
             return {
                 "success": True,
                 "documents": list(sources),

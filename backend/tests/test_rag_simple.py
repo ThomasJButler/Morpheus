@@ -15,11 +15,11 @@ class TestSimpleRAGFormatting:
 
     def test_format_context_empty_list(self):
         """Test formatting empty context returns message."""
-        with patch("app.rag.simple.settings") as mock_settings:
+        with patch('app.rag.simple.settings') as mock_settings:
             mock_settings.openai_api_key = "test-key"
             mock_settings.anthropic_api_key = "test-key"
 
-            with patch("app.rag.simple.get_pinecone_client") as mock_pc:
+            with patch('app.rag.simple.get_pinecone_client') as mock_pc:
                 mock_pc.return_value.get_index.return_value = MagicMock()
                 rag = SimpleRAG()
 
@@ -28,22 +28,20 @@ class TestSimpleRAGFormatting:
 
     def test_format_context_single_item(self):
         """Test formatting single context item."""
-        with patch("app.rag.simple.settings") as mock_settings:
+        with patch('app.rag.simple.settings') as mock_settings:
             mock_settings.openai_api_key = "test-key"
             mock_settings.anthropic_api_key = "test-key"
 
-            with patch("app.rag.simple.get_pinecone_client") as mock_pc:
+            with patch('app.rag.simple.get_pinecone_client') as mock_pc:
                 mock_pc.return_value.get_index.return_value = MagicMock()
                 rag = SimpleRAG()
 
-        contexts = [
-            {
-                "text": "This is test content.",
-                "source": "test.pdf",
-                "page": 5,
-                "score": 0.9,
-            }
-        ]
+        contexts = [{
+            "text": "This is test content.",
+            "source": "test.pdf",
+            "page": 5,
+            "score": 0.9
+        }]
 
         result = rag.format_context_for_prompt(contexts)
 
@@ -54,11 +52,11 @@ class TestSimpleRAGFormatting:
 
     def test_format_context_multiple_items(self):
         """Test formatting multiple context items."""
-        with patch("app.rag.simple.settings") as mock_settings:
+        with patch('app.rag.simple.settings') as mock_settings:
             mock_settings.openai_api_key = "test-key"
             mock_settings.anthropic_api_key = "test-key"
 
-            with patch("app.rag.simple.get_pinecone_client") as mock_pc:
+            with patch('app.rag.simple.get_pinecone_client') as mock_pc:
                 mock_pc.return_value.get_index.return_value = MagicMock()
                 rag = SimpleRAG()
 
@@ -76,11 +74,11 @@ class TestSimpleRAGFormatting:
 
     def test_format_context_no_page(self):
         """Test formatting context without page number."""
-        with patch("app.rag.simple.settings") as mock_settings:
+        with patch('app.rag.simple.settings') as mock_settings:
             mock_settings.openai_api_key = "test-key"
             mock_settings.anthropic_api_key = "test-key"
 
-            with patch("app.rag.simple.get_pinecone_client") as mock_pc:
+            with patch('app.rag.simple.get_pinecone_client') as mock_pc:
                 mock_pc.return_value.get_index.return_value = MagicMock()
                 rag = SimpleRAG()
 
@@ -92,23 +90,21 @@ class TestSimpleRAGFormatting:
 
     def test_create_citations(self):
         """Test citation creation from contexts."""
-        with patch("app.rag.simple.settings") as mock_settings:
+        with patch('app.rag.simple.settings') as mock_settings:
             mock_settings.openai_api_key = "test-key"
             mock_settings.anthropic_api_key = "test-key"
 
-            with patch("app.rag.simple.get_pinecone_client") as mock_pc:
+            with patch('app.rag.simple.get_pinecone_client') as mock_pc:
                 mock_pc.return_value.get_index.return_value = MagicMock()
                 rag = SimpleRAG()
 
-        contexts = [
-            {
-                "text": "This is test content that is longer than 200 characters. " * 5,
-                "source": "test.pdf",
-                "page": 3,
-                "chunk_id": "chunk_123",
-                "score": 0.85,
-            }
-        ]
+        contexts = [{
+            "text": "This is test content that is longer than 200 characters. " * 5,
+            "source": "test.pdf",
+            "page": 3,
+            "chunk_id": "chunk_123",
+            "score": 0.85
+        }]
 
         citations = rag.create_citations(contexts)
 
@@ -121,11 +117,11 @@ class TestSimpleRAGFormatting:
 
     def test_create_citations_multiple(self):
         """Test creating multiple citations."""
-        with patch("app.rag.simple.settings") as mock_settings:
+        with patch('app.rag.simple.settings') as mock_settings:
             mock_settings.openai_api_key = "test-key"
             mock_settings.anthropic_api_key = "test-key"
 
-            with patch("app.rag.simple.get_pinecone_client") as mock_pc:
+            with patch('app.rag.simple.get_pinecone_client') as mock_pc:
                 mock_pc.return_value.get_index.return_value = MagicMock()
                 rag = SimpleRAG()
 
@@ -149,21 +145,19 @@ class TestSimpleRAGEmbedding:
     @pytest.mark.asyncio
     async def test_embed_query_returns_vector(self):
         """Test embed_query returns a vector."""
-        with patch("app.rag.simple.settings") as mock_settings:
+        with patch('app.rag.simple.settings') as mock_settings:
             mock_settings.openai_api_key = "test-key"
             mock_settings.anthropic_api_key = "test-key"
             mock_settings.embedding_model = "text-embedding-3-small"
 
-            with patch("app.rag.simple.get_pinecone_client") as mock_pc:
+            with patch('app.rag.simple.get_pinecone_client') as mock_pc:
                 mock_pc.return_value.get_index.return_value = MagicMock()
 
-                with patch("app.rag.simple.AsyncOpenAI") as mock_openai:
+                with patch('app.rag.simple.AsyncOpenAI') as mock_openai:
                     mock_client = AsyncMock()
                     mock_response = MagicMock()
                     mock_response.data = [MagicMock(embedding=[0.1] * 512)]
-                    mock_client.embeddings.create = AsyncMock(
-                        return_value=mock_response
-                    )
+                    mock_client.embeddings.create = AsyncMock(return_value=mock_response)
                     mock_openai.return_value = mock_client
 
                     rag = SimpleRAG()
@@ -176,21 +170,19 @@ class TestSimpleRAGEmbedding:
     @pytest.mark.asyncio
     async def test_embed_query_uses_correct_model(self):
         """Test embed_query uses configured model."""
-        with patch("app.rag.simple.settings") as mock_settings:
+        with patch('app.rag.simple.settings') as mock_settings:
             mock_settings.openai_api_key = "test-key"
             mock_settings.anthropic_api_key = "test-key"
             mock_settings.embedding_model = "text-embedding-3-small"
 
-            with patch("app.rag.simple.get_pinecone_client") as mock_pc:
+            with patch('app.rag.simple.get_pinecone_client') as mock_pc:
                 mock_pc.return_value.get_index.return_value = MagicMock()
 
-                with patch("app.rag.simple.AsyncOpenAI") as mock_openai:
+                with patch('app.rag.simple.AsyncOpenAI') as mock_openai:
                     mock_client = AsyncMock()
                     mock_response = MagicMock()
                     mock_response.data = [MagicMock(embedding=[0.1] * 512)]
-                    mock_client.embeddings.create = AsyncMock(
-                        return_value=mock_response
-                    )
+                    mock_client.embeddings.create = AsyncMock(return_value=mock_response)
                     mock_openai.return_value = mock_client
 
                     rag = SimpleRAG()
@@ -207,7 +199,7 @@ class TestSimpleRAGRetrieval:
     @pytest.mark.asyncio
     async def test_retrieve_context_filters_by_relevance(self):
         """Test retrieval filters low-relevance results."""
-        with patch("app.rag.simple.settings") as mock_settings:
+        with patch('app.rag.simple.settings') as mock_settings:
             mock_settings.openai_api_key = "test-key"
             mock_settings.anthropic_api_key = "test-key"
             mock_settings.top_k_results = 10
@@ -216,25 +208,17 @@ class TestSimpleRAGRetrieval:
             mock_index = MagicMock()
             mock_index.query.return_value = {
                 "matches": [
-                    MagicMock(
-                        id="1", score=0.9, metadata={"text": "High", "source": "a.txt"}
-                    ),
-                    MagicMock(
-                        id="2",
-                        score=0.6,
-                        metadata={"text": "Medium", "source": "b.txt"},
-                    ),
-                    MagicMock(
-                        id="3", score=0.3, metadata={"text": "Low", "source": "c.txt"}
-                    ),
+                    MagicMock(id="1", score=0.9, metadata={"text": "High", "source": "a.txt"}),
+                    MagicMock(id="2", score=0.6, metadata={"text": "Medium", "source": "b.txt"}),
+                    MagicMock(id="3", score=0.3, metadata={"text": "Low", "source": "c.txt"}),
                 ]
             }
 
-            with patch("app.rag.simple.get_pinecone_client") as mock_pc:
+            with patch('app.rag.simple.get_pinecone_client') as mock_pc:
                 mock_pc.return_value.get_index.return_value = mock_index
 
-                with patch("app.rag.simple.AsyncOpenAI"):
-                    with patch("app.rag.simple.AsyncAnthropic"):
+                with patch('app.rag.simple.AsyncOpenAI'):
+                    with patch('app.rag.simple.AsyncAnthropic'):
                         rag = SimpleRAG()
                         contexts, metrics = await rag.retrieve_context([0.1] * 512)
 
@@ -245,7 +229,7 @@ class TestSimpleRAGRetrieval:
     @pytest.mark.asyncio
     async def test_retrieve_context_returns_metrics(self):
         """Test retrieval returns proper metrics."""
-        with patch("app.rag.simple.settings") as mock_settings:
+        with patch('app.rag.simple.settings') as mock_settings:
             mock_settings.openai_api_key = "test-key"
             mock_settings.anthropic_api_key = "test-key"
             mock_settings.top_k_results = 5
@@ -254,20 +238,16 @@ class TestSimpleRAGRetrieval:
             mock_index = MagicMock()
             mock_index.query.return_value = {
                 "matches": [
-                    MagicMock(
-                        id="1", score=0.9, metadata={"text": "A", "source": "a.txt"}
-                    ),
-                    MagicMock(
-                        id="2", score=0.7, metadata={"text": "B", "source": "b.txt"}
-                    ),
+                    MagicMock(id="1", score=0.9, metadata={"text": "A", "source": "a.txt"}),
+                    MagicMock(id="2", score=0.7, metadata={"text": "B", "source": "b.txt"}),
                 ]
             }
 
-            with patch("app.rag.simple.get_pinecone_client") as mock_pc:
+            with patch('app.rag.simple.get_pinecone_client') as mock_pc:
                 mock_pc.return_value.get_index.return_value = mock_index
 
-                with patch("app.rag.simple.AsyncOpenAI"):
-                    with patch("app.rag.simple.AsyncAnthropic"):
+                with patch('app.rag.simple.AsyncOpenAI'):
+                    with patch('app.rag.simple.AsyncAnthropic'):
                         rag = SimpleRAG()
                         contexts, metrics = await rag.retrieve_context([0.1] * 512)
 
@@ -280,7 +260,7 @@ class TestSimpleRAGRetrieval:
     @pytest.mark.asyncio
     async def test_retrieve_context_empty_results(self):
         """Test handling of no results."""
-        with patch("app.rag.simple.settings") as mock_settings:
+        with patch('app.rag.simple.settings') as mock_settings:
             mock_settings.openai_api_key = "test-key"
             mock_settings.anthropic_api_key = "test-key"
             mock_settings.top_k_results = 5
@@ -289,11 +269,11 @@ class TestSimpleRAGRetrieval:
             mock_index = MagicMock()
             mock_index.query.return_value = {"matches": []}
 
-            with patch("app.rag.simple.get_pinecone_client") as mock_pc:
+            with patch('app.rag.simple.get_pinecone_client') as mock_pc:
                 mock_pc.return_value.get_index.return_value = mock_index
 
-                with patch("app.rag.simple.AsyncOpenAI"):
-                    with patch("app.rag.simple.AsyncAnthropic"):
+                with patch('app.rag.simple.AsyncOpenAI'):
+                    with patch('app.rag.simple.AsyncAnthropic'):
                         rag = SimpleRAG()
                         contexts, metrics = await rag.retrieve_context([0.1] * 512)
 
