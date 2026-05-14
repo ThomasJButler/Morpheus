@@ -22,10 +22,10 @@ class TestRAGOrchestratorInit:
 
     def test_orchestrator_initializes_all_components(self):
         """Test orchestrator initializes all RAG modes and analyzer."""
-        with patch("app.rag.orchestrator.SimpleRAG") as mock_simple:
-            with patch("app.rag.orchestrator.HybridRAG") as mock_hybrid:
-                with patch("app.rag.orchestrator.AgenticRAG") as mock_agentic:
-                    with patch("app.rag.orchestrator.QueryAnalyzer") as mock_analyzer:
+        with patch("app.rag.orchestrator.SimpleRAG"):
+            with patch("app.rag.orchestrator.HybridRAG"):
+                with patch("app.rag.orchestrator.AgenticRAG"):
+                    with patch("app.rag.orchestrator.QueryAnalyzer"):
                         orchestrator = RAGOrchestrator()
 
         assert orchestrator.simple_rag is not None
@@ -40,10 +40,10 @@ class TestRAGOrchestratorRouting:
     @pytest.fixture
     def mock_orchestrator(self):
         """Create orchestrator with mocked RAG implementations."""
-        with patch("app.rag.orchestrator.SimpleRAG") as mock_simple:
-            with patch("app.rag.orchestrator.HybridRAG") as mock_hybrid:
-                with patch("app.rag.orchestrator.AgenticRAG") as mock_agentic:
-                    with patch("app.rag.orchestrator.QueryAnalyzer") as mock_analyzer:
+        with patch("app.rag.orchestrator.SimpleRAG"):
+            with patch("app.rag.orchestrator.HybridRAG"):
+                with patch("app.rag.orchestrator.AgenticRAG"):
+                    with patch("app.rag.orchestrator.QueryAnalyzer"):
                         orchestrator = RAGOrchestrator()
 
                         # Set up mock streaming generators
@@ -317,9 +317,9 @@ class TestRAGOrchestratorAutoEscalation:
     @pytest.fixture
     def mock_orchestrator(self):
         """Create orchestrator with controllable confidence."""
-        with patch("app.rag.orchestrator.SimpleRAG") as mock_simple:
-            with patch("app.rag.orchestrator.HybridRAG") as mock_hybrid:
-                with patch("app.rag.orchestrator.AgenticRAG") as mock_agentic:
+        with patch("app.rag.orchestrator.SimpleRAG"):
+            with patch("app.rag.orchestrator.HybridRAG"):
+                with patch("app.rag.orchestrator.AgenticRAG"):
                     with patch("app.rag.orchestrator.QueryAnalyzer"):
                         orchestrator = RAGOrchestrator()
 
@@ -435,10 +435,10 @@ class TestRAGOrchestratorHyDE:
     @pytest.fixture
     def mock_orchestrator(self):
         """Create orchestrator with mocked HyDE dependencies."""
-        with patch("app.rag.orchestrator.SimpleRAG") as mock_simple:
+        with patch("app.rag.orchestrator.SimpleRAG"):
             with patch("app.rag.orchestrator.HybridRAG"):
                 with patch("app.rag.orchestrator.AgenticRAG"):
-                    with patch("app.rag.orchestrator.QueryAnalyzer") as mock_analyzer:
+                    with patch("app.rag.orchestrator.QueryAnalyzer"):
                         orchestrator = RAGOrchestrator()
 
                         # Mock analyzer HyDE methods
@@ -582,7 +582,7 @@ class TestRAGOrchestratorErrorHandling:
     @pytest.fixture
     def error_orchestrator(self):
         """Create orchestrator that will throw errors."""
-        with patch("app.rag.orchestrator.SimpleRAG") as mock_simple:
+        with patch("app.rag.orchestrator.SimpleRAG"):
             with patch("app.rag.orchestrator.HybridRAG"):
                 with patch("app.rag.orchestrator.AgenticRAG"):
                     with patch("app.rag.orchestrator.QueryAnalyzer"):
@@ -591,8 +591,8 @@ class TestRAGOrchestratorErrorHandling:
                         # Make simple_rag throw an error via async generator
                         async def error_stream(*args, **kwargs):
                             raise Exception("Simulated error")
-                            # This is unreachable but makes it an async generator
-                            yield  # noqa: This line is never reached
+                            # Unreachable but required to mark this as an async generator.
+                            yield
 
                         orchestrator.simple_rag.process_query_streaming = error_stream
 
@@ -620,8 +620,8 @@ class TestRAGOrchestratorWithReflection:
         """Create orchestrator with reflection capability."""
         with patch("app.rag.orchestrator.SimpleRAG"):
             with patch("app.rag.orchestrator.HybridRAG"):
-                with patch("app.rag.orchestrator.AgenticRAG") as mock_agentic:
-                    with patch("app.rag.orchestrator.QueryAnalyzer") as mock_analyzer:
+                with patch("app.rag.orchestrator.AgenticRAG"):
+                    with patch("app.rag.orchestrator.QueryAnalyzer"):
                         orchestrator = RAGOrchestrator()
 
                         # Mock analyzer to recommend AGENTIC mode
@@ -718,7 +718,6 @@ class TestRAGOrchestratorWithReflection:
         self, reflection_orchestrator
     ):
         """Test process_with_reflection yields EnhancedRetrievalMetrics."""
-        from app.models.chat import EnhancedRetrievalMetrics
 
         with patch("app.rag.orchestrator.settings") as mock_settings:
             mock_settings.enable_reflection = True

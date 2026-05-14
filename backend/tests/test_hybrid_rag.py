@@ -7,7 +7,7 @@ import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
 
 from app.rag.hybrid import HybridRAG, InMemoryBM25
-from app.models.chat import Citation, RAGMode, StreamChunk
+from app.models.chat import Citation, RAGMode
 
 
 class TestInMemoryBM25:
@@ -107,8 +107,8 @@ class TestHybridRAGInit:
 
     def test_initializes_clients(self):
         """Test HybridRAG initializes required clients."""
-        with patch("app.rag.hybrid.AsyncOpenAI") as mock_openai:
-            with patch("app.rag.hybrid.AsyncAnthropic") as mock_anthropic:
+        with patch("app.rag.hybrid.AsyncOpenAI"):
+            with patch("app.rag.hybrid.AsyncAnthropic"):
                 with patch("app.rag.hybrid.get_pinecone_client") as mock_pc:
                     mock_pc.return_value.get_index.return_value = MagicMock()
 
@@ -126,7 +126,7 @@ class TestHybridRAGEmbedding:
     @pytest.fixture
     def mock_hybrid_rag(self):
         """Create HybridRAG with mocked clients."""
-        with patch("app.rag.hybrid.AsyncOpenAI") as mock_openai:
+        with patch("app.rag.hybrid.AsyncOpenAI"):
             with patch("app.rag.hybrid.AsyncAnthropic"):
                 with patch("app.rag.hybrid.get_pinecone_client") as mock_pc:
                     mock_pc.return_value.get_index.return_value = MagicMock()
@@ -164,7 +164,7 @@ class TestHybridRAGRetrieval:
     @pytest.fixture
     def mock_hybrid_rag(self):
         """Create HybridRAG with mocked retrieval."""
-        with patch("app.rag.hybrid.AsyncOpenAI") as mock_openai:
+        with patch("app.rag.hybrid.AsyncOpenAI"):
             with patch("app.rag.hybrid.AsyncAnthropic"):
                 with patch("app.rag.hybrid.get_pinecone_client") as mock_pc:
                     mock_index = MagicMock()
@@ -354,8 +354,8 @@ class TestHybridRAGStreaming:
     @pytest.fixture
     def mock_hybrid_rag(self):
         """Create HybridRAG with mocked streaming."""
-        with patch("app.rag.hybrid.AsyncOpenAI") as mock_openai:
-            with patch("app.rag.hybrid.AsyncAnthropic") as mock_anthropic:
+        with patch("app.rag.hybrid.AsyncOpenAI"):
+            with patch("app.rag.hybrid.AsyncAnthropic"):
                 with patch("app.rag.hybrid.get_pinecone_client") as mock_pc:
                     mock_index = MagicMock()
                     mock_pc.return_value.get_index.return_value = mock_index
@@ -484,7 +484,7 @@ class TestHybridRAGErrorHandling:
     @pytest.fixture
     def error_hybrid_rag(self):
         """Create HybridRAG that throws errors."""
-        with patch("app.rag.hybrid.AsyncOpenAI") as mock_openai:
+        with patch("app.rag.hybrid.AsyncOpenAI"):
             with patch("app.rag.hybrid.AsyncAnthropic"):
                 with patch("app.rag.hybrid.get_pinecone_client") as mock_pc:
                     mock_pc.return_value.get_index.return_value = MagicMock()

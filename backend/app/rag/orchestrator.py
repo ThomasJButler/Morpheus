@@ -5,18 +5,15 @@ Manages routing between SimpleRAG, HybridRAG, and AgenticRAG based on
 query analysis, with support for auto-escalation and evaluation loops.
 """
 
-import asyncio
 import logging
 import time
-from typing import AsyncGenerator, List, Optional, Tuple
+from typing import AsyncGenerator, List, Optional
 
 from app.core.config import settings
 from app.models.chat import (
     Citation,
     EnhancedRetrievalMetrics,
-    QueryAnalysis,
     RAGMode,
-    ReflectionResult,
     RetrievalMetrics,
     StreamChunk,
 )
@@ -71,7 +68,6 @@ class RAGOrchestrator:
         Yields:
             StreamChunk objects
         """
-        start_time = time.time()
         namespace = namespace or "default"
         analysis = None
 
@@ -162,7 +158,6 @@ class RAGOrchestrator:
             StreamChunk objects
         """
         namespace = namespace or "default"
-        current_mode = RAGMode.SIMPLE
 
         # Try SimpleRAG first
         yield StreamChunk(type="mode", mode=RAGMode.SIMPLE)
@@ -214,7 +209,6 @@ class RAGOrchestrator:
                         yield chunk
                     elif chunk.type == "done":
                         metrics = chunk.metrics
-                        current_mode = RAGMode.HYBRID
 
                 # Re-evaluate
                 confidence = self._evaluate_confidence(metrics, citations)
@@ -245,7 +239,6 @@ class RAGOrchestrator:
                             yield chunk
                         elif chunk.type == "done":
                             metrics = chunk.metrics
-                            current_mode = RAGMode.AGENTIC
 
         # Send final done with escalation info
         yield StreamChunk(type="done", metrics=metrics)
@@ -545,7 +538,7 @@ class RAGOrchestrator:
             mode_confidence=confidence,
             escalated_from=escalation_path[0] if len(escalation_path) > 1 else None,
             escalation_reason=(
-                f"Confidence below threshold" if len(escalation_path) > 1 else None
+                "Confidence below threshold" if len(escalation_path) > 1 else None
             ),
         )
 

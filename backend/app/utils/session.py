@@ -10,7 +10,7 @@ import uuid
 from datetime import datetime, timedelta
 from typing import Dict, Optional
 
-from app.models.chat import ChatMessage, Citation, Session
+from app.models.chat import Citation, Session
 
 logger = logging.getLogger(__name__)
 

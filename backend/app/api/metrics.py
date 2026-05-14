@@ -120,9 +120,10 @@ async def detailed_health_check():
         }
         health["overall_status"] = "degraded"
 
-    # Check RAG pipelines
+    # Check RAG pipelines — instantiating SimpleRAG raises if its
+    # dependencies can't init; the bare-call side effect is the health check.
     try:
-        simple_rag = SimpleRAG()
+        SimpleRAG()
         health["components"]["rag_simple"] = {
             "status": "healthy",
         }

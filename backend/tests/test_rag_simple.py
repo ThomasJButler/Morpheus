@@ -7,7 +7,7 @@ import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
 
 from app.rag.simple import SimpleRAG
-from app.models.chat import Citation, RetrievalMetrics
+from app.models.chat import RetrievalMetrics
 
 
 class TestSimpleRAGFormatting:

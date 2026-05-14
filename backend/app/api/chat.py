@@ -4,18 +4,15 @@ Handles RAG queries and returns responses with citations.
 Supports tiered RAG modes: Simple, Hybrid, Agentic, and Auto.
 """
 
-import json
 import logging
 from typing import AsyncGenerator, Optional
 
 from fastapi import APIRouter, HTTPException, Header
-from fastapi.responses import StreamingResponse
 from sse_starlette.sse import EventSourceResponse
 
 from app.models.chat import (
     ChatRequest,
     ChatResponse,
-    QueryAnalysis,
     RAGMode,
     StreamChunk,
 )
@@ -228,7 +225,6 @@ async def get_context(
         except ValueError:
             mode = RAGMode.AUTO
 
-        deep_mode = request.get("deep_mode", False)
         return_analysis = request.get("return_analysis", False)
 
         logger.info(

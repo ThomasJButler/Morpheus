@@ -8,8 +8,6 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from fastapi.testclient import TestClient
 
-from app.models.chat import RAGMode
-
 
 class TestChatEndpoint:
     """Tests for POST /api/chat endpoint."""

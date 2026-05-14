@@ -137,7 +137,7 @@ class TestAppLifecycle:
     def test_startup_initializes_pinecone(self, mock_pinecone):
         """Test that startup event initializes Pinecone."""
         # Create a new test client to trigger startup
-        with TestClient(app) as client:
+        with TestClient(app):
             # Verify Pinecone client was called during startup
             mock_pinecone.assert_called()
 
@@ -151,7 +151,7 @@ class TestAppLifecycle:
 
         # App should raise exception during startup
         with pytest.raises(Exception):
-            with TestClient(app) as client:
+            with TestClient(app):
                 pass
 
 
@@ -188,7 +188,7 @@ class TestRateLimiting:
         """
         # Make many requests quickly
         for _ in range(20):
-            response = test_client.get("/api/health")
+            test_client.get("/api/health")
 
         # Eventually should hit rate limit
         # assert response.status_code == 429
@@ -215,5 +215,5 @@ class TestEndToEndFlow:
         pass
 
 
-# Import app for lifecycle tests
-from app.main import app
+# Import app for lifecycle tests (deferred so test-time mocks land first)
+from app.main import app  # noqa: E402

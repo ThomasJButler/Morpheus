@@ -13,7 +13,7 @@ Features:
 
 import logging
 import re
-from typing import List, Optional, Tuple
+from typing import List, Tuple
 
 from anthropic import AsyncAnthropic
 from openai import AsyncOpenAI

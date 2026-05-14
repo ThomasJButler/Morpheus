@@ -7,10 +7,9 @@ Based on preserved code from MorpheusRAGLearningDocuments/original-code/hybrid.p
 Modified to use in-memory BM25 (works with serverless Pinecone).
 """
 
-import asyncio
 import logging
 import time
-from typing import AsyncGenerator, Dict, List, Optional, Tuple
+from typing import AsyncGenerator, List, Optional, Tuple
 
 from anthropic import AsyncAnthropic
 from openai import AsyncOpenAI

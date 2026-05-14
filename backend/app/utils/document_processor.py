@@ -5,7 +5,7 @@ Supports PDF, TXT, MD, and DOCX files.
 
 import logging
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Dict
 
 try:
     import PyPDF2

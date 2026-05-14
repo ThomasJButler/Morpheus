@@ -16,7 +16,7 @@ import asyncio
 import json
 import logging
 import time
-from typing import AsyncGenerator, Dict, List, Optional, Tuple
+from typing import AsyncGenerator, Dict, List, Tuple
 
 from anthropic import AsyncAnthropic
 from openai import AsyncOpenAI
@@ -26,7 +26,6 @@ from app.core.morpheus_prompts import get_system_prompt
 from app.core.pinecone_client import get_pinecone_client
 from app.models.chat import (
     Citation,
-    EnhancedRetrievalMetrics,
     RAGMode,
     ReflectionResult,
     RetrievalMetrics,

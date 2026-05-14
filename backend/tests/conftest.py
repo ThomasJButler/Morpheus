@@ -5,8 +5,8 @@ Provides shared fixtures for all tests including test client, mock data, and uti
 
 import os
 import tempfile
-from typing import AsyncGenerator, Generator
-from unittest.mock import AsyncMock, MagicMock, patch
+from typing import Generator
+from unittest.mock import MagicMock
 
 import pytest
 from fastapi.testclient import TestClient
