@@ -1,6 +1,6 @@
 import React from 'react'
 import { render, screen } from '@testing-library/react'
-import { MessageList } from '../MessageList'
+import MessageList from '../MessageList'
 
 const mockMessages = [
   {
@@ -19,7 +19,7 @@ const mockMessages = [
         source: 'doc.pdf',
         page: 1,
         relevance_score: 0.95,
-        excerpt: 'Sample text',
+        text_preview: 'Sample text',
       },
     ],
   },

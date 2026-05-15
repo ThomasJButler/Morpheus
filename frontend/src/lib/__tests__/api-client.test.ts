@@ -46,7 +46,7 @@ describe('APIClient', () => {
 
       const request = {
         message: 'Test message',
-        mode: 'simple' as const,
+        rag_mode: 'simple' as const,
         session_id: 'test-session',
       };
 
@@ -69,7 +69,7 @@ describe('APIClient', () => {
         text: () => Promise.resolve('Server error'),
       });
 
-      await expect(apiClient.chat({ message: 'test', mode: 'simple' }))
+      await expect(apiClient.chat({ message: 'test', rag_mode: 'simple' }))
         .rejects.toThrow('Chat request failed: Server error');
     });
   });
@@ -192,7 +192,7 @@ describe('APIClient', () => {
       });
 
       const abort = apiClient.streamChat(
-        { message: 'Hello', mode: 'simple' },
+        { message: 'Hello', rag_mode: 'simple' },
         onChunk,
         onError,
         onComplete
@@ -222,7 +222,7 @@ describe('APIClient', () => {
       });
 
       apiClient.streamChat(
-        { message: 'Hello', mode: 'simple' },
+        { message: 'Hello', rag_mode: 'simple' },
         onChunk,
         onError,
         onComplete
@@ -241,7 +241,7 @@ describe('APIClient', () => {
       });
 
       const abort = apiClient.streamChat(
-        { message: 'Hello', mode: 'simple' },
+        { message: 'Hello', rag_mode: 'simple' },
         jest.fn(),
         jest.fn(),
         jest.fn()

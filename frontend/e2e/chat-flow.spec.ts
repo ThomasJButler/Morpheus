@@ -26,7 +26,7 @@ test.describe('Morpheus Chat Flow', () => {
     await page.waitForSelector('[data-testid="chat-interface"]')
 
     // Type message
-    const input = page.getByPlaceholderText(/ask morpheus/i)
+    const input = page.getByPlaceholder(/ask morpheus/i)
     await input.fill('What is the Matrix?')
 
     // Send message
@@ -61,7 +61,7 @@ test.describe('Morpheus Chat Flow', () => {
     await page.waitForSelector('[data-testid="chat-interface"]')
 
     // Send query
-    const input = page.getByPlaceholderText(/ask morpheus/i)
+    const input = page.getByPlaceholder(/ask morpheus/i)
     await input.fill('Test query')
     await page.click('button:has-text("Send")')
 
@@ -77,7 +77,7 @@ test.describe('Morpheus Chat Flow', () => {
   test('shows streaming response', async ({ page }) => {
     await page.waitForSelector('[data-testid="chat-interface"]')
 
-    const input = page.getByPlaceholderText(/ask morpheus/i)
+    const input = page.getByPlaceholder(/ask morpheus/i)
     await input.fill('Tell me a story')
     await page.click('button:has-text("Send")')
 
@@ -98,7 +98,7 @@ test.describe('Morpheus Chat Flow', () => {
 
     await page.waitForSelector('[data-testid="chat-interface"]')
 
-    const input = page.getByPlaceholderText(/ask morpheus/i)
+    const input = page.getByPlaceholder(/ask morpheus/i)
     await input.fill('Test error')
     await page.click('button:has-text("Send")')
 
@@ -111,7 +111,7 @@ test.describe('Morpheus Chat Flow', () => {
     await page.waitForSelector('[data-testid="chat-interface"]')
 
     // Send first message
-    const input = page.getByPlaceholderText(/ask morpheus/i)
+    const input = page.getByPlaceholder(/ask morpheus/i)
     await input.fill('First message')
     await page.click('button:has-text("Send")')
     await page.waitForTimeout(1000)
@@ -169,7 +169,7 @@ test.describe('Mobile responsiveness', () => {
     await expect(page.getByTestId('chat-interface')).toBeVisible()
 
     // Test input
-    const input = page.getByPlaceholderText(/ask morpheus/i)
+    const input = page.getByPlaceholder(/ask morpheus/i)
     await input.fill('Mobile test')
     await page.click('button:has-text("Send")')
 
@@ -187,7 +187,7 @@ test.describe('Accessibility', () => {
     await page.keyboard.press('Tab')
 
     // Verify focus is on input
-    const input = page.getByPlaceholderText(/ask morpheus/i)
+    const input = page.getByPlaceholder(/ask morpheus/i)
     await expect(input).toBeFocused()
 
     // Type and send with Enter
