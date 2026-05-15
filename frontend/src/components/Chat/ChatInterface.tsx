@@ -5,10 +5,7 @@ import { useChat } from 'ai/react';
 import MessageList from './MessageList';
 import Composer from './Composer';
 import EmptyState from './EmptyState';
-import DocumentStats from '../Documents/DocumentStats';
-import SystemStatus from '../Documents/SystemStatus';
 import UploadButton from '../Documents/UploadButton';
-import GlassPanel from '../UI/GlassPanel';
 import Settings from '../Settings/Settings';
 import QuickStartGuide from '../Onboarding/QuickStartGuide';
 import BackToTopButton from '../UI/BackToTopButton';
@@ -34,12 +31,10 @@ interface ChatInterfaceProps {
 }
 
 export default function ChatInterface({ fillParent = false }: ChatInterfaceProps = {}) {
-  const [showDocStats, setShowDocStats] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [uploadSuccess, setUploadSuccess] = useState<string | null>(null);
   const [showSettings, setShowSettings] = useState(false);
   const [documentList, setDocumentList] = useState<string[]>([]);
-  const [statsRefreshKey, setStatsRefreshKey] = useState(0);
   const [showGuide, setShowGuide] = useState(false);
   const [showBackToTop, setShowBackToTop] = useState(false);
   const [showClearConfirm, setShowClearConfirm] = useState(false);
@@ -71,14 +66,11 @@ export default function ChatInterface({ fillParent = false }: ChatInterfaceProps
   useEffect(() => {
     const openGuide = () => setShowGuide(true);
     const openSettings = () => setShowSettings(true);
-    const toggleDocStats = () => setShowDocStats((v) => !v);
     window.addEventListener('morpheus:open-guide', openGuide);
     window.addEventListener('morpheus:open-settings', openSettings);
-    window.addEventListener('morpheus:toggle-doc-stats', toggleDocStats);
     return () => {
       window.removeEventListener('morpheus:open-guide', openGuide);
       window.removeEventListener('morpheus:open-settings', openSettings);
-      window.removeEventListener('morpheus:toggle-doc-stats', toggleDocStats);
     };
   }, []);
 
@@ -178,7 +170,6 @@ export default function ChatInterface({ fillParent = false }: ChatInterfaceProps
       if (e.key === 'Escape') {
         setShowSettings(false);
         setShowGuide(false);
-        setShowDocStats(false);
       }
     };
 
@@ -293,12 +284,6 @@ export default function ChatInterface({ fillParent = false }: ChatInterfaceProps
 
   const handleUploadComplete = useCallback(async (response: DocumentUploadResponse) => {
     setUploadSuccess(`Uploaded "${response.document_id}" - ${response.chunks_created} chunks created`);
-    setShowDocStats(true);
-
-    // Refresh stats
-    setTimeout(() => {
-      setStatsRefreshKey(prev => prev + 1);
-    }, 400);
 
     // Fetch updated document list
     try {
@@ -388,35 +373,6 @@ export default function ChatInterface({ fillParent = false }: ChatInterfaceProps
           <div className="flex items-center gap-0.5 sm:gap-1 p-1 rounded-lg bg-matrix-white/5 border border-matrix-white/10">
             <UploadButton onUploadComplete={handleUploadComplete} />
 
-            {/* Docs button with active state */}
-            <div className="relative group/docs">
-              <button
-                onClick={() => setShowDocStats(!showDocStats)}
-                className={`toolbar-button ${showDocStats ? 'bg-matrix-green/20 border-matrix-green/50 text-matrix-green' : ''}`}
-                aria-label="Toggle document statistics"
-                aria-pressed={showDocStats}
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
-                <span className="hidden sm:inline">Docs</span>
-                {documentList.length > 0 && (
-                  <span className="absolute -top-1 -right-1 w-4 h-4 flex items-center justify-center
-                                   bg-matrix-green text-matrix-black text-[10px] font-bold rounded-full
-                                   animate-fade-in">
-                    {documentList.length}
-                  </span>
-                )}
-              </button>
-              {/* Tooltip */}
-              <div className="absolute top-full right-0 mt-2 px-2 py-1
-                              bg-matrix-black/95 border border-matrix-green/30 rounded
-                              text-xs font-mono text-matrix-white/80 whitespace-nowrap
-                              opacity-0 group-hover/docs:opacity-100 transition-opacity duration-200
-                              pointer-events-none z-20">
-                {showDocStats ? 'Hide documents' : 'Show documents'}
-              </div>
-            </div>
           </div>
 
           {/* Divider — desktop only; mobile uses overflow menu instead */}
@@ -551,7 +507,7 @@ export default function ChatInterface({ fillParent = false }: ChatInterfaceProps
       {/* Main Chat Area - Fixed frame with internal scroll */}
       <div className="flex flex-col md:flex-row flex-1 gap-2 sm:gap-4 min-h-0 overflow-hidden px-1">
         {/* Chat Container */}
-        <div className={`flex flex-col flex-1 ${showDocStats ? 'md:flex-1' : 'w-full'} min-h-0`}>
+        <div className="flex flex-col flex-1 w-full min-h-0">
           {/* Chat panel: plain styled div (NOT <GlassPanel>) so the flex chain
               reaches `messageContainerRef`. GlassPanel always wraps its
               children in a non-flex `<div className="relative z-10">`, which
@@ -643,38 +599,6 @@ export default function ChatInterface({ fillParent = false }: ChatInterfaceProps
           </div>
         </div>
 
-        {/* Document Stats Panel */}
-        {showDocStats && (
-          <div className="flex-shrink-0 w-full md:w-80 slide-in-right flex flex-col gap-3 overflow-y-auto max-h-[40vh] md:max-h-full">
-            <DocumentStats refreshTrigger={statsRefreshKey} />
-
-            {/* Document List */}
-            {documentList.length > 0 && (
-              <GlassPanel className="p-3">
-                <div className="flex items-center gap-2 mb-2 pb-2 border-b border-matrix-green/20">
-                  <span className="text-matrix-green font-mono text-xs">&gt;_</span>
-                  <span className="text-matrix-white/80 font-mono text-xs uppercase tracking-wider">
-                    DOCUMENTS
-                  </span>
-                </div>
-                <ul className="space-y-1">
-                  {documentList.map((doc, index) => (
-                    <li
-                      key={index}
-                      className="text-xs text-matrix-white/70 font-mono flex items-center"
-                    >
-                      <span className="text-matrix-green/50 mr-2">[{String(index + 1).padStart(2, '0')}]</span>
-                      <span className="truncate">{doc}</span>
-                    </li>
-                  ))}
-                </ul>
-              </GlassPanel>
-            )}
-
-            {/* System Status - fills remaining space */}
-            <SystemStatus isConnected={true} />
-          </div>
-        )}
       </div>
 
       {/* Status strip — single prioritised banner (warn > info > ok) so the

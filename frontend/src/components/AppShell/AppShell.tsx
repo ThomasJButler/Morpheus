@@ -68,7 +68,6 @@ export default function AppShell({ showMatrixRain = false }: AppShellProps) {
   const openGuide = useCallback(() => dispatch('morpheus:open-guide'), []);
   const openSettings = useCallback(() => dispatch('morpheus:open-settings'), []);
   const openUpload = useCallback(() => dispatch('morpheus:open-upload'), []);
-  const toggleDocStats = useCallback(() => dispatch('morpheus:toggle-doc-stats'), []);
   const saveChat = useCallback(() => dispatch('morpheus:save-chat'), []);
   const clearChat = useCallback(() => dispatch('morpheus:clear-chat'), []);
 
@@ -133,7 +132,6 @@ export default function AppShell({ showMatrixRain = false }: AppShellProps) {
         onOpenGuide={openGuide}
         onOpenSettings={openSettings}
         onOpenUpload={openUpload}
-        onToggleDocStats={toggleDocStats}
         onSaveChat={saveChat}
         onClearChat={clearChat}
         canSave={hasMessages}
