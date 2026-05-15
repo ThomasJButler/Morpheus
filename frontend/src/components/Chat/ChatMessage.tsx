@@ -158,7 +158,7 @@ export default function ChatMessage({ message, index = 0 }: ChatMessageProps) {
         className={`
           font-geist text-sm sm:text-[15px] leading-relaxed
           text-fg-primary break-words overflow-wrap-anywhere
-          ${isUser ? '' : 'border-l-2 border-accent/40 pl-3'}
+          ${isUser ? '' : 'border-l-2 border-accent/40 light:border-accent/70 pl-3'}
         `}
       >
         {message.content ? (

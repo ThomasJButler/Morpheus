@@ -1,4 +1,5 @@
 import type { Config } from 'tailwindcss'
+import plugin from 'tailwindcss/plugin'
 
 const config: Config = {
   darkMode: 'class',
@@ -132,7 +133,15 @@ const config: Config = {
       },
     },
   },
-  plugins: [],
+  plugins: [
+    // `light:` variant — mirrors Tailwind's built-in `dark:` but for the
+    // explicit `html.light` class set by ThemeProvider. Use for the rare
+    // case where a value differs *only* in light mode beyond what CSS-var
+    // tokens already cover.
+    plugin(({ addVariant }) => {
+      addVariant('light', 'html.light &');
+    }),
+  ],
 }
 
 export default config

@@ -1,11 +1,15 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
+import { useTheme } from '@/lib/theme';
 
 export default function MatrixRain() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const { resolved } = useTheme();
+  const isLight = resolved === 'light';
 
   useEffect(() => {
+    if (isLight) return;
     const canvas = canvasRef.current;
     if (!canvas) return;
 
@@ -74,7 +78,9 @@ export default function MatrixRain() {
       cancelAnimationFrame(animationId);
       window.removeEventListener('resize', resizeCanvas);
     };
-  }, []);
+  }, [isLight]);
+
+  if (isLight) return null;
 
   return (
     <canvas
