@@ -124,7 +124,12 @@ export default function SystemPanel({
       <nav
         role="tablist"
         aria-label="System panel tabs"
-        className="flex items-center gap-1 px-2 py-2 border-b border-edge-subtle"
+        className="
+          flex items-center gap-1 px-2 py-2 border-b border-edge-subtle
+          overflow-x-auto
+          [&::-webkit-scrollbar]:hidden
+          [scrollbar-width:none]
+        "
       >
         <TabButton
           icon={<IconActivity />}
@@ -182,7 +187,7 @@ function TabButton({ icon, label, active, glow, onClick }: TabButtonProps) {
       aria-selected={active}
       onClick={onClick}
       className={`
-        inline-flex items-center gap-1.5
+        inline-flex items-center gap-1.5 flex-shrink-0 whitespace-nowrap
         px-3 py-2 min-h-[44px] rounded-v2-sm
         font-mono text-[11px] tracking-wide
         transition-colors
