@@ -6,6 +6,7 @@ import Button from '../UI/Button';
 import { clsx } from 'clsx';
 import type { RAGMode } from '@/lib/types';
 import type { UserSettings, Provider } from '@/lib/hooks/useSettings';
+import { useTheme, type ThemePref } from '@/lib/theme';
 
 interface SettingsProps {
   isOpen: boolean;
@@ -34,6 +35,7 @@ const RAG_MODES: { value: RAGMode; label: string; description: string; latency: 
 ];
 
 export default function Settings({ isOpen, onClose }: SettingsProps) {
+  const { theme, setTheme } = useTheme();
   // OpenAI settings
   const [apiKey, setApiKey] = useState('');
   const [model, setModel] = useState('gpt-5.4-mini');
@@ -192,6 +194,34 @@ export default function Settings({ isOpen, onClose }: SettingsProps) {
       }
     >
       <div className="space-y-5">
+          {/* Theme picker */}
+          <div className="mb-6">
+            <label className="block text-xs font-mono text-matrix-white/50 uppercase tracking-wider mb-3">
+              Theme
+            </label>
+            <div className="flex gap-2">
+              {(['system', 'light', 'dark'] as ThemePref[]).map((opt) => (
+                <button
+                  key={opt}
+                  type="button"
+                  onClick={() => setTheme(opt)}
+                  className={clsx(
+                    'matrix-tab text-center capitalize',
+                    theme === opt && 'border-matrix-green',
+                  )}
+                  data-state={theme === opt ? 'active' : 'inactive'}
+                >
+                  <div className="flex items-center justify-center gap-2">
+                    {theme === opt && (
+                      <span className="w-2 h-2 bg-matrix-green rounded-full animate-pulse" />
+                    )}
+                    <span>{opt}</span>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+
           {/* Provider Tabs */}
           <div className="mb-6">
             <label className="block text-xs font-mono text-matrix-white/50 uppercase tracking-wider mb-3">

@@ -121,6 +121,83 @@
 [data-accent="amber"]  { --accent-h: 80; }
 [data-accent="cyan"]   { --accent-h: 190; }
 
+/* ============================================================== */
+/* Light theme — "Circuit Board Schematic"                         */
+/* Ported from thomasjbutler.github.io/src/app.css :root block.    */
+/* Activated via <html class="light"> by ThemeProvider; default is */
+/* dark (the :root above). Same OKLch hue 145 preserves identity.  */
+/* ============================================================== */
+html.light {
+  /* Legacy matrix-* — re-pointed to light values so any component
+     still painting with matrix-black/green doesn't break visually. */
+  --matrix-black: oklch(0.985 0.002 145);
+  --matrix-green: oklch(0.35 0.22 145);
+  --matrix-green-dim: oklch(0.50 0.18 145);
+  --matrix-cyan: oklch(0.45 0.12 195);
+  --matrix-white: oklch(0.18 0.04 145);
+  --glass-bg: oklch(1 0 0 / 0.85);
+  --glass-border: oklch(0.35 0.22 145 / 0.18);
+
+  /* v2 backgrounds — warm cream with green tint */
+  --bg-base: oklch(0.985 0.002 145);
+  --bg-elev: oklch(0.99 0.002 145);
+  --bg-panel: oklch(0.97 0.005 145);
+  --bg-input: oklch(1 0 0);
+  --bg-card: oklch(1 0 0 / 0.90);
+  --bg-card-hover: oklch(0.96 0.012 145 / 0.95);
+  --bg-overlay: oklch(0.18 0.03 145 / 0.30);
+
+  /* v2 borders — green-tinted on cream */
+  --border-faint: oklch(0.35 0.22 145 / 0.06);
+  --border-subtle: oklch(0.35 0.22 145 / 0.10);
+  --border-default: oklch(0.35 0.22 145 / 0.18);
+  --border-strong: oklch(0.35 0.22 145 / 0.32);
+  --border-focus: oklch(0.35 0.22 145 / 0.55);
+
+  /* v2 foregrounds — deep ink for readability */
+  --fg-primary: oklch(0.12 0.03 145);
+  --fg-secondary: oklch(0.25 0.10 145);
+  --fg-muted: oklch(0.40 0.06 145);
+  --fg-dim: oklch(0.55 0.04 145);
+  --fg-faint: oklch(0.75 0.02 145);
+
+  /* v2 accent — deeper saturated green (portfolio primary) */
+  --accent: oklch(0.35 0.22 145);
+  --accent-bright: oklch(0.30 0.24 145);
+  --accent-dim: oklch(0.50 0.18 145);
+  --accent-faint: oklch(0.70 0.10 145);
+
+  /* v2 mode palette — darken cyan/amber for AA contrast on cream */
+  --v2-cyan: oklch(0.45 0.14 195);
+  --v2-cyan-dim: oklch(0.55 0.10 195);
+  --v2-amber: oklch(0.55 0.16 85);
+  --v2-amber-dim: oklch(0.65 0.10 85);
+  --v2-purple: oklch(0.45 0.20 295);
+  --v2-red: oklch(0.50 0.22 25);
+  --v2-red-dim: oklch(0.60 0.16 25);
+
+  /* v2 glows — tone way down on light; near-imperceptible halos */
+  --glow-sm: 0 0 12px oklch(0.35 0.22 145 / 0.06);
+  --glow-md: 0 0 24px oklch(0.35 0.22 145 / 0.10);
+  --glow-lg: 0 0 40px oklch(0.35 0.22 145 / 0.14);
+}
+
+/* Light theme — subtle 32px circuit-board grid background */
+html.light body {
+  background-image:
+    linear-gradient(oklch(0.35 0.22 145 / 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, oklch(0.35 0.22 145 / 0.05) 1px, transparent 1px);
+  background-size: 32px 32px;
+  background-position: center;
+}
+
+/* Light theme — faint green text-shadow on headings (portfolio look) */
+html.light h1,
+html.light h2,
+html.light h3 {
+  text-shadow: 0 0 30px oklch(0.40 0.22 145 / 0.06);
+}
+
 /* v2 density — compact tightens spacing and header height */
 [data-density="compact"] {
   --v2-space-3: 8px;
