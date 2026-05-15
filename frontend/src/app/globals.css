@@ -251,8 +251,15 @@ html.redesign-v2 body {
 
 .app-body {
   display: grid;
-  grid-template-columns: var(--rail-w) 1fr var(--rail-w);
+  /* Per-side overrides let the header library/activity toggles collapse
+     just one rail at desktop. AppShell sets --rail-w-docs / --rail-w-sys
+     to 0 when the corresponding rail is collapsed. Fallback to --rail-w. */
+  grid-template-columns:
+    var(--rail-w-docs, var(--rail-w))
+    1fr
+    var(--rail-w-sys, var(--rail-w));
   min-height: 0; /* CRITICAL — lets centre column shrink */
+  transition: grid-template-columns 200ms ease;
 }
 
 .docs-rail,
