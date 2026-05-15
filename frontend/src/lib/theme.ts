@@ -27,10 +27,14 @@ const STORAGE_KEY = 'morpheus.theme';
 
 function getStoredPref(): ThemePref {
   if (typeof window === 'undefined') return 'system';
-  const stored = window.localStorage.getItem(STORAGE_KEY);
-  return stored === 'light' || stored === 'dark' || stored === 'system'
-    ? stored
-    : 'system';
+  try {
+    const stored = window.localStorage.getItem(STORAGE_KEY);
+    return stored === 'light' || stored === 'dark' || stored === 'system'
+      ? stored
+      : 'system';
+  } catch {
+    return 'system';
+  }
 }
 
 function resolvePref(pref: ThemePref): ResolvedTheme {
@@ -66,7 +70,12 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
   const setTheme = useCallback((next: ThemePref) => {
     setThemeState(next);
-    window.localStorage.setItem(STORAGE_KEY, next);
+    try {
+      window.localStorage.setItem(STORAGE_KEY, next);
+    } catch {
+      // Storage unavailable (Safari private mode, sandboxed iframes) —
+      // keep the in-memory theme; user just loses persistence.
+    }
     const nextResolved = resolvePref(next);
     setResolved(nextResolved);
     applyClass(nextResolved);

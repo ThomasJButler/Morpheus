@@ -199,12 +199,13 @@ export default function Settings({ isOpen, onClose }: SettingsProps) {
             <label className="block text-xs font-mono text-matrix-white/50 uppercase tracking-wider mb-3">
               Theme
             </label>
-            <div className="flex gap-2">
+            <div className="flex gap-2" role="group" aria-label="Theme">
               {(['system', 'light', 'dark'] as ThemePref[]).map((opt) => (
                 <button
                   key={opt}
                   type="button"
                   onClick={() => setTheme(opt)}
+                  aria-pressed={theme === opt}
                   className={clsx(
                     'matrix-tab text-center capitalize',
                     theme === opt && 'border-matrix-green',

@@ -115,7 +115,7 @@ export default function ChatMessage({ message, index = 0 }: ChatMessageProps) {
               {message.metadata.processingTime}ms
             </span>
           )}
-          {!isUser && (message.metadata?.chunksRetrieved ?? message.citations?.length) ? (
+          {!isUser && (message.metadata?.chunksRetrieved != null || message.citations?.length) ? (
             <span
               className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full border border-edge-subtle bg-surface-card"
               title="Retrieved chunks"

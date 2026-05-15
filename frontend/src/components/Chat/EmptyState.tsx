@@ -49,8 +49,9 @@ export default function EmptyState({ onSelectPrompt }: EmptyStateProps) {
           </blockquote>
         </div>
 
-        {/* Step cards — bigger numerals, hover lift, dotted connector on desktop */}
-        <ol className="hidden sm:grid sm:grid-cols-3 gap-3 w-full text-left relative">
+        {/* Step cards — bigger numerals, hover lift, dotted connector on desktop.
+            Connector lives outside <ol> so the list keeps only <li> children. */}
+        <div className="hidden sm:block w-full relative">
           {/* Connector line between cards (decorative) */}
           <span
             aria-hidden
@@ -60,6 +61,7 @@ export default function EmptyState({ onSelectPrompt }: EmptyStateProps) {
               pointer-events-none
             "
           />
+          <ol className="grid sm:grid-cols-3 gap-3 text-left">
           {STEPS.map((s) => (
             <li
               key={s.n}
@@ -90,7 +92,8 @@ export default function EmptyState({ onSelectPrompt }: EmptyStateProps) {
               </p>
             </li>
           ))}
-        </ol>
+          </ol>
+        </div>
 
         {/* Quick prompts */}
         <div className="w-full flex flex-col items-center gap-3">

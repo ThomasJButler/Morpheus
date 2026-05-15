@@ -265,22 +265,35 @@ export default function ChatInterface({ fillParent = false }: ChatInterfaceProps
     setQueuedMessage(null);
   }, [health.status, queuedMessage, append]);
 
-  const handleUploadComplete = useCallback(async (response: DocumentUploadResponse) => {
-    setUploadSuccess(`Uploaded "${response.document_id}" - ${response.chunks_created} chunks created`);
-
-    // Fetch updated document list
+  const refreshDocumentList = useCallback(async () => {
     try {
       const listResponse = await apiClient.listDocuments();
       setDocumentList(listResponse.documents || []);
     } catch (error) {
       console.error('Failed to fetch document list:', error);
     }
+  }, []);
+
+  // Populate the document count on mount and whenever the indexed set
+  // changes — otherwise the "N docs" chip stays empty after a reload or
+  // when documents were indexed in another session.
+  useEffect(() => {
+    refreshDocumentList();
+    window.addEventListener('morpheus:documents-changed', refreshDocumentList);
+    return () =>
+      window.removeEventListener('morpheus:documents-changed', refreshDocumentList);
+  }, [refreshDocumentList]);
+
+  const handleUploadComplete = useCallback(async (response: DocumentUploadResponse) => {
+    setUploadSuccess(`Uploaded "${response.document_id}" - ${response.chunks_created} chunks created`);
+
+    await refreshDocumentList();
 
     // Clear success message after 5 seconds
     setTimeout(() => {
       setUploadSuccess(null);
     }, 5000);
-  }, []);
+  }, [refreshDocumentList]);
 
   return (
     <div className={`flex flex-col ${fillParent ? 'h-full' : 'h-[calc(100dvh-60px)] sm:h-[calc(100vh-120px)]'} overflow-hidden`}>
