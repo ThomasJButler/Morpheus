@@ -21,7 +21,7 @@ export default function Button({
 
   const variants = {
     primary: 'matrix-button',
-    secondary: 'bg-transparent border border-matrix-green text-matrix-green hover:bg-matrix-green/10',
+    secondary: 'bg-transparent border border-matrix-green/30 text-matrix-green/80 hover:border-matrix-green/60 hover:bg-matrix-green/10 hover:text-matrix-green',
     ghost: 'bg-transparent text-matrix-green hover:bg-matrix-green/10',
   };
 

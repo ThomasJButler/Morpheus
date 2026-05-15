@@ -437,10 +437,12 @@ html.redesign-v2 body {
     51%, 100% { opacity: 0; }
   }
 
-  /* Matrix Button - Enhanced with micro-interactions */
+  /* Matrix Button - Enhanced with micro-interactions.
+     Primary action: filled accent so it dominates the dialog footer,
+     reading as the intended next step before the secondary (Cancel). */
   .matrix-button {
     @apply px-4 py-2 rounded-md font-mono text-sm font-medium;
-    @apply bg-glass-bg border border-glass-border text-matrix-green;
+    @apply bg-matrix-green/15 border border-matrix-green/60 text-matrix-green;
     transition: all var(--transition-normal) ease;
     transform-origin: center;
   }
@@ -908,18 +910,22 @@ html.redesign-v2 body {
   .matrix-tab {
     @apply relative flex-1 px-4 py-3 rounded-lg font-mono text-sm font-medium;
     @apply text-matrix-white/60 transition-all duration-[250ms];
-    @apply border-2 border-transparent;
+    /* Inactive baseline: subtle border so all options in a segmented control
+       are equally discoverable; only the active one gets the full accent. */
+    @apply border border-matrix-green/15;
   }
 
   .matrix-tab:hover:not([data-state="active"]) {
-    @apply text-matrix-green/80 bg-matrix-green/5;
+    @apply text-matrix-green/80 bg-matrix-green/5 border-matrix-green/30;
   }
 
   .matrix-tab[data-state="active"] {
     @apply text-matrix-green bg-matrix-green/10;
-    @apply border-matrix-green;
-    text-shadow: 0 0 10px rgba(0, 255, 0, 0.5);
-    box-shadow: 0 0 15px rgba(0, 255, 0, 0.2);
+    @apply border-matrix-green/60;
+    /* Softer than full neon — was 0.5/0.2, now 0.25/0.10 so three side-by-side
+       options don't compete for attention. */
+    text-shadow: 0 0 8px oklch(var(--matrix-green-channels) / 0.25);
+    box-shadow: 0 0 12px oklch(var(--matrix-green-channels) / 0.10);
   }
 
   /* Focus Matrix - Consistent focus states */
