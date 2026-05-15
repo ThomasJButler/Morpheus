@@ -4,7 +4,7 @@
 @tailwind utilities;
 
 :root {
-  /* Matrix Theme Colors */
+  /* Matrix theme colours — full values (for direct CSS use) */
   --matrix-black: #0a0a0a;
   --matrix-green: #00ff00;
   --matrix-green-dim: #00cc00;
@@ -12,6 +12,16 @@
   --matrix-white: #e0e0e0;
   --glass-bg: rgba(0, 255, 0, 0.03);
   --glass-border: rgba(0, 255, 0, 0.2);
+
+  /* Matrix theme — OKLch channel triplets for Tailwind alpha modifiers.
+     Used as `oklch(var(--matrix-X-channels) / <alpha-value>)` so classes
+     like `border-matrix-green/50` compile. Channels are L C H,
+     space-separated, no commas. */
+  --matrix-black-channels: 0.10 0.005 145;
+  --matrix-green-channels: 0.866 0.295 142;
+  --matrix-green-dim-channels: 0.72 0.25 142;
+  --matrix-cyan-channels: 0.88 0.16 196;
+  --matrix-white-channels: 0.91 0 0;
 
   /* Animation speeds */
   --transition-fast: 150ms;
@@ -137,6 +147,13 @@ html.light {
   --matrix-white: oklch(0.18 0.04 145);
   --glass-bg: oklch(1 0 0 / 0.85);
   --glass-border: oklch(0.35 0.22 145 / 0.18);
+
+  /* Channel triplets for Tailwind alpha modifiers (border-matrix-green/50). */
+  --matrix-black-channels: 0.985 0.002 145;
+  --matrix-green-channels: 0.35 0.22 145;
+  --matrix-green-dim-channels: 0.50 0.18 145;
+  --matrix-cyan-channels: 0.45 0.12 195;
+  --matrix-white-channels: 0.18 0.04 145;
 
   /* v2 backgrounds — warm cream with green tint */
   --bg-base: oklch(0.985 0.002 145);

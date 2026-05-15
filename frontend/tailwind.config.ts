@@ -11,16 +11,16 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        // Legacy matrix-* names — pointed at CSS variables so the 350+
-        // hardcoded `bg-matrix-black` / `text-matrix-green` usages across
-        // the codebase auto-adapt to the active theme. Values are
-        // overridden by `html.light` in globals.css for the light theme.
+        // Legacy matrix-* names — wired through OKLch channel triplets so
+        // Tailwind's `/X` alpha modifiers compile (e.g. border-matrix-green/50).
+        // The triplets live in CSS vars and switch with the html.light/.dark
+        // class, so theme-aware colour + alpha modifier both work.
         matrix: {
-          black: 'var(--matrix-black)',
-          green: 'var(--matrix-green)',
-          'green-dim': 'var(--matrix-green-dim)',
-          cyan: 'var(--matrix-cyan)',
-          white: 'var(--matrix-white)',
+          black: 'oklch(var(--matrix-black-channels) / <alpha-value>)',
+          green: 'oklch(var(--matrix-green-channels) / <alpha-value>)',
+          'green-dim': 'oklch(var(--matrix-green-dim-channels) / <alpha-value>)',
+          cyan: 'oklch(var(--matrix-cyan-channels) / <alpha-value>)',
+          white: 'oklch(var(--matrix-white-channels) / <alpha-value>)',
         },
         glass: {
           bg: 'var(--glass-bg)',
