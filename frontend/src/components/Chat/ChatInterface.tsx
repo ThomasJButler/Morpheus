@@ -67,15 +67,18 @@ export default function ChatInterface({ fillParent = false }: ChatInterfaceProps
     }
   }, [sessionId]);
 
-  // Header's Guide/Settings icons dispatch CustomEvents (no prop drilling).
+  // Header's icon cluster dispatches CustomEvents (no prop drilling).
   useEffect(() => {
     const openGuide = () => setShowGuide(true);
     const openSettings = () => setShowSettings(true);
+    const toggleDocStats = () => setShowDocStats((v) => !v);
     window.addEventListener('morpheus:open-guide', openGuide);
     window.addEventListener('morpheus:open-settings', openSettings);
+    window.addEventListener('morpheus:toggle-doc-stats', toggleDocStats);
     return () => {
       window.removeEventListener('morpheus:open-guide', openGuide);
       window.removeEventListener('morpheus:open-settings', openSettings);
+      window.removeEventListener('morpheus:toggle-doc-stats', toggleDocStats);
     };
   }, []);
 
@@ -205,6 +208,23 @@ export default function ChatInterface({ fillParent = false }: ChatInterfaceProps
     setMessages([]);
     setShowClearConfirm(false);
   }, [setMessages]);
+
+  // Header Save/Clear icons (desktop) — bind after their callbacks are defined.
+  useEffect(() => {
+    window.addEventListener('morpheus:save-chat', exportChat);
+    window.addEventListener('morpheus:clear-chat', handleClearClick);
+    return () => {
+      window.removeEventListener('morpheus:save-chat', exportChat);
+      window.removeEventListener('morpheus:clear-chat', handleClearClick);
+    };
+  }, [exportChat, handleClearClick]);
+
+  // Broadcast message count so the header can dim Save/Clear when empty.
+  useEffect(() => {
+    window.dispatchEvent(
+      new CustomEvent('morpheus:messages-count', { detail: { count: messages.length } }),
+    );
+  }, [messages.length]);
 
   // Quick-prompt selection from EmptyState — uses useChat's setInput
   // (controlled input) and focuses the composer so the user can edit/send.
@@ -360,8 +380,10 @@ export default function ChatInterface({ fillParent = false }: ChatInterfaceProps
           )}
         </div>
 
-        {/* Right side: Controls with improved grouping */}
-        <div className="flex items-center">
+        {/* Right side: Controls with improved grouping.
+            Desktop hides the entire group — these actions live in the AppShell
+            header now. Mobile keeps Upload + Docs inline + overflow menu. */}
+        <div className="flex items-center md:hidden">
           {/* Primary actions group */}
           <div className="flex items-center gap-0.5 sm:gap-1 p-1 rounded-lg bg-matrix-white/5 border border-matrix-white/10">
             <UploadButton onUploadComplete={handleUploadComplete} />
