@@ -18,6 +18,11 @@ out/
 build/
 dist/
 
+# Test + visual-diff artefacts (local only)
+frontend/playwright-report/
+frontend/test-results/
+frontend/visual-diff/
+
 # Environment files
 *.env
 *.env.local
