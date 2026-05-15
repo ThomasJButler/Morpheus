@@ -121,11 +121,30 @@ export default function SystemPanel({
       onTouchMove={swipe.onTouchMove}
       onTouchEnd={swipe.onTouchEnd}
     >
+      <div className="flex items-center border-b border-edge-subtle">
+        {/* Desktop-only collapse chevron — points right since this rail
+            collapses to the right edge. */}
+        <button
+          type="button"
+          onClick={() => window.dispatchEvent(new CustomEvent('morpheus:toggle-sys'))}
+          aria-label="Collapse system panel"
+          title="Collapse system panel"
+          className="
+            hidden md:inline-flex items-center justify-center
+            flex-shrink-0 w-7 h-9 ml-1
+            text-fg-muted hover:text-accent hover:bg-surface-card-hover rounded
+            transition-colors
+          "
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+            <polyline points="9 18 15 12 9 6" />
+          </svg>
+        </button>
       <nav
         role="tablist"
         aria-label="System panel tabs"
         className="
-          flex items-center gap-0.5 px-2 py-2 border-b border-edge-subtle
+          flex-1 flex items-center gap-0.5 px-2 py-2
           overflow-x-auto
           [&::-webkit-scrollbar]:hidden
           [scrollbar-width:none]
@@ -151,6 +170,7 @@ export default function SystemPanel({
           onClick={() => selectTab('system')}
         />
       </nav>
+      </div>
 
       <div
         className={`

@@ -60,6 +60,20 @@ export default function AppShell({ showMatrixRain = false }: AppShellProps) {
     [],
   );
 
+  // The rail headers also need to be able to toggle collapse from inside the
+  // rail (more discoverable than the header icons alone). Same CustomEvent
+  // pattern — DocsSidebar / SystemPanel dispatch, AppShell listens.
+  useEffect(() => {
+    const onDocs = () => toggleDocs();
+    const onSys = () => toggleSys();
+    window.addEventListener('morpheus:toggle-docs', onDocs);
+    window.addEventListener('morpheus:toggle-sys', onSys);
+    return () => {
+      window.removeEventListener('morpheus:toggle-docs', onDocs);
+      window.removeEventListener('morpheus:toggle-sys', onSys);
+    };
+  }, [toggleDocs, toggleSys]);
+
   // Close any open drawer when the viewport grows past the mobile breakpoint;
   // otherwise the drawer state stays "open" silently and re-appears on the
   // next resize down. Matches the CSS breakpoint at 920px in globals.css.
