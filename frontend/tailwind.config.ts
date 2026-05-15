@@ -10,16 +10,20 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
+        // Legacy matrix-* names — pointed at CSS variables so the 350+
+        // hardcoded `bg-matrix-black` / `text-matrix-green` usages across
+        // the codebase auto-adapt to the active theme. Values are
+        // overridden by `html.light` in globals.css for the light theme.
         matrix: {
-          black: '#0a0a0a',
-          green: '#00ff00',
-          'green-dim': '#00cc00',
-          cyan: '#00ffff',
-          white: '#e0e0e0',
+          black: 'var(--matrix-black)',
+          green: 'var(--matrix-green)',
+          'green-dim': 'var(--matrix-green-dim)',
+          cyan: 'var(--matrix-cyan)',
+          white: 'var(--matrix-white)',
         },
         glass: {
-          bg: 'rgba(0, 255, 0, 0.03)',
-          border: 'rgba(0, 255, 0, 0.2)',
+          bg: 'var(--glass-bg)',
+          border: 'var(--glass-border)',
         },
 
         // ===== v2 redesign tokens (REDESIGN_V2) =====
