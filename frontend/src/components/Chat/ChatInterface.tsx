@@ -312,6 +312,18 @@ export default function ChatInterface({ fillParent = false }: ChatInterfaceProps
             </div>
           </div>
 
+          {/* Doc count chip — visible at all widths so mobile users keep the
+              context indicator even when the Docs toolbar label is hidden. */}
+          {documentList.length > 0 && (
+            <span
+              className="inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-mono
+                         border border-matrix-white/15 bg-matrix-white/5 text-matrix-white/70"
+              title={`${documentList.length} document${documentList.length === 1 ? '' : 's'} indexed`}
+            >
+              {documentList.length} {documentList.length === 1 ? 'doc' : 'docs'}
+            </span>
+          )}
+
           {/* RAG Mode Badge - shows current/last used mode */}
           {ragMetadata.modeUsed && (
             <RAGModeIndicator
@@ -626,43 +638,52 @@ export default function ChatInterface({ fillParent = false }: ChatInterfaceProps
         )}
       </div>
 
-      {/* Status indicators - compact on mobile */}
-      <div className="flex-shrink-0 space-y-1 px-1 pb-1">
-        {/* Session initialization indicator */}
-        {!isInitialized && (
-          <div className="p-2 bg-matrix-green/10 border border-matrix-green/30 rounded-md text-matrix-green text-xs font-mono flex items-center">
-            <span className="animate-pulse mr-2">●</span>
-            <span>Initialising session...</span>
-          </div>
-        )}
-
-        {/* Cleanup indicator */}
-        {isCleaningUp && (
-          <div className="p-2 bg-matrix-cyan/10 border border-matrix-cyan/30 rounded-md text-matrix-cyan text-xs font-mono flex items-center">
-            <svg className="w-3 h-3 animate-spin mr-2" fill="none" viewBox="0 0 24 24">
-              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-            </svg>
-            <span>Preparing workspace...</span>
-          </div>
-        )}
-
-        {/* API Key Warning - shows if the selected provider's API key is missing */}
-        {((settings.provider === 'anthropic' && !hasAnthropicApiKey()) ||
-          (settings.provider === 'openai' && !hasApiKey())) && (
-          <div className="p-2 bg-yellow-500/10 border border-yellow-500/30 rounded-md text-yellow-400 text-xs font-mono flex items-center justify-between">
-            <span>
-              No API key for {settings.provider === 'anthropic' ? 'Claude' : 'GPT'}.
-            </span>
-            <button
-              onClick={() => setShowSettings(true)}
-              className="px-2 py-0.5 bg-yellow-500/20 border border-yellow-500/40 rounded text-yellow-400 hover:bg-yellow-500/30 transition-colors text-xs"
-            >
-              Add Key
-            </button>
-          </div>
-        )}
-      </div>
+      {/* Status strip — single prioritised banner (warn > info > ok) so the
+          composer isn't pushed up by 3 stacked rows on mobile during cold start. */}
+      {(() => {
+        const apiKeyMissing =
+          (settings.provider === 'anthropic' && !hasAnthropicApiKey()) ||
+          (settings.provider === 'openai' && !hasApiKey());
+        if (apiKeyMissing) {
+          return (
+            <div className="flex-shrink-0 px-1 pb-1">
+              <div className="p-2 bg-yellow-500/10 border border-yellow-500/30 rounded-md text-yellow-400 text-xs font-mono flex items-center justify-between">
+                <span>No API key for {settings.provider === 'anthropic' ? 'Claude' : 'GPT'}.</span>
+                <button
+                  onClick={() => setShowSettings(true)}
+                  className="px-2 py-0.5 bg-yellow-500/20 border border-yellow-500/40 rounded text-yellow-400 hover:bg-yellow-500/30 transition-colors text-xs"
+                >
+                  Add Key
+                </button>
+              </div>
+            </div>
+          );
+        }
+        if (isCleaningUp) {
+          return (
+            <div className="flex-shrink-0 px-1 pb-1">
+              <div className="p-2 bg-matrix-cyan/10 border border-matrix-cyan/30 rounded-md text-matrix-cyan text-xs font-mono flex items-center">
+                <svg className="w-3 h-3 animate-spin mr-2" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                </svg>
+                <span>Preparing workspace…</span>
+              </div>
+            </div>
+          );
+        }
+        if (!isInitialized) {
+          return (
+            <div className="flex-shrink-0 px-1 pb-1">
+              <div className="p-2 bg-matrix-green/10 border border-matrix-green/30 rounded-md text-matrix-green text-xs font-mono flex items-center">
+                <span className="animate-pulse mr-2">●</span>
+                <span>Initialising session…</span>
+              </div>
+            </div>
+          );
+        }
+        return null;
+      })()}
 
       {/* Guide Modal — QuickStartGuide now wraps itself in <Modal> (Phase 6),
           so we just render it with isOpen instead of a manual overlay. */}
