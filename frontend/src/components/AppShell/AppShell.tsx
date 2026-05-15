@@ -27,6 +27,17 @@ export default function AppShell({ showMatrixRain = false }: AppShellProps) {
     [],
   );
 
+  // Bridge header → ChatInterface modal triggers via CustomEvents so we don't
+  // have to prop-drill through Body. ChatInterface listens with useEffect.
+  const openGuide = useCallback(
+    () => window.dispatchEvent(new CustomEvent('morpheus:open-guide')),
+    [],
+  );
+  const openSettings = useCallback(
+    () => window.dispatchEvent(new CustomEvent('morpheus:open-settings')),
+    [],
+  );
+
   // Close any open drawer when the viewport grows past the mobile breakpoint;
   // otherwise the drawer state stays "open" silently and re-appears on the
   // next resize down. Matches the CSS breakpoint at 920px in globals.css.
@@ -71,6 +82,8 @@ export default function AppShell({ showMatrixRain = false }: AppShellProps) {
       <Header
         onToggleDocs={toggleDocs}
         onToggleSys={toggleSys}
+        onOpenGuide={openGuide}
+        onOpenSettings={openSettings}
         docsOpen={drawer === 'docs'}
         sysOpen={drawer === 'sys'}
       />

@@ -66,6 +66,18 @@ export default function ChatInterface({ fillParent = false }: ChatInterfaceProps
     }
   }, [sessionId]);
 
+  // Header's Guide/Settings icons dispatch CustomEvents (no prop drilling).
+  useEffect(() => {
+    const openGuide = () => setShowGuide(true);
+    const openSettings = () => setShowSettings(true);
+    window.addEventListener('morpheus:open-guide', openGuide);
+    window.addEventListener('morpheus:open-settings', openSettings);
+    return () => {
+      window.removeEventListener('morpheus:open-guide', openGuide);
+      window.removeEventListener('morpheus:open-settings', openSettings);
+    };
+  }, []);
+
   // Use Vercel AI SDK's useChat hook - now points to Next.js BFF route
   const {
     messages,
@@ -437,68 +449,6 @@ export default function ChatInterface({ fillParent = false }: ChatInterfaceProps
             </div>
           </div>
 
-          {/* Divider */}
-          <div className="w-px h-6 bg-matrix-green/20 mx-1.5 sm:mx-2 hidden sm:block" />
-
-          {/* Help & Settings group */}
-          <div className="hidden sm:flex items-center gap-0.5 sm:gap-1 p-1 rounded-lg bg-matrix-white/5 border border-matrix-white/10">
-            {/* Guide button with tooltip */}
-            <div className="relative group/guide">
-              <button
-                onClick={() => setShowGuide(true)}
-                className="toolbar-button"
-                aria-label="Show quick start guide"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                <span>Guide</span>
-              </button>
-              {/* Tooltip */}
-              <div className="absolute top-full right-0 mt-2 px-2 py-1
-                              bg-matrix-black/95 border border-matrix-green/30 rounded
-                              text-xs font-mono text-matrix-white/80 whitespace-nowrap
-                              opacity-0 group-hover/guide:opacity-100 transition-opacity duration-200
-                              pointer-events-none z-20">
-                Quick start guide
-              </div>
-            </div>
-
-            {/* Settings button with tooltip */}
-            <div className="relative group/settings">
-              <button
-                onClick={() => setShowSettings(true)}
-                className={`toolbar-button icon-spin-hover ${showSettings ? 'bg-matrix-green/20 border-matrix-green/50 text-matrix-green' : ''}`}
-                aria-label="Open settings"
-              >
-                <svg className="w-4 h-4 transition-transform duration-300 group-hover/settings:rotate-90" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                </svg>
-                <span>Settings</span>
-              </button>
-              {/* Tooltip */}
-              <div className="absolute top-full right-0 mt-2 px-2 py-1
-                              bg-matrix-black/95 border border-matrix-green/30 rounded
-                              text-xs font-mono text-matrix-white/80 whitespace-nowrap
-                              opacity-0 group-hover/settings:opacity-100 transition-opacity duration-200
-                              pointer-events-none z-20">
-                Configure API keys & preferences
-              </div>
-            </div>
-          </div>
-
-          {/* Mobile settings button (outside group) */}
-          <button
-            onClick={() => setShowSettings(true)}
-            className="toolbar-button sm:hidden ml-1"
-            aria-label="Open settings"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-            </svg>
-          </button>
         </div>
       </div>
 
