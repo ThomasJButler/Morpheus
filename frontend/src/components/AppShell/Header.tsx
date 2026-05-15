@@ -31,17 +31,13 @@ export default function Header({
       "
       style={{ height: 'var(--header-h)' }}
     >
-      {/* Brand */}
-      <div className="flex items-center gap-3 min-w-0">
-        <span
-          className="font-mono text-base sm:text-lg font-bold tracking-wide text-accent"
-          aria-label="Morpheus"
-        >
+      {/* Brand — stacked: name over tagline, visible at all widths */}
+      <div className="flex flex-col leading-tight min-w-0" aria-label="Morpheus · AI Document Intelligence">
+        <span className="font-mono text-base sm:text-lg font-bold tracking-wide text-accent">
           MORPHEUS
         </span>
-        <span className="hidden sm:inline text-edge-strong">·</span>
-        <span className="hidden sm:inline font-geist text-xs uppercase tracking-[0.18em] text-fg-muted truncate">
-          AI-powered Document Intelligence
+        <span className="font-geist text-[10px] sm:text-[11px] uppercase tracking-[0.18em] text-fg-muted truncate">
+          AI · Document Intelligence
         </span>
       </div>
 
