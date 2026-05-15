@@ -35,6 +35,7 @@ interface ChatInterfaceProps {
 
 export default function ChatInterface({ fillParent = false }: ChatInterfaceProps = {}) {
   const [showDocStats, setShowDocStats] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [uploadSuccess, setUploadSuccess] = useState<string | null>(null);
   const [showSettings, setShowSettings] = useState(false);
   const [documentList, setDocumentList] = useState<string[]>([]);
@@ -396,11 +397,77 @@ export default function ChatInterface({ fillParent = false }: ChatInterfaceProps
             </div>
           </div>
 
-          {/* Divider */}
-          <div className="w-px h-6 bg-matrix-green/20 mx-1.5 sm:mx-2" />
+          {/* Divider — desktop only; mobile uses overflow menu instead */}
+          <div className="hidden sm:block w-px h-6 bg-matrix-green/20 mx-2" />
 
-          {/* Chat actions group */}
-          <div className="flex items-center gap-0.5 sm:gap-1 p-1 rounded-lg bg-matrix-white/5 border border-matrix-white/10">
+          {/* Mobile-only overflow menu for Save/Clear (less-used actions) */}
+          <div className="relative sm:hidden ml-1">
+            <button
+              type="button"
+              onClick={() => setMobileMenuOpen((v) => !v)}
+              aria-label="More actions"
+              aria-expanded={mobileMenuOpen}
+              aria-haspopup="menu"
+              className="toolbar-button"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <circle cx="5" cy="12" r="1.5" fill="currentColor" />
+                <circle cx="12" cy="12" r="1.5" fill="currentColor" />
+                <circle cx="19" cy="12" r="1.5" fill="currentColor" />
+              </svg>
+            </button>
+            {mobileMenuOpen && (
+              <>
+                {/* Click-outside catcher */}
+                <div
+                  className="fixed inset-0 z-30"
+                  onClick={() => setMobileMenuOpen(false)}
+                  aria-hidden
+                />
+                <div
+                  role="menu"
+                  className="absolute right-0 top-full mt-1 z-40 min-w-[160px]
+                             rounded-md border border-edge-default bg-surface-elev
+                             shadow-lg overflow-hidden"
+                >
+                  <button
+                    role="menuitem"
+                    type="button"
+                    onClick={() => { setMobileMenuOpen(false); exportChat(); }}
+                    disabled={messages.length === 0}
+                    className="w-full flex items-center gap-2 px-3 py-2.5 text-left
+                               text-sm font-mono text-fg-primary
+                               hover:bg-surface-card-hover disabled:opacity-40
+                               disabled:cursor-not-allowed disabled:hover:bg-transparent"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                    </svg>
+                    Export chat
+                  </button>
+                  <button
+                    role="menuitem"
+                    type="button"
+                    onClick={() => { setMobileMenuOpen(false); handleClearClick(); }}
+                    disabled={messages.length === 0 || isLoading}
+                    className="w-full flex items-center gap-2 px-3 py-2.5 text-left
+                               text-sm font-mono text-mode-red
+                               hover:bg-mode-red/10 disabled:opacity-40
+                               disabled:cursor-not-allowed disabled:hover:bg-transparent
+                               border-t border-edge-subtle"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                    Clear conversation
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+
+          {/* Chat actions group — desktop only; mobile uses overflow menu */}
+          <div className="hidden sm:flex items-center gap-0.5 sm:gap-1 p-1 rounded-lg bg-matrix-white/5 border border-matrix-white/10">
             {/* Save Chat Button with tooltip */}
             <div className="relative group/save">
               <button

@@ -134,9 +134,10 @@ const Composer = forwardRef<HTMLTextAreaElement, ComposerProps>(function Compose
               onClick={onOpenSettings}
               className={`
                 inline-flex items-center gap-1 px-2.5 min-h-[32px] sm:min-h-[28px]
-                rounded-full border border-edge-subtle
+                rounded-full border
                 ${modeMeta.tone}
-                hover:border-edge-default hover:bg-surface-card-hover
+                border-current/30 bg-current/[0.06]
+                hover:border-current/60 hover:bg-current/[0.10]
                 transition-colors
               `}
               title="Change retrieval mode in Settings"
