@@ -54,6 +54,7 @@ services:
       - NEXT_PUBLIC_ENABLE_MATRIX_RAIN=true
       - NEXT_PUBLIC_ENABLE_METRICS=true
       - NEXT_PUBLIC_DEBUG=true
+      - NEXT_PUBLIC_REDESIGN_V2=true
     volumes:
       # Mount source code for hot-reload
       - ./frontend/src:/app/src

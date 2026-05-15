@@ -49,28 +49,6 @@ export default function AppShell({ showMatrixRain = false }: AppShellProps) {
     el.style.setProperty('--rail-w-sys', sysCollapsed ? '0px' : 'var(--rail-w)');
   }, [docsCollapsed, sysCollapsed]);
 
-  // Bridge header → ChatInterface action triggers via CustomEvents so we don't
-  // have to prop-drill through Body. ChatInterface (and UploadButton) listen
-  // with useEffect. Subscribe to message-count broadcasts so the header can
-  // dim Save/Clear when there's nothing to act on.
-  const [hasMessages, setHasMessages] = useState(false);
-  useEffect(() => {
-    const onCount = (e: Event) => {
-      const n = (e as CustomEvent<{ count: number }>).detail?.count ?? 0;
-      setHasMessages(n > 0);
-    };
-    window.addEventListener('morpheus:messages-count', onCount as EventListener);
-    return () => window.removeEventListener('morpheus:messages-count', onCount as EventListener);
-  }, []);
-
-  const dispatch = (name: string) =>
-    window.dispatchEvent(new CustomEvent(name));
-  const openGuide = useCallback(() => dispatch('morpheus:open-guide'), []);
-  const openSettings = useCallback(() => dispatch('morpheus:open-settings'), []);
-  const openUpload = useCallback(() => dispatch('morpheus:open-upload'), []);
-  const saveChat = useCallback(() => dispatch('morpheus:save-chat'), []);
-  const clearChat = useCallback(() => dispatch('morpheus:clear-chat'), []);
-
   // The rail headers also need to be able to toggle collapse from inside the
   // rail (more discoverable than the header icons alone). Same CustomEvent
   // pattern — DocsSidebar / SystemPanel dispatch, AppShell listens.
@@ -129,13 +107,6 @@ export default function AppShell({ showMatrixRain = false }: AppShellProps) {
       <Header
         onToggleDocs={toggleDocs}
         onToggleSys={toggleSys}
-        onOpenGuide={openGuide}
-        onOpenSettings={openSettings}
-        onOpenUpload={openUpload}
-        onSaveChat={saveChat}
-        onClearChat={clearChat}
-        canSave={hasMessages}
-        canClear={hasMessages}
         docsOpen={drawer === 'docs' || (!docsCollapsed && typeof window !== 'undefined' && window.innerWidth > DRAWER_BREAKPOINT_PX)}
         sysOpen={drawer === 'sys' || (!sysCollapsed && typeof window !== 'undefined' && window.innerWidth > DRAWER_BREAKPOINT_PX)}
       />

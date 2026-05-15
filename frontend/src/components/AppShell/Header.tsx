@@ -3,36 +3,23 @@
 interface HeaderProps {
   onToggleDocs: () => void;
   onToggleSys: () => void;
-  onOpenGuide: () => void;
-  onOpenSettings: () => void;
-  onOpenUpload: () => void;
-  onSaveChat: () => void;
-  onClearChat: () => void;
   docsOpen: boolean;
   sysOpen: boolean;
-  canSave: boolean;
-  canClear: boolean;
 }
 
 /**
  * v2 AppShell header — sticky, compact, 56px tall.
- * Phase 7 wires the docs / system toggle buttons to drawer state owned by
- * AppShell. Settings stays disabled here — it's owned by ChatInterface's
- * toolbar (Phase 6). aria-controls + aria-expanded reflect the live drawer
- * state so assistive tech announces it correctly.
+ *
+ * Carries only the rail toggles + GitHub link. Chat actions (Upload, Save,
+ * Clear, Guide, Settings) live in the chat toolbar where users see them
+ * alongside the Claude/GPT chip and live status — moving them up here had
+ * pushed the cluster off-screen at narrower desktop widths.
  */
 export default function Header({
   onToggleDocs,
   onToggleSys,
-  onOpenGuide,
-  onOpenSettings,
-  onOpenUpload,
-  onSaveChat,
-  onClearChat,
   docsOpen,
   sysOpen,
-  canSave,
-  canClear,
 }: HeaderProps) {
   return (
     <header
@@ -55,7 +42,8 @@ export default function Header({
         </span>
       </div>
 
-      {/* Action cluster */}
+      {/* Action cluster — only nav + external link. Chat actions live in
+          the chat toolbar so the header doesn't overflow narrow desktops. */}
       <div className="flex items-center gap-1.5">
         <HeaderIconButton
           label={docsOpen ? 'Close constructs' : 'Open constructs'}
@@ -74,25 +62,6 @@ export default function Header({
           active={sysOpen}
         >
           <IconActivity />
-        </HeaderIconButton>
-        {/* Desktop-only chat actions — mobile uses the in-chat toolbar
-            (Upload / Docs visible, Save & Clear in overflow menu). */}
-        <span className="hidden md:contents">
-          <HeaderIconButton label="Upload document" onClick={onOpenUpload}>
-            <IconUpload />
-          </HeaderIconButton>
-          <HeaderIconButton label="Save chat" onClick={onSaveChat} disabled={!canSave}>
-            <IconDownload />
-          </HeaderIconButton>
-          <HeaderIconButton label="Clear conversation" onClick={onClearChat} disabled={!canClear}>
-            <IconTrash />
-          </HeaderIconButton>
-        </span>
-        <HeaderIconButton label="Guide" onClick={onOpenGuide}>
-          <IconHelp />
-        </HeaderIconButton>
-        <HeaderIconButton label="Settings" onClick={onOpenSettings}>
-          <IconSettings />
         </HeaderIconButton>
         <a
           href="https://github.com/ThomasJButler/Morpheus"
@@ -159,9 +128,6 @@ function HeaderIconButton({
   );
 }
 
-/* Inline icon glyphs — kept local for Phase 1; Phase 4+ may migrate to
-   lucide-react if we adopt it for the sidebar / system panel. */
-
 function IconLibrary() {
   return (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
@@ -174,54 +140,6 @@ function IconActivity() {
   return (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
       <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
-    </svg>
-  );
-}
-
-function IconUpload() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-      <polyline points="17 8 12 3 7 8" />
-      <line x1="12" y1="3" x2="12" y2="15" />
-    </svg>
-  );
-}
-
-function IconDownload() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-      <polyline points="7 10 12 15 17 10" />
-      <line x1="12" y1="15" x2="12" y2="3" />
-    </svg>
-  );
-}
-
-function IconTrash() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-      <polyline points="3 6 5 6 21 6" />
-      <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-    </svg>
-  );
-}
-
-function IconHelp() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-      <circle cx="12" cy="12" r="10" />
-      <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
-      <line x1="12" y1="17" x2="12.01" y2="17" />
-    </svg>
-  );
-}
-
-function IconSettings() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-      <circle cx="12" cy="12" r="3" />
-      <path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1A1.7 1.7 0 0 0 4.6 9a1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z" />
     </svg>
   );
 }

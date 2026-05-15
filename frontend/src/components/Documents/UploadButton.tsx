@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import DocumentUploader from './DocumentUploader';
 import { DocumentUploadResponse } from '@/lib/types';
 
@@ -10,13 +10,6 @@ interface UploadButtonProps {
 
 export default function UploadButton({ onUploadComplete }: UploadButtonProps) {
   const [isOpen, setIsOpen] = useState(false);
-
-  // Allow the header upload icon (desktop) to open the same uploader modal.
-  useEffect(() => {
-    const onOpen = () => setIsOpen(true);
-    window.addEventListener('morpheus:open-upload', onOpen);
-    return () => window.removeEventListener('morpheus:open-upload', onOpen);
-  }, []);
 
   const handleUploadComplete = (response: DocumentUploadResponse) => {
     if (onUploadComplete) {
