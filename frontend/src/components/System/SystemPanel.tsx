@@ -125,7 +125,7 @@ export default function SystemPanel({
         role="tablist"
         aria-label="System panel tabs"
         className="
-          flex items-center gap-1 px-2 py-2 border-b border-edge-subtle
+          flex items-center gap-0.5 px-2 py-2 border-b border-edge-subtle
           overflow-x-auto
           [&::-webkit-scrollbar]:hidden
           [scrollbar-width:none]
@@ -187,8 +187,8 @@ function TabButton({ icon, label, active, glow, onClick }: TabButtonProps) {
       aria-selected={active}
       onClick={onClick}
       className={`
-        inline-flex items-center gap-1.5 flex-shrink-0 whitespace-nowrap
-        px-3 py-2 min-h-[44px] rounded-v2-sm
+        inline-flex items-center gap-1 flex-shrink-0 whitespace-nowrap
+        px-2 py-2 min-h-[44px] rounded-v2-sm
         font-mono text-[11px] tracking-wide
         transition-colors
         ${active
@@ -197,7 +197,7 @@ function TabButton({ icon, label, active, glow, onClick }: TabButtonProps) {
         ${glow ? 'animate-pulse ring-1 ring-accent/40' : ''}
       `}
     >
-      <span className="shrink-0">{icon}</span>
+      <span className="shrink-0 hidden xl:inline-flex">{icon}</span>
       {label}
     </button>
   );
