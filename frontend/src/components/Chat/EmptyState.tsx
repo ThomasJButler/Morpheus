@@ -24,37 +24,30 @@ export default function EmptyState({ onSelectPrompt }: EmptyStateProps) {
       className="flex-1 min-h-0 grid px-4 py-8 overflow-y-auto"
       style={{ alignContent: 'safe center', justifyItems: 'center' }}
     >
-      <div className="max-w-[680px] w-full flex flex-col items-center gap-8 sm:gap-10 text-center">
-        {/* Terminal glyph — Matrix-themed, less generic than the monitor */}
-        <div
-          className="
-            relative w-14 h-14 sm:w-16 sm:h-16
-            rounded-v2-md border border-accent/40
-            bg-surface-card
-            flex items-center justify-center
-            shadow-glow-sm
-          "
-          aria-hidden
-        >
-          <span className="font-mono text-lg sm:text-xl font-bold text-accent leading-none">
-            &gt;_
-          </span>
-          {/* Pulsing dot for "live cursor" — subtle in light, brighter in dark */}
-          <span className="absolute bottom-1 right-1 w-1.5 h-1.5 rounded-full bg-accent animate-pulse" />
-        </div>
-
-        {/* Quote — display weight, decorative quote mark */}
-        <figure className="max-w-md">
-          <span
+      <div className="max-w-[680px] w-full flex flex-col items-center gap-6 sm:gap-7 text-center">
+        {/* Terminal glyph + quote grouped tightly so they read as one unit */}
+        <div className="flex flex-col items-center gap-4">
+          <div
+            className="
+              relative w-14 h-14 sm:w-16 sm:h-16
+              rounded-v2-md border border-accent/40
+              bg-surface-card
+              flex items-center justify-center
+              shadow-glow-sm
+            "
             aria-hidden
-            className="block font-mono text-3xl leading-none text-accent/30 -mb-2"
           >
-            &ldquo;
-          </span>
-          <blockquote className="font-geist text-[15px] sm:text-base text-fg-secondary leading-relaxed">
-            I can only show you the door. You&apos;re the one that has to walk through it.
+            <span className="font-mono text-lg sm:text-xl font-bold text-accent leading-none">
+              &gt;_
+            </span>
+            {/* Pulsing dot for "live cursor" */}
+            <span className="absolute bottom-1 right-1 w-1.5 h-1.5 rounded-full bg-accent animate-pulse" />
+          </div>
+
+          <blockquote className="max-w-md font-geist text-[14px] sm:text-[15px] text-fg-secondary leading-relaxed">
+            &ldquo;I can only show you the door. You&apos;re the one that has to walk through it.&rdquo;
           </blockquote>
-        </figure>
+        </div>
 
         {/* Step cards — bigger numerals, hover lift, dotted connector on desktop */}
         <ol className="hidden sm:grid sm:grid-cols-3 gap-3 w-full text-left relative">

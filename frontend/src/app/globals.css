@@ -171,12 +171,14 @@ html.light {
   --border-strong: oklch(0.35 0.22 145 / 0.32);
   --border-focus: oklch(0.35 0.22 145 / 0.55);
 
-  /* v2 foregrounds — deep ink for readability */
+  /* v2 foregrounds — deep ink for readability. fg-faint/fg-dim bumped from
+     0.75/0.55 to 0.55/0.45 so keyboard hints, timestamps and last-sync
+     labels meet WCAG AA on cream. */
   --fg-primary: oklch(0.12 0.03 145);
   --fg-secondary: oklch(0.25 0.10 145);
   --fg-muted: oklch(0.40 0.06 145);
-  --fg-dim: oklch(0.55 0.04 145);
-  --fg-faint: oklch(0.75 0.02 145);
+  --fg-dim: oklch(0.45 0.05 145);
+  --fg-faint: oklch(0.55 0.03 145);
 
   /* v2 accent — deeper saturated green (portfolio primary) */
   --accent: oklch(0.35 0.22 145);
