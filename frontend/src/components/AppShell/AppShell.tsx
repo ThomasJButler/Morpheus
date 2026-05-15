@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useEffect } from 'react';
 import MatrixRain from '@/components/UI/MatrixRain';
+import { DRAWER_BREAKPOINT_PX } from '@/lib/breakpoints';
 import Header from './Header';
 import Body from './Body';
 import ColdStart from './ColdStart';
@@ -31,7 +32,7 @@ export default function AppShell({ showMatrixRain = false }: AppShellProps) {
   // next resize down. Matches the CSS breakpoint at 920px in globals.css.
   useEffect(() => {
     const onResize = () => {
-      if (window.innerWidth > 920) setDrawer(null);
+      if (window.innerWidth > DRAWER_BREAKPOINT_PX) setDrawer(null);
     };
     window.addEventListener('resize', onResize);
     return () => window.removeEventListener('resize', onResize);
