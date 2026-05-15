@@ -67,6 +67,12 @@ global.ResizeObserver = class ResizeObserver {
   unobserve() {}
 }
 
+// jsdom doesn't implement scrollIntoView — components that auto-scroll
+// (MessageList, chat containers) call it on refs.
+if (typeof Element !== 'undefined' && !Element.prototype.scrollIntoView) {
+  Element.prototype.scrollIntoView = function scrollIntoView() {}
+}
+
 // Suppress console errors in tests (optional)
 const originalError = console.error
 beforeAll(() => {
