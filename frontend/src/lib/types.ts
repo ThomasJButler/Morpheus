@@ -44,6 +44,8 @@ export interface ChatMessage {
   metadata?: {
     processingTime?: number;
     tokensUsed?: number;
+    mode?: RAGMode;
+    chunksRetrieved?: number;
   };
 }
 

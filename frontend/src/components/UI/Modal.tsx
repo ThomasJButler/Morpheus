@@ -150,7 +150,7 @@ export default function Modal({
         onKeyDown={handleKeyDown}
         className={`
           relative w-full ${SIZE_CLASS[size]}
-          max-h-[90vh] flex flex-col
+          max-h-[95vh] flex flex-col
           rounded-v2-lg border border-edge-default bg-surface-elev
           shadow-glow-md
           slide-up-fade

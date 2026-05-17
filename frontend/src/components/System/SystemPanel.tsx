@@ -121,10 +121,16 @@ export default function SystemPanel({
       onTouchMove={swipe.onTouchMove}
       onTouchEnd={swipe.onTouchEnd}
     >
+      <div className="flex items-center border-b border-edge-subtle">
       <nav
         role="tablist"
         aria-label="System panel tabs"
-        className="flex items-center gap-1 px-2 py-2 border-b border-edge-subtle"
+        className="
+          flex-1 flex items-center gap-0.5 px-1.5 py-2
+          overflow-x-auto
+          [&::-webkit-scrollbar]:hidden
+          [scrollbar-width:none]
+        "
       >
         <TabButton
           icon={<IconActivity />}
@@ -146,6 +152,26 @@ export default function SystemPanel({
           onClick={() => selectTab('system')}
         />
       </nav>
+        {/* Desktop-only collapse chevron — points right since this rail
+            collapses to the right edge. Placed after the tablist so the
+            "fold to the right" motion is visually intuitive. */}
+        <button
+          type="button"
+          onClick={() => window.dispatchEvent(new CustomEvent('morpheus:toggle-sys'))}
+          aria-label="Collapse system panel"
+          title="Collapse system panel"
+          className="
+            hidden md:inline-flex items-center justify-center
+            flex-shrink-0 w-7 h-9 mr-1
+            text-fg-muted hover:text-accent hover:bg-surface-card-hover rounded
+            transition-colors
+          "
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+            <polyline points="9 18 15 12 9 6" />
+          </svg>
+        </button>
+      </div>
 
       <div
         className={`
@@ -182,8 +208,8 @@ function TabButton({ icon, label, active, glow, onClick }: TabButtonProps) {
       aria-selected={active}
       onClick={onClick}
       className={`
-        inline-flex items-center gap-1.5
-        px-3 py-2 min-h-[44px] rounded-v2-sm
+        inline-flex items-center gap-1 flex-shrink-0 whitespace-nowrap
+        px-1.5 py-2 min-h-[44px] rounded-v2-sm
         font-mono text-[11px] tracking-wide
         transition-colors
         ${active
@@ -192,7 +218,7 @@ function TabButton({ icon, label, active, glow, onClick }: TabButtonProps) {
         ${glow ? 'animate-pulse ring-1 ring-accent/40' : ''}
       `}
     >
-      <span className="shrink-0">{icon}</span>
+      <span className="shrink-0 hidden xl:inline-flex">{icon}</span>
       {label}
     </button>
   );

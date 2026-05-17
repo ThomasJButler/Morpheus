@@ -1,6 +1,8 @@
 import type { Config } from 'tailwindcss'
+import plugin from 'tailwindcss/plugin'
 
 const config: Config = {
+  darkMode: 'class',
   content: [
     './src/pages/**/*.{js,ts,jsx,tsx,mdx}',
     './src/components/**/*.{js,ts,jsx,tsx,mdx}',
@@ -9,16 +11,20 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
+        // Legacy matrix-* names — wired through OKLch channel triplets so
+        // Tailwind's `/X` alpha modifiers compile (e.g. border-matrix-green/50).
+        // The triplets live in CSS vars and switch with the html.light/.dark
+        // class, so theme-aware colour + alpha modifier both work.
         matrix: {
-          black: '#0a0a0a',
-          green: '#00ff00',
-          'green-dim': '#00cc00',
-          cyan: '#00ffff',
-          white: '#e0e0e0',
+          black: 'oklch(var(--matrix-black-channels) / <alpha-value>)',
+          green: 'oklch(var(--matrix-green-channels) / <alpha-value>)',
+          'green-dim': 'oklch(var(--matrix-green-dim-channels) / <alpha-value>)',
+          cyan: 'oklch(var(--matrix-cyan-channels) / <alpha-value>)',
+          white: 'oklch(var(--matrix-white-channels) / <alpha-value>)',
         },
         glass: {
-          bg: 'rgba(0, 255, 0, 0.03)',
-          border: 'rgba(0, 255, 0, 0.2)',
+          bg: 'var(--glass-bg)',
+          border: 'var(--glass-border)',
         },
 
         // ===== v2 redesign tokens (REDESIGN_V2) =====
@@ -127,7 +133,15 @@ const config: Config = {
       },
     },
   },
-  plugins: [],
+  plugins: [
+    // `light:` variant — mirrors Tailwind's built-in `dark:` but for the
+    // explicit `html.light` class set by ThemeProvider. Use for the rare
+    // case where a value differs *only* in light mode beyond what CSS-var
+    // tokens already cover.
+    plugin(({ addVariant }) => {
+      addVariant('light', 'html.light &');
+    }),
+  ],
 }
 
 export default config

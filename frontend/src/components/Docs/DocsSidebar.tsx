@@ -101,6 +101,24 @@ export default function DocsSidebar({
             {count}
           </span>
         </div>
+        {/* Desktop-only collapse chevron — discoverable in-column toggle.
+            Mobile uses the drawer scrim/swipe-close instead. */}
+        <button
+          type="button"
+          onClick={() => window.dispatchEvent(new CustomEvent('morpheus:toggle-docs'))}
+          aria-label="Collapse constructs"
+          title="Collapse constructs"
+          className="
+            hidden md:inline-flex items-center justify-center
+            w-6 h-6 rounded
+            text-fg-muted hover:text-accent hover:bg-surface-card-hover
+            transition-colors
+          "
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+            <polyline points="15 18 9 12 15 6" />
+          </svg>
+        </button>
       </header>
 
       <div className="px-3 pt-3">
@@ -140,17 +158,22 @@ export default function DocsSidebar({
         )}
 
         {!isLoading && !error && docs.length === 0 && (
-          <div className="flex flex-col items-center gap-2 px-2 py-8 text-center">
+          <div className="flex flex-col items-center gap-2.5 px-2 py-8 text-center">
             <span
               aria-hidden
-              className="w-9 h-9 rounded-v2-md border border-edge-subtle inline-flex items-center justify-center text-fg-muted"
+              className="
+                w-10 h-10 rounded-v2-md
+                border border-dashed border-accent/40
+                bg-accent/5
+                inline-flex items-center justify-center text-accent/80
+              "
             >
               <FilePlusIcon />
             </span>
-            <p className="m-0 font-mono text-[11.5px] text-fg-muted">
+            <p className="m-0 font-mono text-[11.5px] text-fg-secondary">
               The construct is empty.
             </p>
-            <p className="m-0 text-[11px] text-fg-faint">
+            <p className="m-0 text-[11px] text-fg-muted">
               Upload a document to begin.
             </p>
           </div>

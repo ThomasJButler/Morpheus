@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useEffect } from 'react';
 import MatrixRain from '@/components/UI/MatrixRain';
+import { DRAWER_BREAKPOINT_PX } from '@/lib/breakpoints';
 import Header from './Header';
 import Body from './Body';
 import ColdStart from './ColdStart';
@@ -15,23 +16,59 @@ type MobileDrawer = 'docs' | 'sys' | null;
 
 export default function AppShell({ showMatrixRain = false }: AppShellProps) {
   const [drawer, setDrawer] = useState<MobileDrawer>(null);
+  // Desktop-only: persistent collapse state for the two rails. Below the
+  // drawer breakpoint we rely on `drawer` (slide-over pattern); above it
+  // these flags drive --rail-w-docs/--rail-w-sys to fold the column flush.
+  const [docsCollapsed, setDocsCollapsed] = useState(false);
+  const [sysCollapsed, setSysCollapsed] = useState(false);
+
+  const isDesktop = () =>
+    typeof window !== 'undefined' && window.innerWidth > DRAWER_BREAKPOINT_PX;
 
   const closeDrawer = useCallback(() => setDrawer(null), []);
-  const toggleDocs = useCallback(
-    () => setDrawer((d) => (d === 'docs' ? null : 'docs')),
-    [],
-  );
-  const toggleSys = useCallback(
-    () => setDrawer((d) => (d === 'sys' ? null : 'sys')),
-    [],
-  );
+  const toggleDocs = useCallback(() => {
+    if (isDesktop()) {
+      setDocsCollapsed((c) => !c);
+    } else {
+      setDrawer((d) => (d === 'docs' ? null : 'docs'));
+    }
+  }, []);
+  const toggleSys = useCallback(() => {
+    if (isDesktop()) {
+      setSysCollapsed((c) => !c);
+    } else {
+      setDrawer((d) => (d === 'sys' ? null : 'sys'));
+    }
+  }, []);
+
+  // Write the per-rail width vars onto .app-shell so the grid responds.
+  useEffect(() => {
+    const el = document.querySelector<HTMLElement>('.app-shell');
+    if (!el) return;
+    el.style.setProperty('--rail-w-docs', docsCollapsed ? '0px' : 'var(--rail-w)');
+    el.style.setProperty('--rail-w-sys', sysCollapsed ? '0px' : 'var(--rail-w)');
+  }, [docsCollapsed, sysCollapsed]);
+
+  // The rail headers also need to be able to toggle collapse from inside the
+  // rail (more discoverable than the header icons alone). Same CustomEvent
+  // pattern — DocsSidebar / SystemPanel dispatch, AppShell listens.
+  useEffect(() => {
+    const onDocs = () => toggleDocs();
+    const onSys = () => toggleSys();
+    window.addEventListener('morpheus:toggle-docs', onDocs);
+    window.addEventListener('morpheus:toggle-sys', onSys);
+    return () => {
+      window.removeEventListener('morpheus:toggle-docs', onDocs);
+      window.removeEventListener('morpheus:toggle-sys', onSys);
+    };
+  }, [toggleDocs, toggleSys]);
 
   // Close any open drawer when the viewport grows past the mobile breakpoint;
   // otherwise the drawer state stays "open" silently and re-appears on the
   // next resize down. Matches the CSS breakpoint at 920px in globals.css.
   useEffect(() => {
     const onResize = () => {
-      if (window.innerWidth > 920) setDrawer(null);
+      if (window.innerWidth > DRAWER_BREAKPOINT_PX) setDrawer(null);
     };
     window.addEventListener('resize', onResize);
     return () => window.removeEventListener('resize', onResize);
@@ -70,8 +107,8 @@ export default function AppShell({ showMatrixRain = false }: AppShellProps) {
       <Header
         onToggleDocs={toggleDocs}
         onToggleSys={toggleSys}
-        docsOpen={drawer === 'docs'}
-        sysOpen={drawer === 'sys'}
+        docsOpen={drawer === 'docs' || (!docsCollapsed && typeof window !== 'undefined' && window.innerWidth > DRAWER_BREAKPOINT_PX)}
+        sysOpen={drawer === 'sys' || (!sysCollapsed && typeof window !== 'undefined' && window.innerWidth > DRAWER_BREAKPOINT_PX)}
       />
       <Body
         docsMobileOpen={drawer === 'docs'}

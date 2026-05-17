@@ -4,7 +4,7 @@
 @tailwind utilities;
 
 :root {
-  /* Matrix Theme Colors */
+  /* Matrix theme colours — full values (for direct CSS use) */
   --matrix-black: #0a0a0a;
   --matrix-green: #00ff00;
   --matrix-green-dim: #00cc00;
@@ -12,6 +12,16 @@
   --matrix-white: #e0e0e0;
   --glass-bg: rgba(0, 255, 0, 0.03);
   --glass-border: rgba(0, 255, 0, 0.2);
+
+  /* Matrix theme — OKLch channel triplets for Tailwind alpha modifiers.
+     Used as `oklch(var(--matrix-X-channels) / <alpha-value>)` so classes
+     like `border-matrix-green/50` compile. Channels are L C H,
+     space-separated, no commas. */
+  --matrix-black-channels: 0.10 0.005 145;
+  --matrix-green-channels: 0.866 0.295 142;
+  --matrix-green-dim-channels: 0.72 0.25 142;
+  --matrix-cyan-channels: 0.88 0.16 196;
+  --matrix-white-channels: 0.91 0 0;
 
   /* Animation speeds */
   --transition-fast: 150ms;
@@ -121,6 +131,92 @@
 [data-accent="amber"]  { --accent-h: 80; }
 [data-accent="cyan"]   { --accent-h: 190; }
 
+/* ============================================================== */
+/* Light theme — "Circuit Board Schematic"                         */
+/* Ported from thomasjbutler.github.io/src/app.css :root block.    */
+/* Activated via <html class="light"> by ThemeProvider; default is */
+/* dark (the :root above). Same OKLch hue 145 preserves identity.  */
+/* ============================================================== */
+html.light {
+  /* Legacy matrix-* — re-pointed to light values so any component
+     still painting with matrix-black/green doesn't break visually. */
+  --matrix-black: oklch(0.985 0.002 145);
+  --matrix-green: oklch(0.35 0.22 145);
+  --matrix-green-dim: oklch(0.50 0.18 145);
+  --matrix-cyan: oklch(0.45 0.12 195);
+  --matrix-white: oklch(0.18 0.04 145);
+  --glass-bg: oklch(1 0 0 / 0.85);
+  --glass-border: oklch(0.35 0.22 145 / 0.18);
+
+  /* Channel triplets for Tailwind alpha modifiers (border-matrix-green/50). */
+  --matrix-black-channels: 0.985 0.002 145;
+  --matrix-green-channels: 0.35 0.22 145;
+  --matrix-green-dim-channels: 0.50 0.18 145;
+  --matrix-cyan-channels: 0.45 0.12 195;
+  --matrix-white-channels: 0.18 0.04 145;
+
+  /* v2 backgrounds — warm cream with green tint */
+  --bg-base: oklch(0.985 0.002 145);
+  --bg-elev: oklch(0.99 0.002 145);
+  --bg-panel: oklch(0.97 0.005 145);
+  --bg-input: oklch(1 0 0);
+  --bg-card: oklch(1 0 0 / 0.90);
+  --bg-card-hover: oklch(0.96 0.012 145 / 0.95);
+  --bg-overlay: oklch(0.18 0.03 145 / 0.30);
+
+  /* v2 borders — green-tinted on cream */
+  --border-faint: oklch(0.35 0.22 145 / 0.06);
+  --border-subtle: oklch(0.35 0.22 145 / 0.10);
+  --border-default: oklch(0.35 0.22 145 / 0.18);
+  --border-strong: oklch(0.35 0.22 145 / 0.32);
+  --border-focus: oklch(0.35 0.22 145 / 0.55);
+
+  /* v2 foregrounds — deep ink for readability. fg-faint/fg-dim bumped from
+     0.75/0.55 to 0.55/0.45 so keyboard hints, timestamps and last-sync
+     labels meet WCAG AA on cream. */
+  --fg-primary: oklch(0.12 0.03 145);
+  --fg-secondary: oklch(0.25 0.10 145);
+  --fg-muted: oklch(0.40 0.06 145);
+  --fg-dim: oklch(0.45 0.05 145);
+  --fg-faint: oklch(0.55 0.03 145);
+
+  /* v2 accent — deeper saturated green (portfolio primary) */
+  --accent: oklch(0.35 0.22 145);
+  --accent-bright: oklch(0.30 0.24 145);
+  --accent-dim: oklch(0.50 0.18 145);
+  --accent-faint: oklch(0.70 0.10 145);
+
+  /* v2 mode palette — darken cyan/amber for AA contrast on cream */
+  --v2-cyan: oklch(0.45 0.14 195);
+  --v2-cyan-dim: oklch(0.55 0.10 195);
+  --v2-amber: oklch(0.55 0.16 85);
+  --v2-amber-dim: oklch(0.65 0.10 85);
+  --v2-purple: oklch(0.45 0.20 295);
+  --v2-red: oklch(0.50 0.22 25);
+  --v2-red-dim: oklch(0.60 0.16 25);
+
+  /* v2 glows — tone way down on light; near-imperceptible halos */
+  --glow-sm: 0 0 12px oklch(0.35 0.22 145 / 0.06);
+  --glow-md: 0 0 24px oklch(0.35 0.22 145 / 0.10);
+  --glow-lg: 0 0 40px oklch(0.35 0.22 145 / 0.14);
+}
+
+/* Light theme — subtle 32px circuit-board grid background */
+html.light body {
+  background-image:
+    linear-gradient(oklch(0.35 0.22 145 / 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, oklch(0.35 0.22 145 / 0.05) 1px, transparent 1px);
+  background-size: 32px 32px;
+  background-position: center;
+}
+
+/* Light theme — faint green text-shadow on headings (portfolio look) */
+html.light h1,
+html.light h2,
+html.light h3 {
+  text-shadow: 0 0 30px oklch(0.40 0.22 145 / 0.06);
+}
+
 /* v2 density — compact tightens spacing and header height */
 [data-density="compact"] {
   --v2-space-3: 8px;
@@ -157,8 +253,15 @@ html.redesign-v2 body {
 
 .app-body {
   display: grid;
-  grid-template-columns: var(--rail-w) 1fr var(--rail-w);
+  /* Per-side overrides let the header library/activity toggles collapse
+     just one rail at desktop. AppShell sets --rail-w-docs / --rail-w-sys
+     to 0 when the corresponding rail is collapsed. Fallback to --rail-w. */
+  grid-template-columns:
+    var(--rail-w-docs, var(--rail-w))
+    1fr
+    var(--rail-w-sys, var(--rail-w));
   min-height: 0; /* CRITICAL — lets centre column shrink */
+  transition: grid-template-columns 200ms ease;
 }
 
 .docs-rail,
@@ -336,10 +439,12 @@ html.redesign-v2 body {
     51%, 100% { opacity: 0; }
   }
 
-  /* Matrix Button - Enhanced with micro-interactions */
+  /* Matrix Button - Enhanced with micro-interactions.
+     Primary action: filled accent so it dominates the dialog footer,
+     reading as the intended next step before the secondary (Cancel). */
   .matrix-button {
     @apply px-4 py-2 rounded-md font-mono text-sm font-medium;
-    @apply bg-glass-bg border border-glass-border text-matrix-green;
+    @apply bg-matrix-green/15 border border-matrix-green/60 text-matrix-green;
     transition: all var(--transition-normal) ease;
     transform-origin: center;
   }
@@ -807,18 +912,22 @@ html.redesign-v2 body {
   .matrix-tab {
     @apply relative flex-1 px-4 py-3 rounded-lg font-mono text-sm font-medium;
     @apply text-matrix-white/60 transition-all duration-[250ms];
-    @apply border-2 border-transparent;
+    /* Inactive baseline: subtle border so all options in a segmented control
+       are equally discoverable; only the active one gets the full accent. */
+    @apply border border-matrix-green/15;
   }
 
   .matrix-tab:hover:not([data-state="active"]) {
-    @apply text-matrix-green/80 bg-matrix-green/5;
+    @apply text-matrix-green/80 bg-matrix-green/5 border-matrix-green/30;
   }
 
   .matrix-tab[data-state="active"] {
     @apply text-matrix-green bg-matrix-green/10;
-    @apply border-matrix-green;
-    text-shadow: 0 0 10px rgba(0, 255, 0, 0.5);
-    box-shadow: 0 0 15px rgba(0, 255, 0, 0.2);
+    @apply border-matrix-green/60;
+    /* Softer than full neon — was 0.5/0.2, now 0.25/0.10 so three side-by-side
+       options don't compete for attention. */
+    text-shadow: 0 0 8px oklch(var(--matrix-green-channels) / 0.25);
+    box-shadow: 0 0 12px oklch(var(--matrix-green-channels) / 0.10);
   }
 
   /* Focus Matrix - Consistent focus states */

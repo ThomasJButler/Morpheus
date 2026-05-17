@@ -90,6 +90,14 @@ export default function ChatMessage({ message, index = 0 }: ChatMessageProps) {
 
         {/* Metric chips */}
         <div className="flex items-center gap-1.5 ml-auto text-[10px] font-mono text-fg-muted">
+          {!isUser && message.metadata?.mode && (
+            <span
+              className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full border border-mode-cyan/30 bg-mode-cyan/5 text-mode-cyan uppercase tracking-wider"
+              title="RAG mode"
+            >
+              {message.metadata.mode}
+            </span>
+          )}
           {message.confidence != null && (
             <span
               className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full border border-edge-subtle bg-surface-card"
@@ -107,6 +115,14 @@ export default function ChatMessage({ message, index = 0 }: ChatMessageProps) {
               {message.metadata.processingTime}ms
             </span>
           )}
+          {!isUser && (message.metadata?.chunksRetrieved != null || message.citations?.length) ? (
+            <span
+              className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full border border-edge-subtle bg-surface-card"
+              title="Retrieved chunks"
+            >
+              {message.metadata?.chunksRetrieved ?? message.citations?.length} chunks
+            </span>
+          ) : null}
           {message.timestamp && (
             <time
               className="hidden sm:inline tabular-nums text-fg-faint"
@@ -142,7 +158,7 @@ export default function ChatMessage({ message, index = 0 }: ChatMessageProps) {
         className={`
           font-geist text-sm sm:text-[15px] leading-relaxed
           text-fg-primary break-words overflow-wrap-anywhere
-          ${isUser ? '' : 'border-l-2 border-accent/40 pl-3'}
+          ${isUser ? '' : 'border-l-2 border-accent/40 light:border-accent/70 pl-3'}
         `}
       >
         {message.content ? (

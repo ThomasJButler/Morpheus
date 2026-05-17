@@ -9,10 +9,11 @@ interface HeaderProps {
 
 /**
  * v2 AppShell header — sticky, compact, 56px tall.
- * Phase 7 wires the docs / system toggle buttons to drawer state owned by
- * AppShell. Settings stays disabled here — it's owned by ChatInterface's
- * toolbar (Phase 6). aria-controls + aria-expanded reflect the live drawer
- * state so assistive tech announces it correctly.
+ *
+ * Carries only the rail toggles + GitHub link. Chat actions (Upload, Save,
+ * Clear, Guide, Settings) live in the chat toolbar where users see them
+ * alongside the Claude/GPT chip and live status — moving them up here had
+ * pushed the cluster off-screen at narrower desktop widths.
  */
 export default function Header({
   onToggleDocs,
@@ -31,21 +32,18 @@ export default function Header({
       "
       style={{ height: 'var(--header-h)' }}
     >
-      {/* Brand */}
-      <div className="flex items-center gap-3 min-w-0">
-        <span
-          className="font-mono text-base sm:text-lg font-bold tracking-wide text-accent"
-          aria-label="Morpheus"
-        >
+      {/* Brand — stacked: name over tagline, visible at all widths */}
+      <div className="flex flex-col leading-tight min-w-0" aria-label="Morpheus · AI Document Intelligence">
+        <span className="font-mono text-base sm:text-lg font-bold tracking-wide text-accent">
           MORPHEUS
         </span>
-        <span className="hidden sm:inline text-edge-strong">·</span>
-        <span className="hidden sm:inline font-geist text-xs uppercase tracking-[0.18em] text-fg-muted truncate">
-          AI-powered Document Intelligence
+        <span className="font-geist text-[10px] sm:text-[11px] uppercase tracking-[0.18em] text-fg-muted truncate">
+          AI · Document Intelligence
         </span>
       </div>
 
-      {/* Action cluster */}
+      {/* Action cluster — only nav + external link. Chat actions live in
+          the chat toolbar so the header doesn't overflow narrow desktops. */}
       <div className="flex items-center gap-1.5">
         <HeaderIconButton
           label={docsOpen ? 'Close constructs' : 'Open constructs'}
@@ -64,9 +62,6 @@ export default function Header({
           active={sysOpen}
         >
           <IconActivity />
-        </HeaderIconButton>
-        <HeaderIconButton label="Settings" disabled title="Settings — open via chat toolbar">
-          <IconSettings />
         </HeaderIconButton>
         <a
           href="https://github.com/ThomasJButler/Morpheus"
@@ -124,7 +119,7 @@ function HeaderIconButton({
         border transition-colors
         ${active
           ? 'border-accent/50 text-accent bg-accent/10'
-          : 'border-transparent text-fg-muted hover:text-accent hover:bg-surface-card-hover'}
+          : 'border-edge-subtle text-fg-muted hover:text-accent hover:border-accent/50 hover:bg-surface-card-hover'}
         disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:text-fg-muted disabled:hover:bg-transparent
       `}
     >
@@ -132,9 +127,6 @@ function HeaderIconButton({
     </button>
   );
 }
-
-/* Inline icon glyphs — kept local for Phase 1; Phase 4+ may migrate to
-   lucide-react if we adopt it for the sidebar / system panel. */
 
 function IconLibrary() {
   return (
@@ -148,15 +140,6 @@ function IconActivity() {
   return (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
       <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
-    </svg>
-  );
-}
-
-function IconSettings() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-      <circle cx="12" cy="12" r="3" />
-      <path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1A1.7 1.7 0 0 0 4.6 9a1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z" />
     </svg>
   );
 }

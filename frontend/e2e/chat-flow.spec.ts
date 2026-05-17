@@ -1,208 +1,103 @@
-import { test, expect } from '@playwright/test'
+import { test, expect, type Page } from '@playwright/test'
 
-test.describe('Morpheus Chat Flow', () => {
+/**
+ * E2E coverage for the v2 redesign shell.
+ *
+ * These tests run WITHOUT a backend — CI has no API server, so anything
+ * that needs a live `/api/*` response (sending a message, retrieval,
+ * streaming, citations) is intentionally out of scope here. They cover
+ * the chrome, empty state, theme switching and composer wiring, all of
+ * which render purely client-side.
+ *
+ * The dev server boots with NEXT_PUBLIC_REDESIGN_V2=true (see
+ * playwright.config.ts webServer.env) so page.tsx renders <AppShell>.
+ */
+
+// page.tsx shows a loading splash until React mounts. On a cold dev
+// server the first compile + hydrate can take well over the default
+// 5s assertion window — wait for a post-splash element explicitly.
+async function waitForAppShell(page: Page) {
+  await expect(page.getByRole('textbox', { name: /chat input/i })).toBeVisible(
+    { timeout: 30_000 },
+  )
+}
+
+test.describe('Morpheus shell', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/')
+    await waitForAppShell(page)
   })
 
-  test('displays welcome screen', async ({ page }) => {
-    await expect(page.getByText(/Welcome to Morpheus/i)).toBeVisible()
-    await expect(page.getByText(/blue pill/i)).toBeVisible()
-    await expect(page.getByText(/red pill/i)).toBeVisible()
+  test('renders the header brand', async ({ page }) => {
+    await expect(page.getByText('MORPHEUS', { exact: true })).toBeVisible()
+    await expect(page.getByText(/AI · Document Intelligence/i)).toBeVisible()
   })
 
-  test('allows pill selection', async ({ page }) => {
-    // Select blue pill
-    await page.click('[data-testid="blue-pill"]')
-    await expect(page.getByText(/factual mode/i)).toBeVisible()
-
-    // Select red pill
-    await page.click('[data-testid="red-pill"]')
-    await expect(page.getByText(/creative mode/i)).toBeVisible()
+  test('renders the welcome / empty state', async ({ page }) => {
+    await expect(page.getByRole('region', { name: /welcome/i })).toBeVisible()
+    await expect(
+      page.getByText(/I can only show you the door/i),
+    ).toBeVisible()
+    await expect(page.getByText(/quick prompts/i)).toBeVisible()
   })
 
-  test('sends and receives messages', async ({ page }) => {
-    // Wait for chat interface
-    await page.waitForSelector('[data-testid="chat-interface"]')
-
-    // Type message
-    const input = page.getByPlaceholderText(/ask morpheus/i)
-    await input.fill('What is the Matrix?')
-
-    // Send message
-    await page.click('button:has-text("Send")')
-
-    // Verify user message appears
-    await expect(page.getByText('What is the Matrix?')).toBeVisible()
-
-    // Wait for assistant response
-    await expect(page.getByTestId('assistant-message')).toBeVisible({
-      timeout: 10000,
-    })
+  test('composer is focusable via Cmd+K', async ({ page }) => {
+    const input = page.getByRole('textbox', { name: /chat input/i })
+    await page.keyboard.press('ControlOrMeta+k')
+    await expect(input).toBeFocused()
   })
 
-  test('switches between RAG modes', async ({ page }) => {
-    await page.waitForSelector('[data-testid="mode-selector"]')
-
-    // Test simple mode
-    await page.selectOption('[data-testid="mode-selector"]', 'simple')
-    await expect(page.getByText(/semantic search/i)).toBeVisible()
-
-    // Test hybrid mode
-    await page.selectOption('[data-testid="mode-selector"]', 'hybrid')
-    await expect(page.getByText(/cascading retrieval/i)).toBeVisible()
-
-    // Test agentic mode
-    await page.selectOption('[data-testid="mode-selector"]', 'agentic')
-    await expect(page.getByText(/agentic reasoning/i)).toBeVisible()
+  test('quick prompt fills the composer', async ({ page }) => {
+    await page
+      .getByRole('button', { name: /what is this document about/i })
+      .click()
+    await expect(
+      page.getByRole('textbox', { name: /chat input/i }),
+    ).toHaveValue(/what is this document about/i)
   })
 
-  test('displays citations in responses', async ({ page }) => {
-    await page.waitForSelector('[data-testid="chat-interface"]')
+  test('system panel tabs switch', async ({ page }) => {
+    const sources = page.getByRole('tab', { name: /sources/i })
+    await sources.click()
+    await expect(sources).toHaveAttribute('aria-selected', 'true')
 
-    // Send query
-    const input = page.getByPlaceholderText(/ask morpheus/i)
-    await input.fill('Test query')
-    await page.click('button:has-text("Send")')
-
-    // Wait for response with citations
-    await page.waitForSelector('[data-testid="citation"]', { timeout: 10000 })
-
-    // Verify citation details
-    const citation = page.locator('[data-testid="citation"]').first()
-    await expect(citation).toContainText(/source/i)
-    await expect(citation).toContainText(/page/i)
+    const status = page.getByRole('tab', { name: /status/i })
+    await status.click()
+    await expect(status).toHaveAttribute('aria-selected', 'true')
   })
 
-  test('shows streaming response', async ({ page }) => {
-    await page.waitForSelector('[data-testid="chat-interface"]')
+  test('settings modal opens and theme toggle switches theme', async ({ page }) => {
+    await page
+      .getByRole('button', { name: 'Open settings', exact: true })
+      .click()
 
-    const input = page.getByPlaceholderText(/ask morpheus/i)
-    await input.fill('Tell me a story')
-    await page.click('button:has-text("Send")')
+    const dialog = page.getByRole('dialog', { name: /settings/i })
+    await expect(dialog).toBeVisible()
 
-    // Verify streaming indicator appears
-    await expect(page.getByTestId('streaming-indicator')).toBeVisible()
+    await dialog.getByRole('button', { name: 'light', exact: true }).click()
+    await expect(page.locator('html')).toHaveClass(/light/)
 
-    // Wait for streaming to complete
-    await expect(page.getByTestId('streaming-indicator')).not.toBeVisible({
-      timeout: 15000,
-    })
-  })
-
-  test('handles errors gracefully', async ({ page }) => {
-    // Mock API error
-    await page.route('**/api/chat', (route) => {
-      route.abort('failed')
-    })
-
-    await page.waitForSelector('[data-testid="chat-interface"]')
-
-    const input = page.getByPlaceholderText(/ask morpheus/i)
-    await input.fill('Test error')
-    await page.click('button:has-text("Send")')
-
-    // Verify error message
-    await expect(page.getByText(/error/i)).toBeVisible({ timeout: 5000 })
-    await expect(page.getByText(/try again/i)).toBeVisible()
-  })
-
-  test('persists conversation history', async ({ page }) => {
-    await page.waitForSelector('[data-testid="chat-interface"]')
-
-    // Send first message
-    const input = page.getByPlaceholderText(/ask morpheus/i)
-    await input.fill('First message')
-    await page.click('button:has-text("Send")')
-    await page.waitForTimeout(1000)
-
-    // Send second message
-    await input.fill('Second message')
-    await page.click('button:has-text("Send")')
-    await page.waitForTimeout(1000)
-
-    // Verify both messages are visible
-    await expect(page.getByText('First message')).toBeVisible()
-    await expect(page.getByText('Second message')).toBeVisible()
-
-    // Reload page
-    await page.reload()
-
-    // Verify messages persist
-    await expect(page.getByText('First message')).toBeVisible()
-    await expect(page.getByText('Second message')).toBeVisible()
-  })
-
-  test('displays metrics when enabled', async ({ page }) => {
-    await page.waitForSelector('[data-testid="chat-interface"]')
-
-    // Open metrics panel
-    await page.click('[data-testid="metrics-toggle"]')
-
-    // Verify metrics are visible
-    await expect(page.getByText(/retrieval time/i)).toBeVisible()
-    await expect(page.getByText(/relevance score/i)).toBeVisible()
-    await expect(page.getByText(/tokens used/i)).toBeVisible()
-  })
-
-  test('Matrix rain animation can be toggled', async ({ page }) => {
-    // Toggle Matrix rain off
-    await page.click('[data-testid="settings-button"]')
-    await page.click('[data-testid="matrix-rain-toggle"]')
-
-    // Verify animation stopped
-    await expect(page.locator('.matrix-rain')).not.toBeVisible()
-
-    // Toggle back on
-    await page.click('[data-testid="matrix-rain-toggle"]')
-    await expect(page.locator('.matrix-rain')).toBeVisible()
+    await dialog.getByRole('button', { name: 'dark', exact: true }).click()
+    await expect(page.locator('html')).toHaveClass(/dark/)
   })
 })
 
-test.describe('Mobile responsiveness', () => {
-  test.use({ viewport: { width: 375, height: 667 } })
+test.describe('Mobile shell', () => {
+  test.use({ viewport: { width: 390, height: 844 } })
 
-  test('chat interface works on mobile', async ({ page }) => {
+  test('header and composer render on a phone viewport', async ({ page }) => {
     await page.goto('/')
-
-    // Verify mobile layout
-    await expect(page.getByTestId('chat-interface')).toBeVisible()
-
-    // Test input
-    const input = page.getByPlaceholderText(/ask morpheus/i)
-    await input.fill('Mobile test')
-    await page.click('button:has-text("Send")')
-
-    // Verify message appears
-    await expect(page.getByText('Mobile test')).toBeVisible()
+    await waitForAppShell(page)
+    await expect(page.getByText('MORPHEUS', { exact: true })).toBeVisible()
   })
 })
 
 test.describe('Accessibility', () => {
-  test('keyboard navigation works', async ({ page }) => {
+  test('composer and send button expose ARIA labels', async ({ page }) => {
     await page.goto('/')
-
-    // Tab through elements
-    await page.keyboard.press('Tab')
-    await page.keyboard.press('Tab')
-
-    // Verify focus is on input
-    const input = page.getByPlaceholderText(/ask morpheus/i)
-    await expect(input).toBeFocused()
-
-    // Type and send with Enter
-    await page.keyboard.type('Keyboard test')
-    await page.keyboard.press('Enter')
-
-    await expect(page.getByText('Keyboard test')).toBeVisible()
-  })
-
-  test('has proper ARIA labels', async ({ page }) => {
-    await page.goto('/')
-
-    // Check for ARIA labels
-    await expect(page.locator('[aria-label="Chat messages"]')).toBeVisible()
-    await expect(page.locator('[aria-label="Message input"]')).toBeVisible()
-    await expect(page.locator('[aria-label="Send message"]')).toBeVisible()
+    await waitForAppShell(page)
+    await expect(
+      page.getByRole('button', { name: /send message/i }),
+    ).toBeVisible()
   })
 })

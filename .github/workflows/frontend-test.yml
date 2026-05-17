@@ -81,6 +81,7 @@ jobs:
         working-directory: ./frontend
         env:
           NEXT_PUBLIC_API_URL: http://localhost:8000
+          NEXT_PUBLIC_REDESIGN_V2: 'true'
         run: npm run test:e2e
 
       - name: Upload test results

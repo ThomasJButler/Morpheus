@@ -19,7 +19,7 @@ describe('APIClient', () => {
       const result = await apiClient.health();
 
       expect(result).toEqual({ status: 'healthy' });
-      expect(mockFetch).toHaveBeenCalledWith(expect.stringContaining('/api/health'));
+      expect(mockFetch).toHaveBeenCalledWith(expect.stringContaining('/api/health'), expect.anything());
     });
 
     it('throws error on failure', async () => {
@@ -46,7 +46,7 @@ describe('APIClient', () => {
 
       const request = {
         message: 'Test message',
-        mode: 'simple' as const,
+        rag_mode: 'simple' as const,
         session_id: 'test-session',
       };
 
@@ -69,7 +69,7 @@ describe('APIClient', () => {
         text: () => Promise.resolve('Server error'),
       });
 
-      await expect(apiClient.chat({ message: 'test', mode: 'simple' }))
+      await expect(apiClient.chat({ message: 'test', rag_mode: 'simple' }))
         .rejects.toThrow('Chat request failed: Server error');
     });
   });
@@ -131,7 +131,7 @@ describe('APIClient', () => {
       const result = await apiClient.getDocumentStats();
 
       expect(result).toEqual(mockStats);
-      expect(mockFetch).toHaveBeenCalledWith(expect.stringContaining('/api/documents/stats'));
+      expect(mockFetch).toHaveBeenCalledWith(expect.stringContaining('/api/documents/stats'), expect.anything());
     });
 
     it('throws error on failure', async () => {
@@ -157,7 +157,7 @@ describe('APIClient', () => {
       const result = await apiClient.getPerformance();
 
       expect(result).toEqual(mockPerformance);
-      expect(mockFetch).toHaveBeenCalledWith(expect.stringContaining('/api/metrics/performance'));
+      expect(mockFetch).toHaveBeenCalledWith(expect.stringContaining('/api/metrics/performance'), expect.anything());
     });
 
     it('throws error on failure', async () => {
@@ -192,7 +192,7 @@ describe('APIClient', () => {
       });
 
       const abort = apiClient.streamChat(
-        { message: 'Hello', mode: 'simple' },
+        { message: 'Hello', rag_mode: 'simple' },
         onChunk,
         onError,
         onComplete
@@ -222,7 +222,7 @@ describe('APIClient', () => {
       });
 
       apiClient.streamChat(
-        { message: 'Hello', mode: 'simple' },
+        { message: 'Hello', rag_mode: 'simple' },
         onChunk,
         onError,
         onComplete
@@ -241,7 +241,7 @@ describe('APIClient', () => {
       });
 
       const abort = apiClient.streamChat(
-        { message: 'Hello', mode: 'simple' },
+        { message: 'Hello', rag_mode: 'simple' },
         jest.fn(),
         jest.fn(),
         jest.fn()
