@@ -1,0 +1,16 @@
+version: 2
+updates:
+  - package-ecosystem: "npm"
+    directory: "/frontend"
+    schedule:
+      interval: "weekly"
+    groups:
+      npm_and_yarn:
+        patterns:
+          - "*"
+    ignore:
+      # Stay on AI SDK v4 — v5/v6 are breaking majors (ai/react moved to
+      # @ai-sdk/react, toDataStreamResponse renamed). Allow v4 minor/patch.
+      - dependency-name: "ai"
+        update-types:
+          - "version-update:semver-major"
