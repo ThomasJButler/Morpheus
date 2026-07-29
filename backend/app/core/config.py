@@ -65,11 +65,22 @@ class Settings(BaseSettings):
     sparse_weight: float = Field(
         default=0.3, description="Weight for sparse (BM25) retrieval in hybrid mode"
     )
-    enable_reranking: bool = Field(
+    use_reranker: bool = Field(
         default=True, description="Enable cross-encoder reranking"
+    )
+    reranker_model: str = Field(
+        default="bge-reranker-v2-m3", description="Pinecone reranker model"
     )
     rerank_top_k: int = Field(
         default=5, description="Number of results to keep after reranking"
+    )
+
+    # Multi-Query Expansion Settings
+    enable_multi_query: bool = Field(
+        default=True, description="Enable multi-query expansion for better recall"
+    )
+    multi_query_count: int = Field(
+        default=3, description="Number of query variations to generate"
     )
 
     # Agentic RAG Settings
