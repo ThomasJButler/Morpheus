@@ -21,6 +21,9 @@ def _store_info(app) -> dict:
     store = getattr(app.state, "store", None)
     if store is not None:
         info.update(store.stats())
+    error = getattr(app.state, "store_error", None)
+    if error:
+        info["error"] = error
     return info
 
 
@@ -57,7 +60,9 @@ async def health(request: Request) -> dict:
     except OllamaError as exc:
         out["hints"].append(exc.hint or exc.message)
         return out
-    if out["models"]["chat"]["installed"] and out["models"]["embed"]["installed"]:
+    if out["store"].get("error"):
+        out["hints"].append(out["store"]["error"])
+    elif out["models"]["chat"]["installed"] and out["models"]["embed"]["installed"]:
         out["status"] = "ready"
     return out
 

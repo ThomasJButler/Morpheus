@@ -24,6 +24,7 @@ from app.core.body_limit import MaxBodySizeMiddleware
 from app.core.config import get_settings
 from app.core.ollama import OllamaClient, OllamaError, normalise_model_name
 from app.core.rate_limit import limiter
+from app.core.store import Store, StoreError
 
 logging.basicConfig(
     level=os.environ.get("LOG_LEVEL", "INFO").upper(),
@@ -46,6 +47,18 @@ async def lifespan(app: FastAPI):
     # business in it. Processes running as you can read it, like any file.
     os.chmod(data_dir, 0o700)
     (data_dir / "tmp").mkdir(exist_ok=True)
+
+    # The store opens (or creates) the on-disk index. A model mismatch is a
+    # refusal, not a crash: the app boots, health explains, chat declines.
+    app.state.store = None
+    app.state.store_error = None
+    try:
+        app.state.store = Store(
+            settings.data_dir / "lancedb", embed_model=settings.ollama_embed_model
+        )
+    except StoreError as exc:
+        app.state.store_error = str(exc)
+        logger.error("Store unavailable: %s", exc)
 
     # Tests inject a fake client before startup; create the real one otherwise.
     owned_client = getattr(app.state, "ollama", None) is None
@@ -84,6 +97,8 @@ async def lifespan(app: FastAPI):
     if owned_client:
         await app.state.ollama.aclose()
         app.state.ollama = None
+    app.state.store = None
+    app.state.store_error = None
 
 
 app = FastAPI(
