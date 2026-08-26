@@ -13,10 +13,13 @@ error, because a silent downgrade is a lie about what produced the answer.
 from __future__ import annotations
 
 import json
+import logging
 from collections.abc import AsyncIterator
 from typing import Any
 
 import httpx
+
+logger = logging.getLogger(__name__)
 
 
 class OllamaError(Exception):
@@ -86,7 +89,10 @@ class OllamaClient:
                 f"Model {model!r} is not installed",
                 hint=f"ollama pull {model}",
             )
-        return OllamaError(f"Ollama returned {status_code} on {path}: {body[:200]}")
+        # Ollama's own text can name local paths; it belongs in the log, not
+        # in a response (second-pass review F31).
+        logger.warning("Ollama returned %s on %s: %s", status_code, path, body[:200])
+        return OllamaError(f"Ollama returned {status_code} on {path}")
 
     async def _request(self, method: str, path: str, *, model: str | None = None, **kw) -> httpx.Response:
         try:
@@ -177,7 +183,8 @@ class OllamaClient:
                         continue
                     data = json.loads(line)
                     if data.get("error"):
-                        raise OllamaError(f"Ollama error mid-stream: {str(data['error'])[:200]}")
+                        logger.warning("Ollama error mid-stream: %s", str(data["error"])[:200])
+                        raise OllamaError("Ollama reported an error mid-stream")
                     content = (data.get("message") or {}).get("content") or ""
                     if content:
                         yield {"type": "token", "content": content}
