@@ -2,13 +2,20 @@
 # Morpheus in containers. Optional: running `uvicorn` and `npm run dev` on
 # the host is the primary path and needs nothing from this file.
 #
-# NOT YET VERIFIED with a real `docker compose up` (Docker was being
-# reinstalled on the dev machine when this was written). The contract it
-# implements:
+# Verified 2026-08-26 on Docker Desktop 29.7.2 / Compose v5.4 (Apple
+# Silicon): image builds, a full upload-and-query cycle passes through the
+# container with grounded answers, the library lands in ./backend/data
+# owned by the host user, and both ports publish on 127.0.0.1 only.
+#
+# The contract:
 #   - both ports publish on 127.0.0.1 only, so nothing on the LAN can reach
 #     an app that has no authentication;
 #   - Ollama stays on the HOST (models want the host's RAM/GPU); the backend
-#     reaches it via host.docker.internal;
+#     reaches it via host.docker.internal. On Docker Desktop that name is
+#     proxied through to the host's loopback, so the default Ollama bind
+#     (127.0.0.1:11434) just works. On Linux, extra_hosts maps the name to
+#     the bridge gateway and Ollama must listen there too
+#     (OLLAMA_HOST=0.0.0.0:11434, firewalled to the docker bridge);
 #   - the library bind-mounts to ./backend/data, so documents survive
 #     container rebuilds and remain visible as plain files you can delete.
 #
