@@ -1,170 +1,153 @@
-"""
-FastAPI application entry point.
-Morpheus backend with streaming support and multiple retrieval modes.
+"""FastAPI entry point: local document question answering with verified
+citations.
+
+Everything this app talks to is on 127.0.0.1: the browser in front, Ollama
+behind, and a LanceDB directory on disk. That claim is enforced by tests
+(tests/test_no_egress.py, scripts/prove_local.sh), not by this docstring.
+
+Logging policy (THREAT_MODEL.md): counts, durations, model names and error
+codes at INFO. Never query text, document text or filenames.
 """
 
 import logging
+import os
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from slowapi import _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
 
-from app.api.chat import router as chat_router
-from app.api.documents import router as documents_router
-from app.api.metrics import router as metrics_router
-from app.core.config import settings
-from app.core.pinecone_client import get_pinecone_client
+from app.api.system import router as system_router
+from app.core.body_limit import MaxBodySizeMiddleware
+from app.core.config import get_settings
+from app.core.ollama import OllamaClient, OllamaError, normalise_model_name
+from app.core.rate_limit import limiter
 
-# Configure logging
 logging.basicConfig(
-    level=getattr(logging, settings.log_level.upper()),
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-    handlers=[
-        logging.StreamHandler(),
-        # Uncomment to enable file logging
-        # logging.FileHandler(settings.log_file)
-    ],
+    level=os.environ.get("LOG_LEVEL", "INFO").upper(),
+    format="%(asctime)s %(levelname)s %(name)s: %(message)s",
 )
+# httpx logs every request URL at INFO; ours carry no secrets, but quiet is quiet.
+for _noisy in ("httpx", "httpcore"):
+    logging.getLogger(_noisy).setLevel(logging.WARNING)
 
 logger = logging.getLogger(__name__)
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """
-    Lifespan context manager for startup and shutdown events.
+    settings = get_settings()
 
-    Args:
-        app: FastAPI application instance
-    """
-    # Startup
-    logger.info("Starting Morpheus backend...")
+    data_dir = settings.data_dir
+    data_dir.mkdir(parents=True, exist_ok=True)
+    # 0700: the store holds document text; other users on the machine have no
+    # business in it. Processes running as you can read it, like any file.
+    os.chmod(data_dir, 0o700)
+    (data_dir / "tmp").mkdir(exist_ok=True)
 
+    # Tests inject a fake client before startup; create the real one otherwise.
+    owned_client = getattr(app.state, "ollama", None) is None
+    if owned_client:
+        app.state.ollama = OllamaClient(
+            settings.ollama_base_url,
+            connect_timeout=settings.ollama_connect_timeout_s,
+            read_timeout=settings.ollama_read_timeout_s,
+            keep_alive=settings.ollama_keep_alive,
+            embed_batch_size=settings.ollama_embed_batch_size,
+        )
+
+    logger.info(
+        "Morpheus backend: chat=%s embed=%s data=%s ollama=%s bind=%s:%s",
+        settings.ollama_chat_model,
+        settings.ollama_embed_model,
+        data_dir.resolve(),
+        settings.ollama_base_url,
+        settings.api_host,
+        settings.api_port,
+    )
+    # Startup health is advisory: log and carry on, /api/health reports live
+    # state, and the app must boot for its hints to be reachable at all.
     try:
-        # Initialize Pinecone connection
-        pc_client = get_pinecone_client()
-        stats = pc_client.index_stats()
-        logger.info(f"Pinecone connected - Index stats: {stats}")
-    except Exception as e:
-        logger.error(f"Failed to initialize Pinecone: {e}")
-        raise
-
-    logger.info("Backend started successfully")
+        version = await app.state.ollama.version()
+        installed = await app.state.ollama.installed_models()
+        for name in (settings.ollama_chat_model, settings.ollama_embed_model):
+            if normalise_model_name(name) not in installed:
+                logger.warning("Model %r is not installed. Run: ollama pull %s", name, name)
+        logger.info("Ollama %s reachable", version)
+    except OllamaError as exc:
+        logger.warning("%s%s", exc.message, f" ({exc.hint})" if exc.hint else "")
 
     yield
 
-    # Shutdown
-    logger.info("Shutting down Morpheus backend...")
+    if owned_client:
+        await app.state.ollama.aclose()
+        app.state.ollama = None
 
 
-# Create FastAPI app
 app = FastAPI(
     title="Morpheus API",
-    description="Advanced RAG chatbot with multiple retrieval modes and streaming support",
-    version="1.0.0",
-    docs_url="/docs",
-    redoc_url="/redoc",
+    description="Local document question answering with verified citations.",
+    version="2.0.0",
     lifespan=lifespan,
 )
 
-# Configure CORS
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
+# Order matters: body cap added first so CORS (added after) ends up outermost
+# and a 413 still carries CORS headers the browser can read.
+app.add_middleware(MaxBodySizeMiddleware)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.cors_origins_list,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_origins=get_settings().cors_origins_list,
+    allow_credentials=False,
+    allow_methods=["GET", "POST", "DELETE"],
+    allow_headers=["Content-Type"],
 )
 
 
-# Exception handler
+@app.exception_handler(OllamaError)
+async def ollama_error_handler(request: Request, exc: OllamaError):
+    logger.warning("Ollama error on %s: %s", request.url.path, exc.message)
+    detail: dict = {"code": exc.code, "message": exc.message}
+    if exc.hint:
+        detail["hint"] = exc.hint
+    return JSONResponse(status_code=exc.status, content={"detail": detail})
+
+
 @app.exception_handler(Exception)
-async def global_exception_handler(request, exc):
-    """
-    Global exception handler for unhandled errors.
-
-    Args:
-        request: FastAPI request
-        exc: Exception
-
-    Returns:
-        JSONResponse: Error response
-    """
-    logger.error(f"Unhandled exception: {exc}", exc_info=True)
+async def unhandled_error_handler(request: Request, exc: Exception):
+    # Full traceback to the log, a fixed message to the client. Exception text
+    # used to leak service internals to callers (SECURITY_REVIEW F8).
+    logger.exception("Unhandled error on %s", request.url.path)
     return JSONResponse(
         status_code=500,
-        content={
-            "detail": "Internal server error",
-            "error": str(exc) if settings.debug else "An error occurred",
-        },
+        content={"detail": {"code": "internal_error", "message": "Internal server error."}},
     )
 
 
-# Explicit OPTIONS handler for preflight requests
-@app.options("/{rest_of_path:path}")
-async def preflight_handler(rest_of_path: str):
-    """
-    Handle OPTIONS preflight requests explicitly.
-
-    Args:
-        rest_of_path: The path being requested
-
-    Returns:
-        JSONResponse: Empty response with CORS headers
-    """
-    return JSONResponse(
-        content={},
-        headers={
-            "Access-Control-Allow-Origin": "*",
-            "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
-            "Access-Control-Allow-Headers": "*",
-            "Access-Control-Max-Age": "86400",  # Cache preflight for 24 hours
-        },
-    )
+app.include_router(system_router)
 
 
-# Include routers
-app.include_router(chat_router)
-app.include_router(documents_router)
-app.include_router(metrics_router)
-
-
-# Root endpoint
 @app.get("/")
-async def root():
-    """
-    Root endpoint with API information.
-
-    Returns:
-        dict: API info
-    """
+async def root() -> dict:
     return {
         "name": "Morpheus API",
-        "version": "1.0.0",
-        "status": "operational",
+        "version": "2.0.0",
         "docs": "/docs",
         "health": "/api/health",
-        "endpoints": {
-            "chat": "POST /api/chat",
-            "modes": "GET /api/modes",
-            "health": "GET /api/health",
-            "upload": "POST /api/documents/upload",
-            "document_stats": "GET /api/documents/stats",
-            "metrics_compare": "GET /api/metrics/compare",
-            "metrics_sessions": "GET /api/metrics/sessions",
-            "metrics_performance": "GET /api/metrics/performance",
-        },
     }
 
 
 if __name__ == "__main__":
     import uvicorn
 
+    settings = get_settings()
     uvicorn.run(
         "app.main:app",
         host=settings.api_host,
         port=settings.api_port,
-        reload=settings.reload,
         log_level=settings.log_level.lower(),
     )

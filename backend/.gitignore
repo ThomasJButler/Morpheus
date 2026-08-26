@@ -63,3 +63,6 @@ dmypy.json
 
 # Ruff
 .ruff_cache/
+
+# Everything Morpheus keeps: the LanceDB store and upload temp files
+data/

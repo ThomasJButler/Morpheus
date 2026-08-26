@@ -1,152 +1,95 @@
-"""
-Configuration management using Pydantic Settings.
-Loads environment variables and provides typed configuration access.
+"""Runtime settings.
+
+Nothing here is required. The defaults run Morpheus on a laptop that has
+Ollama installed: bound to loopback, talking only to loopback, keeping
+everything it stores under ./data. Each limit carries the reason for its
+default, because a limit without a reason is the first thing a future edit
+deletes.
+
+Environment variables override fields (case-insensitive) and a .env file in
+the working directory is read if present. Unknown keys are ignored, so a
+stale .env from an older version can never stop the app from starting
+(that happened: SECURITY_REVIEW.md F25).
 """
 
 from functools import lru_cache
-from typing import List, Optional
+from pathlib import Path
 
-from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    """
-    Application settings loaded from environment variables.
-    Uses Pydantic for validation and type safety.
-    """
-
-    # API Keys - Anthropic/OpenAI are optional since users provide via frontend
-    anthropic_api_key: Optional[str] = Field(
-        default=None,
-        description="Anthropic API key for Claude (optional - users provide via frontend)",
-    )
-    openai_api_key: Optional[str] = Field(
-        default=None, description="OpenAI API key for embeddings"
-    )
-    pinecone_api_key: str = Field(..., description="Pinecone API key")
-
-    # Pinecone Configuration
-    pinecone_environment: str = Field(
-        default="us-west1-gcp", description="Pinecone environment"
-    )
-    pinecone_index_name: str = Field(
-        default="morpheus", description="Pinecone index name"
-    )
-    pinecone_dimension: int = Field(default=1536, description="Embedding dimension")
-
-    # Model Configuration
-    anthropic_model: str = Field(
-        default="claude-sonnet-4-6", description="Claude model to use"
-    )
-    embedding_model: str = Field(
-        default="text-embedding-3-large", description="OpenAI embedding model"
-    )
-
-    # RAG Configuration
-    max_chunk_size: int = Field(default=1000, description="Maximum chunk size")
-    chunk_overlap: int = Field(default=200, description="Chunk overlap")
-    top_k_results: int = Field(default=10, description="Top K results to retrieve")
-    min_relevance_score: float = Field(
-        default=0.3, description="Minimum relevance score"
-    )
-
-    # RAG Mode Configuration (Tiered RAG System)
-    default_rag_mode: str = Field(
-        default="auto", description="Default RAG mode: simple, hybrid, agentic, or auto"
-    )
-    enable_hybrid_rag: bool = Field(default=True, description="Enable HybridRAG tier")
-    enable_agentic_rag: bool = Field(default=True, description="Enable AgenticRAG tier")
-
-    # Hybrid RAG Settings (Dense + Sparse retrieval)
-    dense_weight: float = Field(
-        default=0.7, description="Weight for dense (semantic) retrieval in hybrid mode"
-    )
-    sparse_weight: float = Field(
-        default=0.3, description="Weight for sparse (BM25) retrieval in hybrid mode"
-    )
-    enable_reranking: bool = Field(
-        default=True, description="Enable cross-encoder reranking"
-    )
-    rerank_top_k: int = Field(
-        default=5, description="Number of results to keep after reranking"
-    )
-
-    # Agentic RAG Settings
-    agentic_max_tool_calls: int = Field(
-        default=5, description="Maximum tool calls per agentic query"
-    )
-    agentic_timeout_seconds: int = Field(
-        default=30, description="Timeout for agentic processing"
-    )
-    enable_reflection: bool = Field(
-        default=True, description="Enable agent self-reflection on responses"
-    )
-    reflection_min_confidence: float = Field(
-        default=0.6, description="Minimum confidence score to accept without retry"
-    )
-
-    # Query Rewriter Settings
-    enable_query_rewriting: bool = Field(
-        default=True, description="Enable LLM-based query rewriting"
-    )
-
-    # Query Analyzer Settings (Auto-routing)
-    complexity_threshold_low: float = Field(
-        default=0.3, description="Below this → SimpleRAG"
-    )
-    complexity_threshold_high: float = Field(
-        default=0.7, description="Above this → AgenticRAG"
-    )
-
-    # Document Processing
-    supported_file_types: str = Field(
-        default="pdf,txt,md,docx", description="Comma-separated supported file types"
-    )
-    max_file_size_mb: int = Field(default=50, description="Maximum file size in MB")
-
-    # API Configuration
-    api_host: str = Field(default="0.0.0.0", description="API host")
-    api_port: int = Field(default=8000, description="API port")
-    cors_origins: str = Field(
-        default="http://localhost:3000,http://127.0.0.1:3000",
-        description="Allowed CORS origins",
-    )
-
-    # Logging
-    log_level: str = Field(default="INFO", description="Logging level")
-    log_file: str = Field(default="logs/app.log", description="Log file path")
-
-    # Optional Development Settings
-    debug: bool = Field(default=False, description="Debug mode")
-    reload: bool = Field(default=False, description="Auto-reload on code changes")
-
     model_config = SettingsConfigDict(
-        env_file=".env", env_file_encoding="utf-8", case_sensitive=False
+        env_file=".env",
+        env_file_encoding="utf-8",
+        case_sensitive=False,
+        extra="ignore",
     )
 
-    @property
-    def cors_origins_list(self) -> List[str]:
-        """Parse CORS origins string into list."""
-        return [origin.strip() for origin in self.cors_origins.split(",")]
+    # --- Ollama: the only process Morpheus talks to, on loopback ------------
+    ollama_base_url: str = "http://127.0.0.1:11434"
+    # ~6.6 GB at Q4; comfortable on a 32 GB Apple Silicon machine.
+    # qwen3.5:27b is the quality option if you have the memory and patience.
+    ollama_chat_model: str = "qwen3.5:9b"
+    # 768-d, 8k context, ~274 MB, English-focused. bge-m3 if you need
+    # multilingual. Changing this means re-indexing; the store refuses to mix.
+    ollama_embed_model: str = "nomic-embed-text"
+    # Fail in 3 s when Ollama is down instead of hanging every request.
+    ollama_connect_timeout_s: float = 3.0
+    # A cold 9B load plus a long answer can take this long on CPU.
+    ollama_read_timeout_s: float = 180.0
+    # Keep the model resident between questions (Ollama's own default is 5m).
+    ollama_keep_alive: str = "15m"
+    ollama_embed_batch_size: int = 32
+
+    # --- Storage: everything Morpheus keeps lives under here ----------------
+    data_dir: Path = Path("data")
+
+    # --- Upload limits, enforced before the body is read ---------------------
+    # 25 MB is roughly a 1,000-page text PDF. Scanned-image PDFs are bigger
+    # and useless here anyway (no OCR).
+    max_upload_mb: int = 25
+    # Caps the parser's work on a pathological file. Breaching either is a 422.
+    max_pdf_pages: int = 500
+    max_text_chars: int = 2_000_000
+
+    # --- Chunking and retrieval ----------------------------------------------
+    chunk_size: int = 1000
+    chunk_overlap: int = 200
+    # How many chunks reach the prompt.
+    top_k: int = 6
+    # How many candidates each retriever (vector, BM25) contributes to fusion.
+    candidates: int = 20
+    # Cosine floor for vector hits. nomic similarities cluster higher than
+    # OpenAI's did; tuned against test-documents/DEMO-QUERIES.md.
+    min_vector_score: float = 0.5
+    # Deep mode asks the model for up to this many sub-questions.
+    deep_max_subqueries: int = 3
+
+    # --- Generation -----------------------------------------------------------
+    temperature: float = 0.2
+    num_ctx: int = 8192
+    max_answer_tokens: int = 1024
+
+    # --- HTTP -----------------------------------------------------------------
+    # Loopback unless you know exactly why you want otherwise; there is no
+    # auth, so exposing this on a LAN is an explicit decision (DEPLOYMENT.md).
+    api_host: str = "127.0.0.1"
+    api_port: int = 8000
+    cors_origins: str = "http://localhost:3000,http://127.0.0.1:3000"
+    # Belt and braces on loopback: stops a runaway local script, nothing more.
+    rate_limit: str = "60/minute"
+    log_level: str = "INFO"
 
     @property
-    def supported_file_types_list(self) -> List[str]:
-        """Parse supported file types string into list."""
-        return [ft.strip().lower() for ft in self.supported_file_types.split(",")]
+    def cors_origins_list(self) -> list[str]:
+        return [o.strip() for o in self.cors_origins.split(",") if o.strip()]
+
+    @property
+    def max_upload_bytes(self) -> int:
+        return self.max_upload_mb * 1024 * 1024
 
 
-@lru_cache()
+@lru_cache
 def get_settings() -> Settings:
-    """
-    Get cached settings instance.
-    Uses lru_cache to ensure settings are loaded only once.
-
-    Returns:
-        Settings: Application settings
-    """
     return Settings()
-
-
-# Convenience export
-settings = get_settings()
