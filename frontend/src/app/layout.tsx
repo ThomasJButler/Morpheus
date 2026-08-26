@@ -1,5 +1,4 @@
 import type { Metadata } from 'next'
-import { Inter } from 'next/font/google'
 import { GeistSans } from 'geist/font/sans'
 import './globals.css'
 import '@/styles/matrix.css'
@@ -7,16 +6,15 @@ import { WithErrorBoundary } from '@/components/ErrorBoundary'
 import { REDESIGN_V2 } from '@/lib/flags'
 import { ThemeProvider, themeBootstrapScript } from '@/lib/theme'
 
-const inter = Inter({ subsets: ['latin'] })
-
 export const metadata: Metadata = {
-  title: 'Morpheus - Agentic RAG System',
-  description: 'Just like Morpheus revealed the truth about The Matrix, this AI reveals knowledge from your documents.',
-  keywords: 'RAG, AI, Retrieval Augmented Generation, Claude, Pinecone, Matrix',
-  authors: [{ name: 'Morpheus Team' }],
+  title: 'Morpheus',
+  description:
+    'Local document question answering with verified citations. Runs entirely on your machine: Ollama for the models, LanceDB for the index.',
+  keywords: 'RAG, local AI, Ollama, LanceDB, document Q&A, citations',
+  authors: [{ name: 'Tom Butler' }],
   openGraph: {
-    title: 'Morpheus - Agentic RAG System',
-    description: 'AI-powered document intelligence with Matrix-inspired interface',
+    title: 'Morpheus',
+    description: 'Local document question answering with verified citations.',
     type: 'website',
   },
 }
@@ -39,7 +37,7 @@ export default function RootLayout({
             pref so first paint matches the saved theme (no FOUC). */}
         <script dangerouslySetInnerHTML={{ __html: themeBootstrapScript }} />
       </head>
-      <body className={`${inter.className} antialiased`}>
+      <body className="font-sans antialiased">
         <ThemeProvider>
           <div className="min-h-screen bg-matrix-black">
             {/* Matrix grid background pattern — dark-theme only */}

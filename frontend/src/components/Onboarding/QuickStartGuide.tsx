@@ -9,6 +9,54 @@ interface QuickStartGuideProps {
   onOpenSettings?: () => void;
 }
 
+const STEPS: Array<{
+  n: string;
+  icon: string;
+  title: string;
+  body: string;
+  meta?: string;
+  tone: 'green' | 'cyan' | 'white';
+}> = [
+  {
+    n: '1/4',
+    icon: '⬇️',
+    title: 'Pull the models',
+    body: 'Morpheus runs on Ollama. One-time downloads, then everything is offline.',
+    meta: 'ollama pull nomic-embed-text · ollama pull qwen3.5:9b',
+    tone: 'green',
+  },
+  {
+    n: '2/4',
+    icon: '📄',
+    title: 'Upload a document',
+    body: 'PDF, TXT, MD or DOCX. It is chunked, embedded and indexed on this machine.',
+    meta: 'Library lives in backend/data',
+    tone: 'cyan',
+  },
+  {
+    n: '3/4',
+    icon: '💬',
+    title: 'Ask questions',
+    body: 'Every claim carries a [n] marker that maps to a real passage. If the documents do not contain the answer, Morpheus says so.',
+    meta: 'Try: "Summarise this document"',
+    tone: 'white',
+  },
+  {
+    n: '4/4',
+    icon: '🔒',
+    title: 'Runs on your machine',
+    body: 'Documents and the index stay in backend/data until you delete them. Nothing is sent anywhere.',
+    meta: 'Proof: backend/tests/test_no_egress.py',
+    tone: 'cyan',
+  },
+];
+
+const TONE = {
+  green: { text: 'text-matrix-green', border: 'border-matrix-green/30', bg: 'bg-matrix-green/10' },
+  cyan: { text: 'text-matrix-cyan', border: 'border-matrix-cyan/30', bg: 'bg-matrix-cyan/10' },
+  white: { text: 'text-matrix-white', border: 'border-matrix-white/20', bg: 'bg-matrix-white/5' },
+} as const;
+
 export default function QuickStartGuide({ isOpen, onDismiss, onOpenSettings }: QuickStartGuideProps) {
   return (
     <Modal
@@ -23,146 +71,63 @@ export default function QuickStartGuide({ isOpen, onDismiss, onOpenSettings }: Q
         </svg>
       }
       footer={
-        <Button variant="primary" onClick={onDismiss}>
-          Got it, thanks!
-        </Button>
+        <>
+          {onOpenSettings && (
+            <Button variant="secondary" onClick={onOpenSettings}>
+              Open Settings
+            </Button>
+          )}
+          <Button variant="primary" onClick={onDismiss}>
+            Got it, thanks!
+          </Button>
+        </>
       }
     >
       <div className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-2 sm:gap-3 mb-3 sm:mb-5">
-            {/* Step 1: Add API Key */}
-            <div className="group relative">
-              <div className="absolute -inset-0.5 bg-gradient-to-r from-matrix-green/20 to-transparent rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-250 blur" />
-              <div className="relative stat-card p-2 sm:p-4 h-full">
-                <div className="flex items-start gap-2 sm:gap-3">
-                  <div className="flex-shrink-0 text-center">
-                    <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-matrix-green/10 border border-matrix-green/30 flex items-center justify-center mb-0.5 sm:mb-1 group-hover:border-matrix-green/50 group-hover:bg-matrix-green/20 transition-all duration-250">
-                      <span className="text-lg sm:text-xl">⚙️</span>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-2 sm:gap-3 mb-3 sm:mb-5">
+          {STEPS.map((step) => {
+            const tone = TONE[step.tone];
+            return (
+              <div key={step.n} className="group relative">
+                <div className={`relative stat-card p-2 sm:p-4 h-full ${step.n === '4/4' ? tone.border : ''}`}>
+                  <div className="flex items-start gap-2 sm:gap-3">
+                    <div className="flex-shrink-0 text-center">
+                      <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full ${tone.bg} border ${tone.border} flex items-center justify-center mb-0.5 sm:mb-1`}>
+                        <span className="text-lg sm:text-xl">{step.icon}</span>
+                      </div>
+                      <div className={`inline-block px-1 sm:px-1.5 py-0.5 rounded-full ${tone.bg} border ${tone.border}`}>
+                        <span className={`text-xs ${tone.text} font-mono font-bold`}>{step.n}</span>
+                      </div>
                     </div>
-                    <div className="inline-block px-1 sm:px-1.5 py-0.5 rounded-full bg-matrix-green/10 border border-matrix-green/30">
-                      <span className="text-xs text-matrix-green font-mono font-bold">1/4</span>
-                    </div>
-                  </div>
-                  <div className="flex-1 pt-0">
-                    <h3 className="text-sm sm:text-base font-mono font-bold text-matrix-green mb-0.5 sm:mb-1" style={{ textShadow: '0 0 10px rgba(0, 255, 0, 0.2)' }}>
-                      Add Your API Key
-                    </h3>
-                    <p className="text-xs text-matrix-white/70 leading-snug mb-1.5 sm:mb-2">
-                      Open Settings and add your Claude or GPT API key to get started
-                    </p>
-                    {onOpenSettings && (
-                      <Button
-                        variant="secondary"
-                        size="sm"
-                        onClick={onOpenSettings}
-                        className="text-xs font-mono"
-                      >
-                        Open Settings
-                      </Button>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Step 2: Upload Document */}
-            <div className="group relative">
-              <div className="absolute -inset-0.5 bg-gradient-to-r from-matrix-cyan/20 to-transparent rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-250 blur" />
-              <div className="relative stat-card p-2 sm:p-4 h-full">
-                <div className="flex items-start gap-2 sm:gap-3">
-                  <div className="flex-shrink-0 text-center">
-                    <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-matrix-cyan/10 border border-matrix-cyan/30 flex items-center justify-center mb-0.5 sm:mb-1 group-hover:border-matrix-cyan/50 group-hover:bg-matrix-cyan/20 transition-all duration-250">
-                      <span className="text-lg sm:text-xl">📄</span>
-                    </div>
-                    <div className="inline-block px-1 sm:px-1.5 py-0.5 rounded-full bg-matrix-cyan/10 border border-matrix-cyan/30">
-                      <span className="text-xs text-matrix-cyan font-mono font-bold">2/4</span>
-                    </div>
-                  </div>
-                  <div className="flex-1 pt-0">
-                    <h3 className="text-sm sm:text-base font-mono font-bold text-matrix-cyan mb-0.5 sm:mb-1" style={{ textShadow: '0 0 10px rgba(0, 255, 255, 0.2)' }}>
-                      Upload a Document
-                    </h3>
-                    <p className="text-xs text-matrix-white/70 leading-snug mb-0.5">
-                      Click the Upload button to add documents you want to analyse
-                    </p>
-                    <p className="text-xs text-matrix-cyan/50 font-mono mt-0.5">
-                      Supports: PDF, TXT, MD, DOCX
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Step 3: Ask Questions */}
-            <div className="group relative">
-              <div className="absolute -inset-0.5 bg-gradient-to-r from-matrix-white/10 to-transparent rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-250 blur" />
-              <div className="relative stat-card p-2 sm:p-4 h-full">
-                <div className="flex items-start gap-2 sm:gap-3">
-                  <div className="flex-shrink-0 text-center">
-                    <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-matrix-white/5 border border-matrix-white/20 flex items-center justify-center mb-0.5 sm:mb-1 group-hover:border-matrix-white/30 group-hover:bg-matrix-white/10 transition-all duration-250">
-                      <span className="text-lg sm:text-xl">💬</span>
-                    </div>
-                    <div className="inline-block px-1 sm:px-1.5 py-0.5 rounded-full bg-matrix-white/5 border border-matrix-white/20">
-                      <span className="text-xs text-matrix-white/70 font-mono font-bold">3/4</span>
-                    </div>
-                  </div>
-                  <div className="flex-1 pt-0">
-                    <h3 className="text-sm sm:text-base font-mono font-bold text-matrix-white mb-0.5 sm:mb-1">
-                      Ask Questions
-                    </h3>
-                    <p className="text-xs text-matrix-white/70 leading-snug mb-1 sm:mb-2">
-                      Type questions about your documents in the chat below
-                    </p>
-                    <div className="px-1.5 sm:px-2 py-0.5 sm:py-1 bg-matrix-black/40 border border-matrix-green/20 rounded">
-                      <p className="text-xs text-matrix-green/80 font-mono italic">
-                        Try: &quot;Summarise this document&quot;
+                    <div className="flex-1 pt-0">
+                      <h3 className={`text-sm sm:text-base font-mono font-bold ${tone.text} mb-0.5 sm:mb-1`}>
+                        {step.title}
+                      </h3>
+                      <p className="text-xs text-matrix-white/70 leading-snug mb-1">
+                        {step.body}
                       </p>
+                      {step.meta && (
+                        <div className="px-1.5 sm:px-2 py-0.5 sm:py-1 bg-matrix-black/40 border border-matrix-green/20 rounded">
+                          <p className="text-xs text-matrix-green/80 font-mono break-all">
+                            {step.meta}
+                          </p>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
               </div>
-            </div>
+            );
+          })}
+        </div>
 
-            {/* Step 4: Privacy Note */}
-            <div className="group relative">
-              <div className="absolute -inset-0.5 bg-gradient-to-r from-matrix-cyan/20 to-transparent rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-250 blur" />
-              <div className="relative stat-card p-2 sm:p-4 h-full border-matrix-cyan/40">
-                <div className="flex items-start gap-2 sm:gap-3">
-                  <div className="flex-shrink-0 text-center">
-                    <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-matrix-cyan/10 border border-matrix-cyan/30 flex items-center justify-center mb-0.5 sm:mb-1 group-hover:border-matrix-cyan/50 group-hover:bg-matrix-cyan/20 transition-all duration-250">
-                      <span className="text-lg sm:text-xl">🔒</span>
-                    </div>
-                    <div className="inline-block px-1 sm:px-1.5 py-0.5 rounded-full bg-matrix-cyan/10 border border-matrix-cyan/30">
-                      <span className="text-xs text-matrix-cyan font-mono font-bold">4/4</span>
-                    </div>
-                  </div>
-                  <div className="flex-1 pt-0">
-                    <h3 className="text-sm sm:text-base font-mono font-bold text-matrix-cyan mb-0.5 sm:mb-1" style={{ textShadow: '0 0 10px rgba(0, 255, 255, 0.2)' }}>
-                      Complete Privacy
-                    </h3>
-                    <p className="text-xs text-matrix-white/70 leading-snug mb-1">
-                      Documents cleared when you start a new browser session
-                    </p>
-                    <div className="px-1.5 sm:px-2 py-0.5 sm:py-1 bg-matrix-cyan/5 border border-matrix-cyan/20 rounded">
-                      <p className="text-xs text-matrix-cyan/70 font-mono">
-                        🛡️ Temporary storage - complete privacy
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
+        <div className="relative py-2 sm:py-3 mb-2 sm:mb-3">
+          <div className="relative text-center border-y border-matrix-green/10 py-1.5 sm:py-2">
+            <p className="matrix-quote text-xs sm:text-sm text-matrix-green/90 max-w-xl mx-auto italic px-2">
+              &quot;I can only show you the door. You&apos;re the one that has to walk through it.&quot;
+            </p>
           </div>
-
-          {/* Morpheus Quote */}
-          <div className="relative py-2 sm:py-3 mb-2 sm:mb-3">
-            <div className="relative text-center border-y border-matrix-green/10 py-1.5 sm:py-2">
-              <p className="matrix-quote text-xs sm:text-sm text-matrix-green/90 max-w-xl mx-auto italic px-2" style={{ textShadow: '0 0 15px rgba(0, 255, 0, 0.2)' }}>
-                &quot;I can only show you the door. You&apos;re the one that has to walk through it.&quot;
-              </p>
-            </div>
-          </div>
-
+        </div>
       </div>
     </Modal>
   );

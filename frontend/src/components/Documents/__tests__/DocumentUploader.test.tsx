@@ -142,14 +142,13 @@ describe('DocumentUploader', () => {
     expect(screen.getByText(/Unsupported file type/)).toBeInTheDocument();
   });
 
-  it('rejects files over 10MB', async () => {
+  it('rejects files over 25MB', async () => {
     render(
       <DocumentUploader isOpen={true} onClose={mockOnClose} onUploadComplete={mockOnUploadComplete} />
     );
 
-    // Create a file > 10MB
-    const largeContent = new Array(11 * 1024 * 1024).fill('a').join('');
-    const file = new File([largeContent], 'large.pdf', { type: 'application/pdf' });
+    // A file just over the 25MB cap (typed array keeps this fast).
+    const file = new File([new Uint8Array(26 * 1024 * 1024)], 'large.pdf', { type: 'application/pdf' });
     const input = document.querySelector('input[type="file"]') as HTMLInputElement;
 
     await userEvent.upload(input, file);
@@ -159,7 +158,7 @@ describe('DocumentUploader', () => {
 
   it('shows upload progress during upload', async () => {
     (apiClient.uploadDocument as jest.Mock).mockImplementation(
-      () => new Promise(resolve => setTimeout(() => resolve({ document_id: 'test-123', chunks_created: 5 }), 500))
+      () => new Promise(resolve => setTimeout(() => resolve({ source: 'test.pdf', chunks: 5, pages: 2, replaced: false }), 500))
     );
 
     render(
@@ -204,7 +203,7 @@ describe('DocumentUploader', () => {
   });
 
   it('calls onUploadComplete callback on success', async () => {
-    const mockResponse = { document_id: 'test-123', chunks_created: 5 };
+    const mockResponse = { source: 'test.pdf', chunks: 5, pages: 2, replaced: false };
     (apiClient.uploadDocument as jest.Mock).mockResolvedValue(mockResponse);
 
     render(
@@ -220,10 +219,9 @@ describe('DocumentUploader', () => {
     const uploadButton = screen.getByText('Upload');
     fireEvent.click(uploadButton);
 
-    // Wait for completion (component has 2s indexing delay before calling callback)
     await waitFor(() => {
       expect(mockOnUploadComplete).toHaveBeenCalledWith(mockResponse);
-    }, { timeout: 5000 });
+    });
   });
 
   it('calls onClose when cancel button is clicked', () => {
@@ -281,7 +279,7 @@ describe('DocumentUploader', () => {
   });
 
   it('shows success message after upload', async () => {
-    const mockResponse = { document_id: 'test-123', chunks_created: 5 };
+    const mockResponse = { source: 'test.pdf', chunks: 5, pages: 2, replaced: false };
     (apiClient.uploadDocument as jest.Mock).mockResolvedValue(mockResponse);
 
     render(
@@ -298,8 +296,8 @@ describe('DocumentUploader', () => {
 
     // Check success message
     await waitFor(() => {
-      expect(screen.getByText(/Document ID: test-123/)).toBeInTheDocument();
-      expect(screen.getByText(/Chunks created: 5/)).toBeInTheDocument();
+      expect(screen.getByText(/Added to the library/)).toBeInTheDocument();
+      expect(screen.getByText(/5 chunks indexed/)).toBeInTheDocument();
     });
   });
 });

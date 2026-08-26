@@ -1,165 +1,60 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import Modal from '../UI/Modal';
 import Button from '../UI/Button';
 import { clsx } from 'clsx';
-import type { RAGMode } from '@/lib/types';
-import type { UserSettings, Provider } from '@/lib/hooks/useSettings';
+import type { ModelEntry, RetrievalMode } from '@/lib/types';
+import { useSettings } from '@/lib/hooks/useSettings';
 import { useTheme, type ThemePref } from '@/lib/theme';
+import { apiClient } from '@/lib/api-client';
 
 interface SettingsProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
-const OPENAI_MODELS = [
-  { value: 'gpt-5.5-2026-04-23', label: 'GPT-5.5', description: 'Frontier — complex reasoning & coding' },
-  { value: 'gpt-5.4', label: 'GPT-5.4', description: 'Most capable mainline' },
-  { value: 'gpt-5.4-mini', label: 'GPT-5.4 mini', description: 'Fast and cost-effective' },
-  { value: 'gpt-5.4-nano', label: 'GPT-5.4 nano', description: 'Lowest latency / cheapest' },
-];
-
-const ANTHROPIC_MODELS = [
-  { value: 'claude-sonnet-4-6', label: 'Claude Sonnet 4.6', description: 'Balanced default' },
-  { value: 'claude-haiku-4-5-20251001', label: 'Claude Haiku 4.5', description: 'Fastest, cost-effective' },
-  { value: 'claude-sonnet-4-20250514', label: 'Claude Sonnet 4', description: 'Previous generation' },
-];
-
-// RAG modes for intelligent document retrieval
-const RAG_MODES: { value: RAGMode; label: string; description: string; latency: string }[] = [
-  { value: 'auto', label: 'Auto', description: 'Intelligent routing based on query', latency: 'varies' },
-  { value: 'simple', label: 'Simple', description: 'Fast semantic search', latency: '~800ms' },
-  { value: 'hybrid', label: 'Hybrid', description: 'Semantic + keyword search', latency: '~1200ms' },
-  { value: 'agentic', label: 'Agentic', description: 'AI agent with tool use', latency: '~2600ms' },
+const RETRIEVAL_MODES: { value: RetrievalMode; label: string; description: string }[] = [
+  { value: 'hybrid', label: 'Hybrid', description: 'Vector + keyword (BM25), fused. The default.' },
+  { value: 'vector', label: 'Vector', description: 'Semantic search only.' },
 ];
 
 export default function Settings({ isOpen, onClose }: SettingsProps) {
   const { theme, setTheme } = useTheme();
-  // OpenAI settings
-  const [apiKey, setApiKey] = useState('');
-  const [model, setModel] = useState('gpt-5.4-mini');
-  const [showKey, setShowKey] = useState(false);
-  const [testingConnection, setTestingConnection] = useState(false);
-  const [testResult, setTestResult] = useState<'success' | 'error' | null>(null);
+  const { settings, updateSettings, clearSettings } = useSettings();
 
-  // Anthropic settings
-  const [anthropicApiKey, setAnthropicApiKey] = useState('');
-  const [anthropicModel, setAnthropicModel] = useState('claude-sonnet-4-6');
-  const [showAnthropicKey, setShowAnthropicKey] = useState(false);
-  const [testingAnthropicConnection, setTestingAnthropicConnection] = useState(false);
-  const [anthropicTestResult, setAnthropicTestResult] = useState<'success' | 'error' | null>(null);
+  const [mode, setMode] = useState<RetrievalMode>('hybrid');
+  const [deep, setDeep] = useState(false);
+  const [model, setModel] = useState<string>('');
+  const [chatModels, setChatModels] = useState<ModelEntry[]>([]);
+  const [modelsError, setModelsError] = useState<string | null>(null);
+  const [defaultModel, setDefaultModel] = useState<string>('the configured default');
 
-  // Provider selection
-  const [provider, setProvider] = useState<Provider>('anthropic');
-
-  // RAG mode settings
-  const [ragMode, setRagMode] = useState<RAGMode>('auto');
-  const [deepMode, setDeepMode] = useState(false);
-
-  // General settings
-  const [saveKey, setSaveKey] = useState(true);
-
-  // Load saved settings on mount
+  // Seed local state from saved settings each time the modal opens, and
+  // fetch what Ollama actually has installed for the dropdown.
   useEffect(() => {
-    const savedSettings = localStorage.getItem('userSettings');
-    if (savedSettings) {
-      try {
-        const settings: UserSettings = JSON.parse(savedSettings);
-        setApiKey(settings.openaiApiKey || '');
-        setModel(settings.openaiModel || 'gpt-5.4-mini');
-        setAnthropicApiKey(settings.anthropicApiKey || '');
-        setAnthropicModel(settings.anthropicModel || 'claude-sonnet-4-6');
-        setProvider(settings.provider || 'anthropic');
-        setSaveKey(settings.saveApiKey ?? true);
-        // Load RAG mode settings with defaults for backwards compatibility
-        setRagMode(settings.ragMode || 'auto');
-        setDeepMode(settings.deepMode ?? false);
-      } catch (e) {
-        console.error('Failed to load settings:', e);
-      }
-    }
-  }, []);
+    if (!isOpen) return;
+    setMode(settings.mode);
+    setDeep(settings.deep);
+    setModel(settings.model ?? '');
+    setModelsError(null);
+    apiClient
+      .listModels()
+      .then((response) => {
+        setChatModels(response.chat);
+        const configured = response.chat.find((m) => m.configured);
+        if (configured) setDefaultModel(configured.name);
+      })
+      .catch((error: Error) => {
+        setChatModels([]);
+        setModelsError(error.message);
+      });
+  }, [isOpen, settings.mode, settings.deep, settings.model]);
 
   const handleSave = () => {
-    const settings: UserSettings = {
-      openaiApiKey: saveKey ? apiKey : '',
-      openaiModel: model,
-      anthropicApiKey: saveKey ? anthropicApiKey : '',
-      anthropicModel: anthropicModel,
-      provider: provider,
-      saveApiKey: saveKey,
-      ragMode: ragMode,
-      deepMode: deepMode,
-    };
-
-    if (saveKey) {
-      localStorage.setItem('userSettings', JSON.stringify(settings));
-    } else {
-      sessionStorage.setItem('userSettings', JSON.stringify(settings));
-      localStorage.removeItem('userSettings');
-    }
-
-    window.dispatchEvent(new CustomEvent('settingsUpdated', { detail: settings }));
+    updateSettings({ mode, deep, model: model || null });
     onClose();
   };
-
-  const testConnection = async (providerType: Provider) => {
-    const key = providerType === 'openai' ? apiKey : anthropicApiKey;
-    const setTesting = providerType === 'openai' ? setTestingConnection : setTestingAnthropicConnection;
-    const setResult = providerType === 'openai' ? setTestResult : setAnthropicTestResult;
-
-    if (!key) {
-      setResult('error');
-      return;
-    }
-
-    setTesting(true);
-    setResult(null);
-
-    try {
-      const response = await fetch('/api/test-connection', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ provider: providerType, apiKey: key }),
-      });
-
-      const data = await response.json();
-      setResult(data.success ? 'success' : 'error');
-    } catch (error) {
-      console.error('Connection test failed:', error);
-      setResult('error');
-    } finally {
-      setTesting(false);
-    }
-  };
-
-  const handleClearSettings = () => {
-    setApiKey('');
-    setModel('gpt-5.4-mini');
-    setAnthropicApiKey('');
-    setAnthropicModel('claude-sonnet-4-6');
-    setProvider('anthropic');
-    setSaveKey(true);
-    setRagMode('auto');
-    setDeepMode(false);
-    localStorage.removeItem('userSettings');
-    sessionStorage.removeItem('userSettings');
-    setTestResult(null);
-    setAnthropicTestResult(null);
-  };
-
-  // Get current provider's settings
-  const currentApiKey = provider === 'anthropic' ? anthropicApiKey : apiKey;
-  const setCurrentApiKey = provider === 'anthropic' ? setAnthropicApiKey : setApiKey;
-  const currentModel = provider === 'anthropic' ? anthropicModel : model;
-  const setCurrentModel = provider === 'anthropic' ? setAnthropicModel : setModel;
-  const currentShowKey = provider === 'anthropic' ? showAnthropicKey : showKey;
-  const setCurrentShowKey = provider === 'anthropic' ? setShowAnthropicKey : setShowKey;
-  const currentTesting = provider === 'anthropic' ? testingAnthropicConnection : testingConnection;
-  const currentTestResult = provider === 'anthropic' ? anthropicTestResult : testResult;
-  const currentModels = provider === 'anthropic' ? ANTHROPIC_MODELS : OPENAI_MODELS;
-  const keyPlaceholder = provider === 'anthropic' ? 'sk-ant-...' : 'sk-...';
 
   return (
     <Modal
@@ -177,257 +72,134 @@ export default function Settings({ isOpen, onClose }: SettingsProps) {
         <>
           <button
             type="button"
-            onClick={handleClearSettings}
+            onClick={clearSettings}
             className="mr-auto px-3 py-1.5 text-[11px] font-mono text-mode-red hover:bg-mode-red/10 rounded-v2-sm transition-colors"
           >
-            Clear all
+            Reset to defaults
           </button>
           <Button variant="secondary" onClick={onClose}>Cancel</Button>
-          <Button
-            variant="primary"
-            onClick={handleSave}
-            disabled={!apiKey && !anthropicApiKey}
-          >
-            Save
-          </Button>
+          <Button variant="primary" onClick={handleSave}>Save</Button>
         </>
       }
     >
       <div className="space-y-5">
-          {/* Theme picker */}
-          <div className="mb-6">
-            <label className="block text-xs font-mono text-matrix-white/50 uppercase tracking-wider mb-3">
-              Theme
-            </label>
-            <div className="flex gap-2" role="group" aria-label="Theme">
-              {(['system', 'light', 'dark'] as ThemePref[]).map((opt) => (
-                <button
-                  key={opt}
-                  type="button"
-                  onClick={() => setTheme(opt)}
-                  aria-pressed={theme === opt}
-                  className={clsx(
-                    'matrix-tab text-center capitalize',
-                    theme === opt && 'border-matrix-green',
-                  )}
-                  data-state={theme === opt ? 'active' : 'inactive'}
-                >
-                  <div className="flex items-center justify-center gap-2">
-                    {theme === opt && (
-                      <span className="w-2 h-2 bg-matrix-green rounded-full animate-pulse" />
-                    )}
-                    <span>{opt}</span>
-                  </div>
-                </button>
+        {/* Theme */}
+        <div>
+          <label className="block text-xs font-mono text-matrix-white/50 uppercase tracking-wider mb-3">
+            Theme
+          </label>
+          <div className="flex gap-2" role="group" aria-label="Theme">
+            {(['system', 'light', 'dark'] as ThemePref[]).map((opt) => (
+              <button
+                key={opt}
+                type="button"
+                onClick={() => setTheme(opt)}
+                aria-pressed={theme === opt}
+                className={clsx('matrix-tab text-center capitalize', theme === opt && 'border-matrix-green')}
+                data-state={theme === opt ? 'active' : 'inactive'}
+              >
+                <div className="flex items-center justify-center gap-2">
+                  {theme === opt && <span className="w-2 h-2 bg-matrix-green rounded-full animate-pulse" />}
+                  <span>{opt}</span>
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="matrix-divider" />
+
+        {/* Model */}
+        <div className="space-y-3">
+          <h3 className="section-header">Model</h3>
+          <p className="text-xs text-matrix-white/40">
+            Answers come from a model running in Ollama on this machine. The
+            list shows what is installed; add more with{' '}
+            <code className="text-matrix-green/80">ollama pull &lt;name&gt;</code>.
+          </p>
+          <select
+            value={model}
+            onChange={(e) => setModel(e.target.value)}
+            className="matrix-select"
+            aria-label="Chat model"
+          >
+            <option value="">Default ({defaultModel})</option>
+            {chatModels
+              .filter((m) => !m.configured)
+              .map((m) => (
+                <option key={m.name} value={m.name}>
+                  {m.name}{m.parameter_size ? ` · ${m.parameter_size}` : ''}
+                </option>
               ))}
-            </div>
-          </div>
+          </select>
+          {modelsError && (
+            <p className="text-xs text-mode-red font-mono">
+              Could not list models: {modelsError}
+            </p>
+          )}
+        </div>
 
-          {/* Provider Tabs */}
-          <div className="mb-6">
-            <label className="block text-xs font-mono text-matrix-white/50 uppercase tracking-wider mb-3">
-              AI Provider
-            </label>
-            <div className="flex gap-2">
+        <div className="matrix-divider" />
+
+        {/* Retrieval */}
+        <div className="space-y-4">
+          <h3 className="section-header">Retrieval</h3>
+          <div className="flex gap-2" role="group" aria-label="Retrieval mode">
+            {RETRIEVAL_MODES.map((option) => (
               <button
-                onClick={() => setProvider('anthropic')}
-                className={clsx('matrix-tab text-center', provider === 'anthropic' && 'border-matrix-green')}
-                data-state={provider === 'anthropic' ? 'active' : 'inactive'}
+                key={option.value}
+                type="button"
+                onClick={() => setMode(option.value)}
+                aria-pressed={mode === option.value}
+                className={clsx('matrix-tab text-center', mode === option.value && 'border-matrix-green')}
+                data-state={mode === option.value ? 'active' : 'inactive'}
               >
                 <div className="flex items-center justify-center gap-2">
-                  {provider === 'anthropic' && (
-                    <span className="w-2 h-2 bg-matrix-green rounded-full animate-pulse" />
-                  )}
-                  <span>Claude</span>
+                  {mode === option.value && <span className="w-2 h-2 bg-matrix-green rounded-full animate-pulse" />}
+                  <span>{option.label}</span>
                 </div>
-                <div className="text-xs opacity-60 mt-0.5">Anthropic</div>
               </button>
-              <button
-                onClick={() => setProvider('openai')}
-                className={clsx('matrix-tab text-center', provider === 'openai' && 'border-matrix-cyan')}
-                data-state={provider === 'openai' ? 'active' : 'inactive'}
-                style={provider === 'openai' ? { borderColor: 'var(--matrix-cyan)', color: 'var(--matrix-cyan)' } : {}}
-              >
-                <div className="flex items-center justify-center gap-2">
-                  {provider === 'openai' && (
-                    <span className="w-2 h-2 bg-matrix-cyan rounded-full animate-pulse" />
-                  )}
-                  <span>GPT</span>
-                </div>
-                <div className="text-xs opacity-60 mt-0.5">OpenAI</div>
-              </button>
-            </div>
+            ))}
           </div>
+          <p className="text-xs text-matrix-white/40">
+            {RETRIEVAL_MODES.find((o) => o.value === mode)?.description}
+          </p>
 
-          <div className="matrix-divider" />
-
-          {/* Active Provider Settings */}
-          <div className="space-y-5">
-            <h3 className="section-header">
-              {provider === 'anthropic' ? 'Claude' : 'GPT'} Configuration
-            </h3>
-
-            {/* API Key */}
+          <label className="flex items-center gap-3 cursor-pointer group">
+            <input
+              type="checkbox"
+              checked={deep}
+              onChange={(e) => setDeep(e.target.checked)}
+              className="w-4 h-4 bg-matrix-black/60 border-glass-border rounded text-matrix-green focus:ring-matrix-green/50 focus:ring-offset-0"
+            />
             <div>
-              <label className="block text-xs font-mono text-matrix-white/50 uppercase tracking-wider mb-2">
-                API Key
-              </label>
-              <div className="relative">
-                <input
-                  type={currentShowKey ? 'text' : 'password'}
-                  value={currentApiKey}
-                  onChange={(e) => setCurrentApiKey(e.target.value)}
-                  placeholder={keyPlaceholder}
-                  className={clsx(
-                    'w-full px-4 py-3 bg-matrix-black/60 border rounded-lg',
-                    'text-matrix-white placeholder-matrix-white/30',
-                    'focus:outline-none focus:border-matrix-green focus:ring-1 focus:ring-matrix-green/50',
-                    'font-mono text-sm transition-all duration-200',
-                    currentTestResult === 'success' ? 'border-matrix-green' :
-                    currentTestResult === 'error' ? 'border-red-500' : 'border-glass-border'
-                  )}
-                />
-                <button
-                  type="button"
-                  onClick={() => setCurrentShowKey(!currentShowKey)}
-                  className="absolute right-12 top-1/2 -translate-y-1/2 text-matrix-white/40 hover:text-matrix-green transition-colors"
-                  aria-label={currentShowKey ? 'Hide API key' : 'Show API key'}
-                >
-                  {currentShowKey ? (
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                    </svg>
-                  ) : (
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
-                    </svg>
-                  )}
-                </button>
-                <button
-                  onClick={() => testConnection(provider)}
-                  disabled={!currentApiKey || currentTesting}
-                  className={clsx(
-                    'absolute right-2 top-1/2 -translate-y-1/2 px-2 py-1 rounded text-xs font-mono',
-                    'transition-all duration-200',
-                    currentApiKey && !currentTesting
-                      ? 'text-matrix-green hover:bg-matrix-green/20'
-                      : 'text-matrix-white/30 cursor-not-allowed'
-                  )}
-                >
-                  {currentTesting ? '...' : '⚡'}
-                </button>
-              </div>
-              <div className="mt-2 flex items-center justify-between">
-                <span className="text-xs text-matrix-white/40">
-                  Stored {saveKey ? 'locally in browser' : 'for this session only'}
-                </span>
-                {currentTestResult === 'success' && (
-                  <span className="text-xs text-matrix-green">✓ Valid</span>
-                )}
-                {currentTestResult === 'error' && (
-                  <span className="text-xs text-red-400">✗ Invalid</span>
-                )}
-              </div>
-            </div>
-
-            {/* Model Selection */}
-            <div>
-              <label className="block text-xs font-mono text-matrix-white/50 uppercase tracking-wider mb-2">
-                Model
-              </label>
-              <select
-                value={currentModel}
-                onChange={(e) => setCurrentModel(e.target.value)}
-                className="matrix-select"
-              >
-                {currentModels.map((m) => (
-                  <option key={m.value} value={m.value}>
-                    {m.label} - {m.description}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-          <div className="matrix-divider" />
-
-          {/* RAG Mode Settings */}
-          <div className="space-y-5">
-            <h3 className="section-header">
-              Retrieval Mode
-            </h3>
-
-            {/* RAG Mode Selector */}
-            <div>
-              <label className="block text-xs font-mono text-matrix-white/50 uppercase tracking-wider mb-2">
-                Search Strategy
-              </label>
-              <select
-                value={ragMode}
-                onChange={(e) => setRagMode(e.target.value as RAGMode)}
-                className="matrix-select"
-              >
-                {RAG_MODES.map((mode) => (
-                  <option key={mode.value} value={mode.value}>
-                    {mode.label} - {mode.description} ({mode.latency})
-                  </option>
-                ))}
-              </select>
-              <p className="mt-2 text-xs text-matrix-white/40">
-                {ragMode === 'auto' && 'System analyses query complexity and routes to optimal mode.'}
-                {ragMode === 'simple' && 'Fastest option using semantic embeddings only.'}
-                {ragMode === 'hybrid' && 'Combines semantic + keyword search for better recall.'}
-                {ragMode === 'agentic' && 'AI agent that can search multiple times and refine results.'}
-              </p>
-            </div>
-
-            {/* Deep Mode Toggle */}
-            <label className="flex items-center gap-3 cursor-pointer group">
-              <input
-                type="checkbox"
-                checked={deepMode}
-                onChange={(e) => setDeepMode(e.target.checked)}
-                className="w-4 h-4 bg-matrix-black/60 border-glass-border rounded text-matrix-green focus:ring-matrix-green/50 focus:ring-offset-0"
-              />
-              <div>
-                <span className="text-sm font-mono text-matrix-white/70 group-hover:text-matrix-white transition-colors">
-                  Deep Dive Mode
-                </span>
-                <p className="text-xs text-matrix-white/40 mt-0.5">
-                  Force agentic mode for thorough multi-pass search
-                </p>
-              </div>
-            </label>
-          </div>
-
-          <div className="matrix-divider" />
-
-          {/* General Settings */}
-          <div className="space-y-4">
-            <label className="flex items-center gap-3 cursor-pointer group">
-              <input
-                type="checkbox"
-                checked={saveKey}
-                onChange={(e) => setSaveKey(e.target.checked)}
-                className="w-4 h-4 bg-matrix-black/60 border-glass-border rounded text-matrix-green focus:ring-matrix-green/50 focus:ring-offset-0"
-              />
               <span className="text-sm font-mono text-matrix-white/70 group-hover:text-matrix-white transition-colors">
-                Remember settings
+                Deep retrieval
               </span>
-            </label>
-
-            {/* Privacy Note */}
-            <div className="p-3 bg-matrix-green/5 border border-matrix-green/20 rounded-lg space-y-1.5">
-              <p className="text-xs text-matrix-white/60 leading-relaxed">
-                <span className="text-matrix-green font-medium">Privacy:</span> API keys are stored locally in your browser (or only in this session if &ldquo;Remember settings&rdquo; is off). They&rsquo;re used to authenticate requests to {provider === 'anthropic' ? 'Anthropic' : 'OpenAI'} on your behalf via this app&rsquo;s server route — they&rsquo;re never persisted server-side and never shared with third parties.
-              </p>
-              <p className="text-xs text-matrix-white/50 leading-relaxed">
-                <span className="text-matrix-green font-medium">No data retention:</span> Conversations and uploaded documents are scoped to your session and deleted when the session ends. Nothing is stored long-term on the server.
+              <p className="text-xs text-matrix-white/40 mt-0.5">
+                The model drafts up to three sub-questions, each is searched
+                separately and the results are fused. Slower, wider net.
               </p>
             </div>
-          </div>
+          </label>
+        </div>
 
+        <div className="matrix-divider" />
+
+        {/* What happens to your data */}
+        <div className="p-3 bg-matrix-green/5 border border-matrix-green/20 rounded-lg space-y-1.5">
+          <p className="text-xs text-matrix-white/60 leading-relaxed">
+            <span className="text-matrix-green font-medium">Local by design:</span>{' '}
+            documents, embeddings and the search index live in{' '}
+            <code className="text-matrix-green/80">backend/data/</code> on this
+            machine and stay there until you delete them. Questions and answers
+            go to Ollama on 127.0.0.1 and nowhere else.
+          </p>
+          <p className="text-xs text-matrix-white/50 leading-relaxed">
+            No accounts, no API keys, no telemetry. The test that enforces
+            this lives at <code className="text-matrix-green/80">backend/tests/test_no_egress.py</code>.
+          </p>
+        </div>
       </div>
     </Modal>
   );

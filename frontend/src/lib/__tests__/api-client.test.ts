@@ -1,6 +1,5 @@
 import { apiClient } from '../api-client';
 
-// Mock fetch globally
 const mockFetch = jest.fn();
 global.fetch = mockFetch;
 
@@ -10,244 +9,137 @@ describe('APIClient', () => {
   });
 
   describe('health', () => {
-    it('returns health status on success', async () => {
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve({ status: 'healthy' }),
-      });
-
-      const result = await apiClient.health();
-
-      expect(result).toEqual({ status: 'healthy' });
-      expect(mockFetch).toHaveBeenCalledWith(expect.stringContaining('/api/health'), expect.anything());
+    it('returns the health payload', async () => {
+      const payload = { status: 'ready', hints: [] };
+      mockFetch.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve(payload) });
+      await expect(apiClient.health()).resolves.toEqual(payload);
+      expect(mockFetch).toHaveBeenCalledWith(expect.stringContaining('/api/health'));
     });
 
-    it('throws error on failure', async () => {
+    it('surfaces the backend detail message on failure', async () => {
       mockFetch.mockResolvedValueOnce({
         ok: false,
+        json: () => Promise.resolve({ detail: { code: 'x', message: 'Ollama is down' } }),
       });
-
-      await expect(apiClient.health()).rejects.toThrow('Health check failed');
+      await expect(apiClient.health()).rejects.toThrow('Ollama is down');
     });
   });
 
-  describe('chat', () => {
-    it('sends chat request with correct parameters', async () => {
-      const mockResponse = {
-        response: 'Test response',
-        citations: [],
-        metrics: { query_time_ms: 100 },
-      };
-
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve(mockResponse),
-      });
-
-      const request = {
-        message: 'Test message',
-        rag_mode: 'simple' as const,
-        session_id: 'test-session',
-      };
-
-      const result = await apiClient.chat(request);
-
-      expect(result).toEqual(mockResponse);
-      expect(mockFetch).toHaveBeenCalledWith(
-        expect.stringContaining('/api/chat'),
-        expect.objectContaining({
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ ...request, stream: false }),
-        })
-      );
+  describe('documents', () => {
+    it('lists documents', async () => {
+      const docs = { documents: [{ source: 'a.md', chunks: 3, pages: null, added_at: 't' }] };
+      mockFetch.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve(docs) });
+      await expect(apiClient.listDocuments()).resolves.toEqual(docs);
     });
 
-    it('throws error on chat failure', async () => {
+    it('uploads via FormData', async () => {
+      const response = { source: 'test.pdf', chunks: 5, pages: 2, replaced: false };
+      mockFetch.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve(response) });
+      const file = new File(['content'], 'test.pdf', { type: 'application/pdf' });
+      await expect(apiClient.uploadDocument(file)).resolves.toEqual(response);
+      const [url, options] = mockFetch.mock.calls[0];
+      expect(url).toContain('/api/documents/upload');
+      expect(options.method).toBe('POST');
+      expect(options.body).toBeInstanceOf(FormData);
+    });
+
+    it('throws the string detail on upload failure', async () => {
       mockFetch.mockResolvedValueOnce({
         ok: false,
-        text: () => Promise.resolve('Server error'),
+        json: () => Promise.resolve({ detail: 'Unsupported file type .exe.' }),
       });
-
-      await expect(apiClient.chat({ message: 'test', rag_mode: 'simple' }))
-        .rejects.toThrow('Chat request failed: Server error');
-    });
-  });
-
-  describe('uploadDocument', () => {
-    it('sends FormData correctly', async () => {
-      const mockResponse = {
-        document_id: 'doc-123',
-        chunks_created: 5,
-      };
-
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve(mockResponse),
-      });
-
-      const file = new File(['test content'], 'test.pdf', { type: 'application/pdf' });
-      const result = await apiClient.uploadDocument(file);
-
-      expect(result).toEqual(mockResponse);
-      expect(mockFetch).toHaveBeenCalledWith(
-        expect.stringContaining('/api/documents/upload'),
-        expect.objectContaining({
-          method: 'POST',
-        })
-      );
-
-      // Verify FormData was sent
-      const callArgs = mockFetch.mock.calls[0][1];
-      expect(callArgs.body).toBeInstanceOf(FormData);
+      const file = new File(['x'], 'x.exe');
+      await expect(apiClient.uploadDocument(file)).rejects.toThrow('Unsupported file type .exe.');
     });
 
-    it('throws error on upload failure', async () => {
-      mockFetch.mockResolvedValueOnce({
-        ok: false,
-        text: () => Promise.resolve('Upload failed'),
-      });
-
-      const file = new File(['test'], 'test.pdf', { type: 'application/pdf' });
-
-      await expect(apiClient.uploadDocument(file))
-        .rejects.toThrow('Upload failed: Upload failed');
-    });
-  });
-
-  describe('getDocumentStats', () => {
-    it('returns document stats', async () => {
-      const mockStats = {
-        total_documents: 10,
-        total_chunks: 150,
-        total_vectors: 150,
-      };
-
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve(mockStats),
-      });
-
-      const result = await apiClient.getDocumentStats();
-
-      expect(result).toEqual(mockStats);
-      expect(mockFetch).toHaveBeenCalledWith(expect.stringContaining('/api/documents/stats'), expect.anything());
-    });
-
-    it('throws error on failure', async () => {
-      mockFetch.mockResolvedValueOnce({ ok: false });
-
-      await expect(apiClient.getDocumentStats())
-        .rejects.toThrow('Failed to fetch document stats');
-    });
-  });
-
-  describe('getPerformance', () => {
-    it('returns performance metrics', async () => {
-      const mockPerformance = {
-        avg_response_time: 200,
-        requests_per_minute: 10,
-      };
-
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve(mockPerformance),
-      });
-
-      const result = await apiClient.getPerformance();
-
-      expect(result).toEqual(mockPerformance);
-      expect(mockFetch).toHaveBeenCalledWith(expect.stringContaining('/api/metrics/performance'), expect.anything());
-    });
-
-    it('throws error on failure', async () => {
-      mockFetch.mockResolvedValueOnce({ ok: false });
-
-      await expect(apiClient.getPerformance())
-        .rejects.toThrow('Failed to fetch performance');
+    it('URL-encodes the source when deleting', async () => {
+      mockFetch.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({}) });
+      await apiClient.deleteDocument('weird name & things.md');
+      const [url, options] = mockFetch.mock.calls[0];
+      expect(url).toContain('/api/documents/weird%20name%20%26%20things.md');
+      expect(options.method).toBe('DELETE');
     });
   });
 
   describe('streamChat', () => {
-    it('calls onChunk with parsed chunks', async () => {
-      const onChunk = jest.fn();
+    it('parses token, citation and done events and stops at [DONE]', async () => {
+      const onEvent = jest.fn();
       const onError = jest.fn();
       const onComplete = jest.fn();
 
-      // Create a mock ReadableStream
       const encoder = new TextEncoder();
       const stream = new ReadableStream({
         start(controller) {
-          controller.enqueue(encoder.encode('data: {"type":"token","content":"Hello"}\n\n'));
-          controller.enqueue(encoder.encode('data: {"type":"token","content":" World"}\n\n'));
+          controller.enqueue(encoder.encode('data: {"type":"mode","mode":"hybrid"}\n\n'));
+          controller.enqueue(encoder.encode('data: {"type":"token","content":"Hello "}\n\n'));
+          controller.enqueue(
+            encoder.encode(
+              'data: {"type":"citation","citation":{"index":1,"chunk_id":"abc","source":"a.md","text_preview":"t","score":1.0}}\n\n',
+            ),
+          );
+          controller.enqueue(
+            encoder.encode(
+              'data: {"type":"done","done":{"retrieved":3,"cited":1,"grounded":true,"model":"m","mode":"hybrid"}}\n\n',
+            ),
+          );
           controller.enqueue(encoder.encode('data: [DONE]\n\n'));
           controller.close();
         },
       });
 
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        body: stream,
-        headers: new Headers({ 'content-type': 'text/event-stream' }),
-      });
-
-      const abort = apiClient.streamChat(
-        { message: 'Hello', rag_mode: 'simple' },
-        onChunk,
-        onError,
-        onComplete
-      );
-
-      // Wait for stream to process
-      await new Promise(resolve => setTimeout(resolve, 100));
-
-      expect(onChunk).toHaveBeenCalledWith({ type: 'token', content: 'Hello' });
-      expect(onChunk).toHaveBeenCalledWith({ type: 'token', content: ' World' });
-      expect(onChunk).toHaveBeenCalledWith({ type: 'done' });
-      expect(onComplete).toHaveBeenCalled();
-      expect(onError).not.toHaveBeenCalled();
-
-      // Cleanup
-      if (typeof abort === 'function') abort();
-    });
-
-    it('calls onError on stream failure', async () => {
-      const onChunk = jest.fn();
-      const onError = jest.fn();
-      const onComplete = jest.fn();
-
-      mockFetch.mockResolvedValueOnce({
-        ok: false,
-        statusText: 'Internal Server Error',
-      });
+      mockFetch.mockResolvedValueOnce({ ok: true, body: stream });
 
       apiClient.streamChat(
-        { message: 'Hello', rag_mode: 'simple' },
-        onChunk,
+        { message: 'Hello', mode: 'hybrid', deep: false },
+        onEvent,
         onError,
-        onComplete
+        onComplete,
       );
+      await new Promise((resolve) => setTimeout(resolve, 100));
 
-      // Wait for error to propagate
-      await new Promise(resolve => setTimeout(resolve, 100));
-
-      expect(onError).toHaveBeenCalled();
+      expect(onEvent).toHaveBeenCalledWith({ type: 'mode', mode: 'hybrid' });
+      expect(onEvent).toHaveBeenCalledWith({ type: 'token', content: 'Hello ' });
+      expect(onEvent).toHaveBeenCalledWith(
+        expect.objectContaining({ type: 'citation' }),
+      );
+      expect(onEvent).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: 'done',
+          done: expect.objectContaining({ grounded: true, cited: 1 }),
+        }),
+      );
+      expect(onComplete).toHaveBeenCalledTimes(1);
+      expect(onError).not.toHaveBeenCalled();
     });
 
-    it('returns abort function', () => {
+    it('reports a non-OK response through onError with the backend detail', async () => {
+      const onError = jest.fn();
       mockFetch.mockResolvedValueOnce({
-        ok: true,
-        body: new ReadableStream(),
+        ok: false,
+        status: 503,
+        json: () => Promise.resolve({ detail: { code: 'ollama_unavailable', message: 'Ollama is not reachable' } }),
       });
-
-      const abort = apiClient.streamChat(
-        { message: 'Hello', rag_mode: 'simple' },
+      apiClient.streamChat(
+        { message: 'x', mode: 'hybrid', deep: false },
         jest.fn(),
+        onError,
         jest.fn(),
-        jest.fn()
       );
+      await new Promise((resolve) => setTimeout(resolve, 50));
+      expect(onError).toHaveBeenCalled();
+      expect(onError.mock.calls[0][0].message).toContain('Ollama is not reachable');
+    });
 
+    it('returns an abort function', () => {
+      mockFetch.mockResolvedValueOnce({ ok: true, body: new ReadableStream() });
+      const abort = apiClient.streamChat(
+        { message: 'x', mode: 'hybrid', deep: false },
+        jest.fn(),
+        jest.fn(),
+        jest.fn(),
+      );
       expect(typeof abort).toBe('function');
+      abort();
     });
   });
 });

@@ -3,23 +3,21 @@
 import { useState, useEffect, useCallback } from 'react';
 import { apiClient } from '@/lib/api-client';
 import { useBackendHealth } from '@/lib/hooks/useBackendHealth';
-import type { DocumentStats, EnhancedRetrievalMetrics, RAGMode } from '@/lib/types';
+import type { DocumentStats, DoneInfo } from '@/lib/types';
 
 interface StatusTabProps {
-  metrics?: EnhancedRetrievalMetrics;
-  modeUsed?: RAGMode;
+  done?: DoneInfo;
 }
-
-const MODE_COLOR: Record<RAGMode, string> = {
-  simple: 'text-accent',
-  hybrid: 'text-mode-amber',
-  agentic: 'text-mode-cyan',
-  auto: 'text-mode-purple',
-};
 
 const REFRESH_EVENT = 'morpheus:documents-changed';
 
-export default function StatusTab({ metrics, modeUsed }: StatusTabProps) {
+function formatBytes(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+export default function StatusTab({ done }: StatusTabProps) {
   const health = useBackendHealth();
   const [stats, setStats] = useState<DocumentStats | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -28,7 +26,7 @@ export default function StatusTab({ metrics, modeUsed }: StatusTabProps) {
   const fetchStats = useCallback(async () => {
     setError(null);
     try {
-      const data = await apiClient.getDocumentStats();
+      const data = await apiClient.documentStats();
       setStats(data);
       setLastSync(new Date());
     } catch (err) {
@@ -49,12 +47,12 @@ export default function StatusTab({ metrics, modeUsed }: StatusTabProps) {
   return (
     <div className="flex flex-col gap-4">
       <Section
-        title=">_ INDEX STATUS"
+        title=">_ LIBRARY"
         action={
           <button
             type="button"
             onClick={fetchStats}
-            aria-label="Refresh index status"
+            aria-label="Refresh library status"
             title="Refresh"
             className="inline-flex items-center justify-center w-6 h-6 rounded-v2-sm text-fg-muted hover:text-fg-primary hover:bg-surface-card-hover transition-colors"
           >
@@ -66,10 +64,9 @@ export default function StatusTab({ metrics, modeUsed }: StatusTabProps) {
           <p className="font-mono text-[11px] text-mode-red">{error}</p>
         ) : (
           <>
-            <StatRow label="DOC" value={stats?.total_documents ?? '—'} accent />
-            <StatRow label="CHK" value={stats?.total_chunks ?? '—'} accent />
-            <StatRow label="VEC" value={stats?.total_embeddings ?? '—'} />
-            <StatRow label="SIZ" value={stats?.index_size ?? '—'} />
+            <StatRow label="DOC" value={stats?.documents ?? '—'} accent />
+            <StatRow label="CHK" value={stats?.chunks ?? '—'} accent />
+            <StatRow label="SIZ" value={stats ? formatBytes(stats.size_bytes) : '—'} />
             {lastSync && (
               <p className="mt-1.5 font-mono text-[10px] text-fg-faint">
                 last sync · {lastSync.toLocaleTimeString()}
@@ -79,45 +76,27 @@ export default function StatusTab({ metrics, modeUsed }: StatusTabProps) {
         )}
       </Section>
 
-      <Section title=">_ LAST QUERY">
-        {metrics ? (
+      <Section title=">_ LAST ANSWER">
+        {done ? (
           <>
+            <StatRow label="MODE" value={`${done.mode}${done.deep ? ' · deep' : ''}`.toUpperCase()} accent />
             <div className="flex items-center justify-between font-mono text-[11px]">
-              <span className="text-fg-muted">[MODE]</span>
-              <span className={`${MODE_COLOR[modeUsed ?? 'auto']} uppercase`}>
-                {modeUsed ?? 'auto'}
+              <span className="text-fg-muted">[GRND]</span>
+              <span className={done.grounded ? 'text-accent' : 'text-mode-amber'}>
+                {done.grounded ? 'YES' : 'NO'}
               </span>
             </div>
-            {metrics.mode_confidence != null && (
-              <StatRow
-                label="CONF"
-                value={`${Math.round(metrics.mode_confidence * 100)}%`}
-              />
-            )}
-            <StatRow label="TIME" value={`${metrics.query_time_ms}ms`} />
-            <StatRow label="HITS" value={metrics.num_results} />
-            {metrics.tool_calls_made > 0 && (
-              <StatRow label="TOOL" value={metrics.tool_calls_made} accent />
-            )}
-            {metrics.reranked && (
-              <p className="mt-1.5 font-mono text-[11px] text-accent inline-flex items-center gap-1.5">
-                <IconCheck /> Reranked for precision
-              </p>
-            )}
-            {metrics.escalated_from && (
-              <p className="mt-1.5 font-mono text-[11px] text-mode-amber">
-                Escalated from {metrics.escalated_from.toUpperCase()}
-                {metrics.escalation_reason && (
-                  <span className="block text-fg-muted normal-case mt-0.5">
-                    {metrics.escalation_reason}
-                  </span>
-                )}
-              </p>
-            )}
+            <StatRow label="CITE" value={`${done.cited}/${done.retrieved}`} />
+            {done.retrieval_ms != null && <StatRow label="RETR" value={`${Math.round(done.retrieval_ms)}ms`} />}
+            {done.generation_ms != null && <StatRow label="GEN" value={`${Math.round(done.generation_ms)}ms`} />}
+            {done.completion_tokens != null && <StatRow label="TOK" value={`${done.prompt_tokens ?? '?'} in / ${done.completion_tokens} out`} />}
+            <p className="mt-1.5 font-mono text-[10px] text-fg-faint">
+              model · {done.model}
+            </p>
           </>
         ) : (
           <p className="font-mono text-[11px] text-fg-faint">
-            Run a query to see retrieval metrics here.
+            Ask a question to see retrieval facts here.
           </p>
         )}
       </Section>
@@ -168,14 +147,6 @@ function IconRefresh() {
       <polyline points="23 4 23 10 17 10" />
       <polyline points="1 20 1 14 7 14" />
       <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
-    </svg>
-  );
-}
-
-function IconCheck() {
-  return (
-    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-      <polyline points="20 6 9 17 4 12" />
     </svg>
   );
 }

@@ -1,78 +1,30 @@
 'use client';
 
-import { useState } from 'react';
 import { useSettings } from '@/lib/hooks/useSettings';
-import { useSession } from '@/lib/hooks/useSession';
 import { useBackendHealth } from '@/lib/hooks/useBackendHealth';
-import type { RAGMode } from '@/lib/types';
-
-interface SystemTabProps {
-  modeUsed?: RAGMode;
-}
 
 /**
- * Right-rail bottom tab: snapshot of the running stack + keyboard shortcuts.
- * All data is read-only from existing hooks — no new API calls. Designed to
- * be glanceable while the user is configuring or chatting.
+ * Right-rail bottom tab: a glanceable snapshot of the local stack plus
+ * keyboard shortcuts. Read-only, no new API calls.
  */
-export default function SystemTab({ modeUsed }: SystemTabProps) {
+export default function SystemTab() {
   const { settings } = useSettings();
-  const { sessionId } = useSession();
   const health = useBackendHealth();
-  const [copied, setCopied] = useState(false);
 
-  const netLabel = health.status === 'ready' ? 'ONLINE' : health.status === 'warming' ? 'WARMING' : '—';
-  const llmLabel = settings.provider === 'anthropic' ? 'CLAUDE' : 'OPENAI';
-  const ragLabel = (modeUsed ?? settings.ragMode ?? 'auto').toUpperCase();
-  const depLabel = settings.deepMode ? 'ON' : 'OFF';
-  const sessionShort = sessionId ? `${sessionId.slice(0, 8)}…` : '—';
-
-  const copySession = async () => {
-    if (!sessionId) return;
-    try {
-      await navigator.clipboard.writeText(sessionId);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1500);
-    } catch {
-      // Clipboard may be unavailable (e.g. http context). Silently fail.
-    }
-  };
+  const netLabel =
+    health.status === 'ready' ? 'ONLINE' : health.status === 'warming' ? 'STARTING' : '—';
 
   return (
     <div className="flex flex-col gap-4">
       <Section title=">_ SYSTEM">
         <StatRow label="NET" value={netLabel} accent={health.status === 'ready'} />
-        <StatRow label="LLM" value={llmLabel} accent />
-        <StatRow label="RAG" value={ragLabel} accent />
-        <StatRow label="DEP" value={depLabel} accent={settings.deepMode} />
+        <StatRow label="MOD" value={settings.model ?? 'default'} accent />
+        <StatRow label="RAG" value={settings.mode.toUpperCase()} accent />
+        <StatRow label="DEP" value={settings.deep ? 'ON' : 'OFF'} accent={settings.deep} />
         <p className="mt-2 font-mono text-[11px] text-fg-muted leading-relaxed">
-          Intelligent routing engaged. The system analyses query complexity and
-          routes to the optimal retrieval mode.
+          Everything runs on this machine: LanceDB for retrieval, Ollama for
+          generation. Nothing leaves it.
         </p>
-      </Section>
-
-      <Section title=">_ SESSION">
-        <div className="flex items-center justify-between font-mono text-[11px]">
-          <span className="text-fg-muted">[ID]</span>
-          <button
-            type="button"
-            onClick={copySession}
-            disabled={!sessionId}
-            title={sessionId ? 'Copy session ID' : 'No session yet'}
-            className="inline-flex items-center gap-1.5 text-fg-secondary hover:text-fg-primary disabled:opacity-40 disabled:hover:text-fg-secondary transition-colors"
-          >
-            <span className="tabular-nums">{sessionShort}</span>
-            <span className="text-fg-faint">{copied ? '✓' : '⧉'}</span>
-          </button>
-        </div>
-        <StatRow
-          label="MOD"
-          value={
-            settings.provider === 'anthropic'
-              ? settings.anthropicModel?.split('-').slice(-2).join('-') || '—'
-              : settings.openaiModel || '—'
-          }
-        />
       </Section>
 
       <Section title=">_ SHORTCUTS">

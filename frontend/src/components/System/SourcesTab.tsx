@@ -11,8 +11,8 @@ interface SourcesTabProps {
  * dispatches `morpheus:metrics-updated` whenever ChatInterface receives a new
  * response; the panel re-renders us with the latest `citations` array.
  *
- * Render priority is the relevance_score (back-end already orders results
- * before sending headers; we don't re-sort to avoid surprising the user).
+ * Every card is a verified citation: its [n] ordinal is the marker used in
+ * the answer text, mapped server-side to a retrieved chunk.
  */
 export default function SourcesTab({ citations }: SourcesTabProps) {
   if (!citations || citations.length === 0) {
@@ -26,7 +26,7 @@ export default function SourcesTab({ citations }: SourcesTabProps) {
         </span>
         <p className="m-0 font-mono text-[11.5px] text-fg-muted">No sources yet.</p>
         <p className="m-0 text-[11px] text-fg-faint">
-          Citations from retrieved chunks appear here after a query.
+          Verified citations from the last answer appear here.
         </p>
       </div>
     );
@@ -44,8 +44,8 @@ export default function SourcesTab({ citations }: SourcesTabProps) {
       </header>
 
       <ul className="flex flex-col gap-2">
-        {citations.map((c, i) => (
-          <SourceCard key={`${c.source}-${i}`} citation={c} index={i + 1} />
+        {citations.map((c) => (
+          <SourceCard key={c.chunk_id} citation={c} />
         ))}
       </ul>
     </div>
@@ -54,12 +54,11 @@ export default function SourcesTab({ citations }: SourcesTabProps) {
 
 interface SourceCardProps {
   citation: Citation;
-  index: number;
 }
 
-function SourceCard({ citation, index }: SourceCardProps) {
-  const ordinal = String(index).padStart(2, '0');
-  const score = Math.round((citation.relevance_score ?? 0) * 100);
+function SourceCard({ citation }: SourceCardProps) {
+  const ordinal = String(citation.index).padStart(2, '0');
+  const score = Math.round((citation.score ?? 0) * 100);
   const filename = citation.source;
   const ext = filename.split('.').pop()?.toLowerCase() || 'doc';
 

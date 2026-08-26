@@ -1,94 +1,125 @@
-import {
+// Plain fetch client for the local FastAPI backend. No sessions, no keys:
+// the backend is on this machine and the library is yours.
+
+import type {
   ChatRequest,
-  ChatResponse,
-  DocumentUploadResponse,
+  DocumentInfo,
   DocumentStats,
-  StreamChunk,
+  DocumentUploadResponse,
+  HealthResponse,
+  ModelsResponse,
+  StreamEvent,
 } from './types';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000';
+
+async function ensureOk(response: Response, fallback: string): Promise<Response> {
+  if (response.ok) return response;
+  let detail = fallback;
+  try {
+    const body = await response.json();
+    const d = (body as { detail?: unknown })?.detail;
+    if (typeof d === 'string') detail = d;
+    else if (d && typeof d === 'object' && 'message' in d) {
+      detail = String((d as { message: unknown }).message);
+    }
+  } catch {
+    // keep the fallback message
+  }
+  throw new Error(detail);
+}
 
 class APIClient {
-  private baseURL: string;
-  private sessionId: string | null = null;
+  baseURL = API_URL;
 
-  constructor() {
-    this.baseURL = API_URL;
+  async health(): Promise<HealthResponse> {
+    const res = await ensureOk(
+      await fetch(`${this.baseURL}/api/health`),
+      'Health check failed',
+    );
+    return res.json();
   }
 
-  // Set session ID for all subsequent requests
-  setSessionId(sessionId: string) {
-    this.sessionId = sessionId;
-    console.log('🔑 API client session set:', sessionId);
+  async listModels(): Promise<ModelsResponse> {
+    const res = await ensureOk(
+      await fetch(`${this.baseURL}/api/models`),
+      'Failed to list models',
+    );
+    return res.json();
   }
 
-  // Get session headers
-  private getSessionHeaders(): Record<string, string> {
-    if (this.sessionId) {
-      return { 'X-Session-ID': this.sessionId };
-    }
-    return {};
+  async uploadDocument(file: File): Promise<DocumentUploadResponse> {
+    const formData = new FormData();
+    formData.append('file', file);
+    const res = await ensureOk(
+      await fetch(`${this.baseURL}/api/documents/upload`, {
+        method: 'POST',
+        body: formData,
+      }),
+      'Upload failed',
+    );
+    return res.json();
   }
 
-  // Health check
-  async health(): Promise<{ status: string }> {
-    const response = await fetch(`${this.baseURL}/api/health`, {
-      headers: this.getSessionHeaders(),
-    });
-    if (!response.ok) throw new Error('Health check failed');
-    return response.json();
+  async listDocuments(): Promise<{ documents: DocumentInfo[] }> {
+    const res = await ensureOk(
+      await fetch(`${this.baseURL}/api/documents`),
+      'Failed to fetch the document list',
+    );
+    return res.json();
   }
 
-  // Send chat message (non-streaming)
-  async chat(request: ChatRequest): Promise<ChatResponse> {
-    const response = await fetch(`${this.baseURL}/api/chat`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        ...this.getSessionHeaders(),
-      },
-      body: JSON.stringify({ ...request, stream: false }),
-    });
-
-    if (!response.ok) {
-      const error = await response.text();
-      throw new Error(`Chat request failed: ${error}`);
-    }
-
-    return response.json();
+  async documentStats(): Promise<DocumentStats> {
+    const res = await ensureOk(
+      await fetch(`${this.baseURL}/api/documents/stats`),
+      'Failed to fetch document stats',
+    );
+    return res.json();
   }
 
-  // Stream chat response
+  async deleteDocument(source: string): Promise<void> {
+    await ensureOk(
+      await fetch(`${this.baseURL}/api/documents/${encodeURIComponent(source)}`, {
+        method: 'DELETE',
+      }),
+      'Failed to delete the document',
+    );
+  }
+
+  async clearDocuments(): Promise<void> {
+    await ensureOk(
+      await fetch(`${this.baseURL}/api/documents`, { method: 'DELETE' }),
+      'Failed to clear the library',
+    );
+  }
+
+  /**
+   * POST /api/chat and parse the SSE stream. Events arrive as
+   * `data: <json>` lines; `data: [DONE]` terminates. Returns an abort
+   * function.
+   */
   streamChat(
     request: ChatRequest,
-    onChunk: (chunk: StreamChunk) => void,
+    onEvent: (event: StreamEvent) => void,
     onError: (error: Error) => void,
-    onComplete: () => void
+    onComplete: () => void,
   ): () => void {
     const abortController = new AbortController();
-    let reader: ReadableStreamDefaultReader<Uint8Array> | null = null;
 
-    const startStream = async () => {
+    const run = async () => {
+      let reader: ReadableStreamDefaultReader<Uint8Array> | null = null;
       try {
-        console.log('🚀 Starting stream for request:', request.message.substring(0, 50));
         const response = await fetch(`${this.baseURL}/api/chat`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Accept': 'text/event-stream',
-            ...this.getSessionHeaders(),
+            Accept: 'text/event-stream',
           },
-          body: JSON.stringify({ ...request, stream: true }),
+          body: JSON.stringify(request),
           signal: abortController.signal,
         });
-
-        console.log('📡 Response received:', response.status, response.headers.get('content-type'));
-
-        if (!response.ok) {
-          throw new Error(`Stream failed: ${response.statusText}`);
-        }
-
-        if (!response.body) {
+        if (!response.ok || !response.body) {
+          await ensureOk(response, `Chat failed (${response.status})`);
           throw new Error('No response body');
         }
 
@@ -96,163 +127,48 @@ class APIClient {
         const decoder = new TextDecoder();
         let buffer = '';
 
-        console.log('✅ Stream reader ready, starting to read...');
-
-        while (true) {
+        for (;;) {
           const { done, value } = await reader.read();
-
           if (done) {
-            console.log('🏁 Stream done');
             onComplete();
-            break;
+            return;
           }
+          buffer += decoder.decode(value, { stream: true });
 
-          // Append new data to buffer
-          const chunk = decoder.decode(value, { stream: true });
-          buffer += chunk;
-          console.log('📦 Received chunk, buffer size:', buffer.length, 'chunk:', chunk.substring(0, 100));
-
-          // SSE events are separated by double newlines
-          // Look for complete events
           let boundary = buffer.indexOf('\n\n');
-
           while (boundary !== -1) {
-            // Extract complete event
-            const event = buffer.slice(0, boundary);
+            const rawEvent = buffer.slice(0, boundary);
             buffer = buffer.slice(boundary + 2);
-
-            console.log('🔍 Processing event:', event.substring(0, 150));
-
-            // Parse the event
-            const lines = event.split('\n');
-
-            for (const line of lines) {
-              if (line.startsWith('data: ')) {
-                const data = line.slice(6).trim();
-
-                if (data === '[DONE]') {
-                  console.log('✅ Received [DONE] marker');
-                  onChunk({ type: 'done' });
-                  onComplete();
-                  return;
-                }
-
-                // Skip empty data lines
-                if (!data) continue;
-
-                try {
-                  const chunk = JSON.parse(data) as StreamChunk;
-                  console.log('✨ Parsed chunk:', chunk);
-                  onChunk(chunk);
-                } catch (e) {
-                  console.error('❌ Failed to parse chunk:', e, 'Data:', data);
-                }
-              } else if (line.trim() && !line.startsWith(':')) {
-                // Fallback: Handle events without 'data: ' prefix (malformed SSE)
-                console.warn('⚠️ Event missing data: prefix, attempting parse:', line.substring(0, 100));
-                try {
-                  const chunk = JSON.parse(line.trim()) as StreamChunk;
-                  console.log('✨ Parsed chunk (no prefix):', chunk);
-                  onChunk(chunk);
-                } catch {
-                  console.error('❌ Failed to parse malformed event:', line.substring(0, 100));
-                }
+            for (const line of rawEvent.split('\n')) {
+              if (!line.startsWith('data: ')) continue;
+              const data = line.slice('data: '.length).trim();
+              if (!data) continue;
+              if (data === '[DONE]') {
+                onComplete();
+                return;
+              }
+              try {
+                onEvent(JSON.parse(data) as StreamEvent);
+              } catch {
+                // A malformed line is dropped; the [DONE] sentinel still
+                // terminates the stream cleanly.
               }
             }
-
-            // Look for next complete event
             boundary = buffer.indexOf('\n\n');
           }
         }
       } catch (error) {
-        if (error instanceof Error) {
-          if (error.name === 'AbortError') {
-            console.log('Stream aborted');
-          } else {
-            onError(error);
-          }
+        if (error instanceof Error && error.name !== 'AbortError') {
+          onError(error);
         }
       } finally {
-        if (reader) {
-          reader.releaseLock();
-        }
+        reader?.releaseLock();
       }
     };
 
-    startStream();
-
-    // Return abort function
-    return () => {
-      abortController.abort();
-    };
-  }
-
-  // Upload document
-  async uploadDocument(file: File): Promise<DocumentUploadResponse> {
-    const formData = new FormData();
-    formData.append('file', file);
-
-    const response = await fetch(`${this.baseURL}/api/documents/upload`, {
-      method: 'POST',
-      headers: this.getSessionHeaders(),
-      body: formData,
-    });
-
-    if (!response.ok) {
-      const error = await response.text();
-      throw new Error(`Upload failed: ${error}`);
-    }
-
-    return response.json();
-  }
-
-  // Get document statistics
-  async getDocumentStats(): Promise<DocumentStats> {
-    const response = await fetch(`${this.baseURL}/api/documents/stats`, {
-      headers: this.getSessionHeaders(),
-    });
-    if (!response.ok) throw new Error('Failed to fetch document stats');
-    return response.json();
-  }
-
-  // List documents in session
-  async listDocuments(): Promise<{ documents: string[]; count: number; total_chunks: number }> {
-    const response = await fetch(`${this.baseURL}/api/documents/list`, {
-      headers: this.getSessionHeaders(),
-    });
-    if (!response.ok) throw new Error('Failed to fetch document list');
-    return response.json();
-  }
-
-  // Cleanup session (delete all documents)
-  async cleanupSession(): Promise<{ success: boolean; vectors_deleted: number }> {
-    const response = await fetch(`${this.baseURL}/api/documents/cleanup`, {
-      method: 'POST',
-      headers: this.getSessionHeaders(),
-    });
-    if (!response.ok) throw new Error('Failed to cleanup session');
-    return response.json();
-  }
-
-  // Delete all documents in session
-  async deleteAllDocuments(): Promise<{ success: boolean }> {
-    const response = await fetch(`${this.baseURL}/api/documents/all`, {
-      method: 'DELETE',
-      headers: this.getSessionHeaders(),
-    });
-    if (!response.ok) throw new Error('Failed to delete documents');
-    return response.json();
-  }
-
-  // Get performance metrics
-  async getPerformance(): Promise<Record<string, unknown>> {
-    const response = await fetch(`${this.baseURL}/api/metrics/performance`, {
-      headers: this.getSessionHeaders(),
-    });
-    if (!response.ok) throw new Error('Failed to fetch performance');
-    return response.json();
+    run();
+    return () => abortController.abort();
   }
 }
 
-// Export singleton instance
 export const apiClient = new APIClient();

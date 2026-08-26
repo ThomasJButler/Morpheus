@@ -70,11 +70,10 @@ const config: Config = {
         },
       },
       fontFamily: {
-        mono: ['JetBrains Mono', 'Fira Code', 'monospace'],
-        sans: ['Inter', 'system-ui', 'sans-serif'],
-        // v2: Geist for body text in new components. Falls through to Inter
-        // if the geist font fails to load. Apply via className="font-geist".
-        geist: ['var(--font-geist-sans)', 'Geist', 'Inter', 'system-ui', 'sans-serif'],
+        // All local: Geist ships as a package, monospace is the system's.
+        mono: ['ui-monospace', 'SFMono-Regular', 'Menlo', 'Consolas', 'monospace'],
+        sans: ['var(--font-geist-sans)', 'Geist', 'system-ui', 'sans-serif'],
+        geist: ['var(--font-geist-sans)', 'Geist', 'system-ui', 'sans-serif'],
       },
       borderRadius: {
         // v2 radius tokens — match prototype shadcn-leaning scale

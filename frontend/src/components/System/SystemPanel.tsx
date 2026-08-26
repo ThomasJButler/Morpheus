@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useSearchParams, usePathname, useRouter } from 'next/navigation';
-import type { RAGMode, EnhancedRetrievalMetrics, QueryAnalysis, Citation } from '@/lib/types';
+import type { Citation, DoneInfo } from '@/lib/types';
 import { useSwipeToClose } from '@/lib/hooks/useSwipeToClose';
 import StatusTab from './StatusTab';
 import SourcesTab from './SourcesTab';
@@ -23,19 +23,15 @@ interface SystemPanelProps {
  * Cross-component data flow:
  *  - StatusTab fetches its own index stats via `apiClient.getDocumentStats()`
  *    and listens for the `morpheus:documents-changed` event from Phase 4.
- *  - Last-query metrics and citations arrive via the `morpheus:metrics-updated`
- *    CustomEvent dispatched from ChatInterface whenever ragMetadata changes.
- *    Same pattern as Phase 4 (decouples the rail from chat state without a
- *    context provider or state lifting).
- *  - SystemTab consumes useBackendHealth + useSession + useSettings directly.
+ *  - The last answer's citations and done stats arrive via the
+ *    `morpheus:metrics-updated` CustomEvent dispatched from ChatInterface.
+ *  - SystemTab consumes useBackendHealth + useSettings directly.
  */
 
 export type SystemPanelTab = 'status' | 'sources' | 'system';
 
 export interface MetricsSnapshot {
-  metrics?: EnhancedRetrievalMetrics;
-  modeUsed?: RAGMode;
-  analysis?: QueryAnalysis;
+  done?: DoneInfo;
   citations: Citation[];
 }
 
@@ -182,11 +178,9 @@ export default function SystemPanel({
         role="tabpanel"
         aria-label={`${tab} content`}
       >
-        {tab === 'status' && (
-          <StatusTab metrics={snapshot.metrics} modeUsed={snapshot.modeUsed} />
-        )}
+        {tab === 'status' && <StatusTab done={snapshot.done} />}
         {tab === 'sources' && <SourcesTab citations={snapshot.citations} />}
-        {tab === 'system' && <SystemTab modeUsed={snapshot.modeUsed} />}
+        {tab === 'system' && <SystemTab />}
       </div>
     </aside>
   );

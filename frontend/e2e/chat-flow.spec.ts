@@ -101,3 +101,25 @@ test.describe('Accessibility', () => {
     ).toBeVisible()
   })
 })
+
+test.describe('Locality', () => {
+  test('no request leaves localhost during the shell flow', async ({ page }) => {
+    const external: string[] = []
+    await page.route('**/*', (route) => {
+      const url = new URL(route.request().url())
+      if (!['localhost', '127.0.0.1'].includes(url.hostname)) {
+        external.push(url.href)
+        return route.abort()
+      }
+      return route.continue()
+    })
+    await page.goto('/')
+    await waitForAppShell(page)
+    await page
+      .getByRole('button', { name: /what is this document about/i })
+      .click()
+    await page.getByRole('button', { name: /send message/i }).click()
+    await page.waitForTimeout(1500)
+    expect(external).toEqual([])
+  })
+})
