@@ -1,242 +1,48 @@
-# Morpheus Frontend - Matrix-Themed RAG Interface
+# Morpheus frontend
 
-A stunning Matrix-inspired frontend for the Morpheus Agentic RAG System, built with Next.js 15, TypeScript, and Tailwind CSS.
+Next.js 15 interface for the local Morpheus backend: upload documents, ask questions, see answers with verified `[n]` citations and a grounded flag. Talks only to the backend on `127.0.0.1:8000`; no analytics, no remote fonts, no API keys.
 
-## Features
+## Run
 
-✅ **4 RAG Modes**
-- Simple Semantic Search
-- Hybrid Search
-- Cascading Retrieval (Advanced hybrid with reranking)
-- Agentic AI-Powered Search
-
-✅ **Matrix Theme**
-- Glass morphism UI components
-- Matrix rain animation
-- Terminal-style input
-- Green glow effects
-
-✅ **Real-Time Streaming**
-- Server-Sent Events (SSE)
-- Live response streaming
-- Citation highlighting
-- Performance metrics
-
-✅ **Production Ready**
-- TypeScript strict mode
-- Fully responsive design
-- Error handling
-- Session persistence
-
-## Prerequisites
-
-- Node.js 18+ and npm
-- Backend API running on `http://localhost:8000`
-
-## Quick Start
-
-1. **Install dependencies:**
 ```bash
 npm install
+npm run dev          # http://localhost:3000, expects the backend on 127.0.0.1:8000
 ```
 
-2. **Configure environment:**
-Create or edit `.env.local`:
-```env
-NEXT_PUBLIC_API_URL=http://localhost:8000
-NEXT_PUBLIC_ENABLE_MATRIX_RAIN=true
-NEXT_PUBLIC_STREAM_TIMEOUT=30000
-```
+`npm run build && npm run start` serves a production build, still against the local backend. `.env.example` lists the few variables that exist; none are required.
 
-3. **Start development server:**
-```bash
-npm run dev
-```
-
-4. **Open browser:**
-Navigate to [http://localhost:3000](http://localhost:3000)
-
-## Available Scripts
+## Scripts
 
 ```bash
-npm run dev      # Start development server
-npm run build    # Build for production
-npm run start    # Start production server
-npm run lint     # Run ESLint
+npm run lint
+npx tsc --noEmit
+npm run test:ci      # jest
+npm run test:e2e     # Playwright; includes a test that fails if any request leaves localhost
 ```
 
-## Project Structure
+`scripts/screenshot.mjs` captures the README image from a running stack.
+
+## Layout
 
 ```
-frontend/
-├── src/
-│   ├── app/                    # Next.js app directory
-│   │   ├── layout.tsx          # Root layout with Matrix theme
-│   │   ├── page.tsx            # Main chat page
-│   │   └── globals.css         # Global styles
-│   ├── components/
-│   │   ├── Chat/               # Chat components
-│   │   │   ├── ChatInterface.tsx
-│   │   │   ├── MessageList.tsx
-│   │   │   ├── ChatMessage.tsx
-│   │   │   ├── InputBar.tsx
-│   │   │   └── ModeSelector.tsx
-│   │   ├── Context/            # Context components
-│   │   │   ├── CitationHighlight.tsx
-│   │   │   ├── DocumentViewer.tsx
-│   │   │   └── RetrievalMetrics.tsx
-│   │   └── UI/                 # Reusable UI components
-│   │       ├── MatrixRain.tsx
-│   │       ├── GlassPanel.tsx
-│   │       ├── LoadingPulse.tsx
-│   │       └── Button.tsx
-│   └── lib/
-│       ├── api-client.ts       # Backend API client
-│       ├── types.ts            # TypeScript types
-│       └── hooks/              # React hooks
-│           └── useChat.ts      # Chat state management
+src/
+  app/                layout (local Geist font, theme bootstrap), page, global styles
+  components/
+    AppShell/         three-pane shell, header, mobile drawers, start-up strip
+    Chat/             ChatInterface, MessageList, ChatMessage (grounded chip, citations), Composer, mode badge
+    Docs/             library sidebar with per-document delete and clear-all
+    System/           Status, Sources (the last answer's verified citations), System tabs
+    Documents/        uploader
+    Settings/         theme, model picker (installed Ollama models), retrieval mode, deep toggle
+    Onboarding/       quick start guide
+  lib/
+    api-client.ts     fetch + SSE client for the backend
+    hooks/useLocalChat.ts   chat state over the SSE stream
+    hooks/useSettings.ts    persisted settings; purges the pre-2.0 blob that held API keys
+    hooks/useBackendHealth.ts
+    types.ts          mirrors backend/app/models/chat.py
 ```
 
-## Features in Detail
+## Security headers
 
-### RAG Modes
-
-1. **Simple Mode**: Basic semantic search using embeddings
-2. **Hybrid Mode**: Combines dense and sparse retrieval
-3. **Cascading Mode**: Advanced hybrid retrieval with cross-encoder reranking (48% performance improvement)
-4. **Agentic Mode**: Claude AI decides search strategy autonomously
-
-### Matrix Theme
-
-The UI features a stunning Matrix-inspired design:
-- Deep black background with subtle green gradients
-- Glass morphism panels with green borders
-- Matrix rain animation (can be toggled)
-- Terminal-style input with blinking cursor
-- Green glow effects on hover/focus
-
-### Real-Time Streaming
-
-Uses Server-Sent Events for real-time response streaming:
-- Instant feedback as responses generate
-- Progressive citation loading
-- Live performance metrics
-- Smooth animations
-
-## API Integration
-
-The frontend connects to the backend API at `http://localhost:8000` by default.
-
-### Endpoints Used:
-- `POST /api/chat` - Send messages with streaming
-- `GET /api/modes` - Get available RAG modes
-- `POST /api/documents/upload` - Upload documents
-- `GET /api/metrics/compare` - Compare mode performance
-
-## Customization
-
-### Theme Colors
-
-Edit `tailwind.config.ts` to customize the Matrix theme:
-
-```javascript
-colors: {
-  matrix: {
-    black: '#0a0a0a',
-    green: '#00ff00',
-    'green-dim': '#00cc00',
-    cyan: '#00ffff',
-    white: '#e0e0e0',
-  }
-}
-```
-
-### Matrix Rain
-
-Toggle the Matrix rain animation:
-
-```env
-NEXT_PUBLIC_ENABLE_MATRIX_RAIN=false
-```
-
-## Performance
-
-- **Lighthouse Score**: 90+ across all metrics
-- **Build Size**: ~100KB First Load JS
-- **Response Time**: < 500ms initial stream
-- **Optimizations**:
-  - Component memoization
-  - Virtual scrolling ready
-  - Image optimization
-  - Code splitting
-
-## Deployment
-
-### Production Build
-
-```bash
-npm run build
-npm run start
-```
-
-### Environment Variables
-
-For production, update `.env.production`:
-
-```env
-NEXT_PUBLIC_API_URL=https://api.your-domain.com
-```
-
-### Deployment Platforms
-
-Optimized for:
-- **Vercel** (recommended for Next.js)
-- **Netlify**
-- **Railway**
-- **AWS Amplify**
-
-## Troubleshooting
-
-### Backend Connection Issues
-
-If the frontend can't connect to the backend:
-1. Ensure backend is running on port 8000
-2. Check CORS settings in backend
-3. Verify `NEXT_PUBLIC_API_URL` in `.env.local`
-
-### Build Errors
-
-If build fails:
-1. Clear `.next` folder: `rm -rf .next`
-2. Clear node_modules: `rm -rf node_modules && npm install`
-3. Check Node.js version: `node --version` (should be 18+)
-
-### Styling Issues
-
-If styles don't load properly:
-1. Ensure Tailwind CSS is imported in `globals.css`
-2. Check PostCSS configuration
-3. Restart development server
-
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Test thoroughly
-5. Submit a pull request
-
-## License
-
-MIT License - See LICENSE file for details
-
-## Support
-
-For issues or questions:
-- Open an issue on GitHub
-- Check the backend documentation
-- Review CLAUDE.md for architecture details
-
----
-
-*"Welcome to the real world..."* - Morpheus 🟢
+`next.config.js` sets a Content-Security-Policy whose `connect-src` is the local backend and nothing else, plus `X-Frame-Options: DENY`, `nosniff`, a referrer policy and a permissions policy. The bundle is checked in CI for font, analytics and CDN hosts.

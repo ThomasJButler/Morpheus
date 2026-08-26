@@ -14,3 +14,12 @@ Written 2026-08-26 against commit `3397d0b` on `feat/localai`, before any code w
 Reading order for a first pass: the summary of the review, then 01, then 03. The rest is reference.
 
 These documents are not deleted when the work is done. They are the record of what was found and why each decision was made; the review's status table is the only part that changes.
+
+## Outcome
+
+The work described here landed on `feat/localai` on 2026-08-26, one commit per step plus fixes
+found along the way: `2f91d7b` docs, `d2b28ea` step 0 and 1, `ec8b551` step 2, `4c09a58` step 3,
+`98a4881` step 4, `d597d5e` step 5, `c67c8d3` step 6, `7ec96c3` step 7, `42bf75d` and `8eb1ffc`
+step 8, `3f23fda` (filenames out of the access log), `87a3002` step 9, `0ff0394` (the SSE framing bug the
+screenshot run found), `da5d213` (npm audit fix), and the step 10 commit for the honesty pass. `SECURITY_REVIEW.md` section 7 carries the verdict for every finding, and
+sections 5.8 to 5.11 the evidence gathered after the rebuild.

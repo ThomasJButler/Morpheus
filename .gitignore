@@ -1,7 +1,6 @@
 /.claude
 backend/.env
 .env.local
-/Pinecone RAG
 /gicc
 
 # Personal/local config files
@@ -102,12 +101,9 @@ coverage.xml
 /frontend/node_modules
 /backend/.venv
 
-# Starter templates (unused)
-pinecone-vercel-starter/
-DEPLOYMENT.md
+# Local-only notes and scratch
 kotsd.txt
 /MorpheusRAGLearningDocuments
-CLAUDE.md
 plan.md
 
 # Test documents (user-generated for testing)

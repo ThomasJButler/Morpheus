@@ -1,6 +1,6 @@
 # Threat Model
 
-Morpheus is a **single-user document question-answering tool that runs on one machine**. This document states the trust boundary so that anyone changing the code can reason about a security decision without reading the whole codebase. It describes the design being built on `feat/localai`; `SECURITY_REVIEW.md` records what the code did before that work and tracks each finding to its fix.
+Morpheus is a **single-user document question-answering tool that runs on one machine**. This document states the trust boundary so that anyone changing the code can reason about a security decision without reading the whole codebase. It describes the design as built on `feat/localai` (2026-08-26); `SECURITY_REVIEW.md` records what the code did before that work and tracks each finding to the commit that fixed it.
 
 ## What Morpheus is for
 
@@ -31,7 +31,7 @@ There are no accounts, no API keys, and no operator-side secrets. There is nothi
 
 | Threat | Defence | Where |
 |---|---|---|
-| Data leaves the machine | No cloud client is importable; loopback-only HTTP; static and runtime egress tests; CI runs the suite in a network namespace with only loopback | `tests/test_no_cloud_imports.py`, `tests/test_no_egress.py`, `scripts/prove_local.sh`, CI |
+| Data leaves the machine | No cloud client is importable; loopback-only HTTP; static and runtime egress tests; the macOS proof runs the backend under a kernel sandbox; CI runs the suite in a network namespace with only loopback | `tests/test_no_cloud_imports.py`, `tests/test_no_egress.py`, `scripts/prove_local.sh`, `.github/workflows/backend-test.yml` |
 | Oversized upload exhausts memory or disk | Request body capped at the ASGI layer before any read | `app/core/body_limit.py` |
 | Malicious document hangs or crashes the parser | Maintained parser (`pypdf` 6), page and character caps, parse errors mapped to 422 without tracebacks | `app/utils/document_processor.py` |
 | Temp file left behind with document contents | Temp files live under `data/tmp` (0700) and are removed in `finally` | `app/api/documents.py` |

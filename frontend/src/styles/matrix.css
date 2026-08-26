@@ -418,7 +418,7 @@
   background: var(--matrix-green);
 }
 
-/* Message Animations (from pinecone-vercel-starter demo) */
+/* Message Animations */
 @keyframes slideInFromBottom {
   0% {
     transform: translateY(100%);

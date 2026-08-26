@@ -1,11 +1,11 @@
 # Morpheus Demo Queries
 ## Test Queries for TechCorp Employee Handbook
 
-Use these queries to demonstrate different RAG modes:
+Use these queries to try retrieval against the sample handbook:
 
 ---
 
-## Factual Queries (Simple RAG)
+## Factual queries (direct lookups)
 
 ### Query 1: "Who is the CTO?"
 **Expected Answer:**
@@ -21,7 +21,7 @@ Use these queries to demonstrate different RAG modes:
 
 ---
 
-## Procedural Queries (Hybrid RAG)
+## Procedural queries (hybrid retrieval shines here)
 
 ### Query 4: "How do I submit an expense report?"
 **Expected Answer:**
@@ -55,7 +55,7 @@ Use these queries to demonstrate different RAG modes:
 
 ---
 
-## Comparative Queries (Hybrid/Agentic RAG)
+## Comparative queries (try Deep mode)
 
 ### Query 7: "Compare the health insurance plans"
 **Expected Answer:**
@@ -83,7 +83,7 @@ Use these queries to demonstrate different RAG modes:
 
 ---
 
-## Complex/Multi-Part Queries (Agentic RAG)
+## Multi-part queries (try Deep mode)
 
 ### Query 9: "What are all the security requirements for working remotely?"
 **Expected Answer:**

@@ -1,155 +1,64 @@
-# Morpheus Backend
+# Morpheus backend
 
-FastAPI backend for Morpheus with agentic reasoning, cascading retrieval, and streaming support.
+FastAPI service that indexes documents into a local LanceDB store, retrieves with hybrid search, and streams answers from a model running in Ollama, with every citation verified before it reaches the client. Binds to `127.0.0.1:8000` and talks only to Ollama on `127.0.0.1:11434`.
 
-## Quick Start
-
-### 1. Set up environment
+## Run
 
 ```bash
-# Create and activate virtual environment
-python3 -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-
-# Install dependencies
-pip install -r requirements.txt
+python3 -m venv .venv
+.venv/bin/pip install -r requirements.txt
+.venv/bin/uvicorn app.main:app          # or: python -m app.main
 ```
 
-### 2. Configure environment variables
+No `.env` is needed. `.env.example` lists every setting with its default; `../DEPLOYMENT.md` explains the ones worth changing.
+
+## Endpoints
+
+| Method and path | What it does |
+|---|---|
+| `GET /api/health` | Ollama reachable, configured models installed, store path and counts, hints such as `ollama pull ...` |
+| `GET /api/models` | Installed Ollama models, split into chat and embedding, with the configured ones flagged |
+| `POST /api/chat` | Server-Sent Events: `mode`, `token`, `citation`, `done`, `error`, then `[DONE]`. Body `{message, mode: hybrid|vector, deep, model?}` |
+| `POST /api/documents/upload` | Multipart `file`; PDF, DOCX, TXT, MD; capped before the body is read |
+| `GET /api/documents` | The library: source, chunks, pages, added_at |
+| `POST /api/documents/delete` | `{source}`; removes the chunks and compacts old versions so the text leaves the disk |
+| `DELETE /api/documents` | Clears the library |
+| `GET /api/documents/stats` | Documents, chunks, bytes on disk |
+
+Interactive docs at `/docs`.
+
+## Layout
+
+```
+app/
+  main.py                 app factory: middleware order, error handlers, lifespan (store + Ollama client)
+  core/config.py          settings; every default has its reason in a comment
+  core/ollama.py          the only network client: /api/embed, /api/chat (stream), /api/tags
+  core/store.py           LanceDB table, deterministic chunk ids, hybrid search with RRF, delete + compact
+  core/prompts.py         policy above persona; documents in a guarded, escaped, numbered block
+  core/body_limit.py      request body cap at the ASGI layer (from isq-agent, MIT)
+  core/rate_limit.py      per-IP limiter (from isq-agent, MIT)
+  rag/pipeline.py         embed, retrieve, refuse-or-generate, stream
+  rag/citations.py        the streaming [n] validator
+  api/                    system (health, models), documents, chat
+  utils/                  chunker, parsers with caps
+tests/                    see TESTING.md
+scripts/                  prove_local.sh, smoke_local.sh, loopback-only.sb
+test-documents/           the sample handbook and demo questions
+```
+
+## Tests
 
 ```bash
-# Copy the example env file
-cp .env.example .env
-
-# Edit .env and add your API keys:
-# - ANTHROPIC_API_KEY
-# - OPENAI_API_KEY
-# - PINECONE_API_KEY
+.venv/bin/pytest                         # everything; the Ollama integration test skips if 11434 is silent
+.venv/bin/pytest -m integration          # just the real-Ollama run (needs qwen3.5:0.8b pulled)
+.venv/bin/ruff check app tests
+.venv/bin/pip-audit
+scripts/prove_local.sh                   # macOS: kernel sandbox + lsof sampling, full ingest-and-query cycle
 ```
 
-### 3. Run the server
+`TESTING.md` describes what each test file proves.
 
-```bash
-# Development mode (with auto-reload)
-uvicorn app.main:app --reload --port 8000
+## Logging
 
-# Production mode
-uvicorn app.main:app --host 0.0.0.0 --port 8000
-```
-
-The API will be available at http://localhost:8000
-
-## API Documentation
-
-Interactive API documentation is available at:
-- Swagger UI: http://localhost:8000/docs
-- ReDoc: http://localhost:8000/redoc
-
-## Available Endpoints
-
-### Chat
-- `POST /api/chat` - Send a message and get a response (streaming or non-streaming)
-
-### Health & Info
-- `GET /api/health` - Health check and Pinecone connection status
-- `GET /api/modes` - List available RAG modes
-- `GET /` - API information
-
-## RAG Modes
-
-All modes are fully implemented:
-
-- **Simple**: Basic semantic search with direct retrieval
-- **Hybrid**: Dense + sparse retrieval with cross-encoder reranking (48% performance improvement)
-- **Agentic**: Claude-powered intelligent search strategy with autonomous decision-making
-- **Query Rewriting**: Automatic query enhancement and expansion
-
-## Project Structure
-
-```
-backend/
-├── app/
-│   ├── main.py                    # FastAPI application entry point
-│   ├── api/
-│   │   ├── chat.py                # Chat endpoints
-│   │   ├── documents.py           # Document processing endpoints
-│   │   └── metrics.py             # Performance metrics endpoints
-│   ├── core/
-│   │   ├── config.py              # Configuration management
-│   │   └── pinecone_client.py     # Vector database client
-│   ├── models/
-│   │   └── chat.py                # Pydantic models
-│   ├── rag/
-│   │   ├── simple.py              # Simple semantic search
-│   │   ├── hybrid.py              # Cascading retrieval (dense + sparse)
-│   │   ├── agentic.py             # Agentic RAG with tool use
-│   │   ├── reranker.py            # Cross-encoder reranking
-│   │   └── query_rewriter.py      # Query enhancement
-│   └── utils/
-│       ├── chunking.py            # Document chunking
-│       ├── document_processor.py   # Document processing
-│       └── session.py             # Session management
-├── tests/                         # Test files
-├── requirements.txt               # Python dependencies
-├── IMPLEMENTATION_SUMMARY.md      # Implementation details
-├── TESTING.md                     # Testing documentation
-└── .env.example                   # Environment template
-```
-
-## Development
-
-### Running tests
-```bash
-pytest tests/ -v
-```
-
-### Code formatting
-```bash
-black app/
-ruff check app/
-```
-
-### Type checking
-```bash
-mypy app/
-```
-
-## Environment Variables
-
-See [.env.example](.env.example) for all configuration options.
-
-Key variables:
-- `ANTHROPIC_API_KEY` - Claude API key (required)
-- `OPENAI_API_KEY` - OpenAI API key for embeddings (required)
-- `PINECONE_API_KEY` - Pinecone API key (required)
-- `PINECONE_INDEX_NAME` - Name of your Pinecone index
-- `TOP_K_RESULTS` - Number of results to retrieve (default: 10)
-
-## Next Steps
-
-1. Configure your `.env` file with API keys
-2. Test the health endpoint: `curl http://localhost:8000/api/health`
-3. Try a chat request (see API docs for examples)
-4. Compare different RAG modes using the metrics endpoint
-5. Upload documents and test retrieval quality
-
-## Troubleshooting
-
-**Port already in use:**
-```bash
-# Change the port
-uvicorn app.main:app --reload --port 8001
-```
-
-**Import errors:**
-```bash
-# Ensure virtual environment is activated
-source venv/bin/activate
-# Reinstall dependencies
-pip install -r requirements.txt
-```
-
-**Pinecone connection errors:**
-- Check your API key in `.env`
-- Verify index exists in Pinecone dashboard
-- Check index dimension matches embedding model (1536 for text-embedding-3-large)
+Counts, durations, model names and error codes at INFO. Never query text, document text or filenames; deletion takes the filename in a POST body precisely so the access log does not carry it. The policy lives in `../THREAT_MODEL.md`.

@@ -175,3 +175,19 @@ If any step fails with the network off, the claim is false and the README must c
 - **Does not mean:** the model files appeared by magic. Two `ollama pull`s and the package installs are network activity, at install time, and are listed as such.
 - **Does not mean:** immune to prompt injection. Documents are treated as data and every citation is verified; a document can still try to steer the wording of an answer, and the UI shows when an answer cites nothing.
 - **Does not mean:** encrypted at rest. `backend/data/` is a directory owned by your user with mode 0700; disk encryption is the operating system's job (FileVault).
+
+## As built (2026-08-26)
+
+- Layer 1 is `backend/tests/test_no_egress.py`, unit and integration variants, plus a test that the
+  guard catches a deliberate escape.
+- Layer 2 is `backend/scripts/prove_local.sh` with `scripts/loopback-only.sb`. The first profile
+  also allowed unix sockets and over-matched; the script's sanity check caught it. Real output is
+  in `SECURITY_REVIEW.md` 5.8.
+- Layer 3 is the `sudo unshare -n` job in `.github/workflows/backend-test.yml`, rehearsed locally
+  in a container started with `--network none` (`SECURITY_REVIEW.md` 5.10).
+- Layer 4 is the `lsof` sampler inside the prove script.
+- Layer 5 is the Playwright test in `frontend/e2e/chat-flow.spec.ts` and a bundle grep in CI that
+  targets font, analytics and CDN hosts specifically; a grep for any URL-shaped string flagged
+  Next.js documentation links and Tailwind's licence banner, which are text, not egress.
+- Layer 6 is `backend/tests/test_no_cloud_imports.py`.
+- Layer 7 is written up in `DEPLOYMENT.md`.

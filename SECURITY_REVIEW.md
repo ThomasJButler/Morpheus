@@ -6,7 +6,7 @@
 | Commit reviewed | `3397d0b` on `feat/localai` (working tree clean apart from `frontend/package-lock.json` version bump) |
 | Reviewer | Claude (Fable 5), at Tom Butler's request, adversarial brief |
 | Scope | Everything tracked in the repo, the installed backend virtualenv, the CI workflows, the live deployment configuration, and the two sibling repos used as reference (`../odysseus`, `../isq-agent`) |
-| Status of findings | All findings are **Open** at the time of writing. The last section tracks resolution as the migration lands. This file is updated, not replaced. |
+| Status of findings | Written 2026-08-26 before any code changed; by the end of the same day every finding was fixed, mitigated or retired on `feat/localai`. Section 7 has the verdict and commit for each. This file is updated, not replaced. |
 
 This review was written before any code was changed, so that the findings are recorded as found and cannot be quietly fixed away. Every finding names the file and line it was observed in. Where I ran something to confirm a claim, the output is in section 5. Where something is fine, it is listed in section 4 so you know it was checked rather than missed.
 
@@ -79,7 +79,7 @@ What was not done: no live traffic was sent to the Render backend or the Vercel 
 
 **Fix.** The migration: Ollama for embeddings and generation, LanceDB on local disk, backend bound to loopback. No cloud client remains importable (`test_no_cloud_imports.py` guards it).
 
-**Status.** Open. Resolved by migration steps 1, 2, 4, 6.
+**Status.** Fixed: `d2b28ea`, `ec8b551`, `98a4881`, `c67c8d3`: cloud clients removed, LanceDB on disk, loopback bind, static guard; proven in 5.8 and 5.10.
 
 ---
 
@@ -107,7 +107,7 @@ What was not done: no live traffic was sent to the Render backend or the Vercel 
 
 **Fix.** Numbered sources in the prompt (`[1]`...`[n]`, each tied to a chunk ID); the model cites with `[n]`; an inline validator during streaming passes valid markers through and drops unknown ones **before** the client sees them; a `citation` event is emitted the first time each valid marker appears; a `done` event reports `{retrieved, cited, grounded}`; when nothing clears the retrieval floor the backend returns a fixed refusal and never calls the model (isq-agent's pattern, `rag-service/app/rag/generator.py:174-191`).
 
-**Status.** Open. Resolved by migration step 4 and the frontend step 7.
+**Status.** Fixed: `98a4881` (inline validator, refusal path), `7ec96c3` (citations rendered), plus `0ff0394` (SSE framing fix, without which the frontend dropped every event).
 
 ---
 
@@ -130,7 +130,7 @@ What was not done: no live traffic was sent to the Render backend or the Vercel 
 
 **Fix.** Bind FastAPI to `127.0.0.1` (default in the new config), remove session namespaces entirely in favour of a single on-disk library the user controls (decision recorded 2026-08-26), delete the `/cleanup` and namespace endpoints. If the app is ever exposed on a LAN, that is a documented opt-in with a warning, not a default.
 
-**Status.** Open. Resolved by migration steps 1, 3, 6.
+**Status.** Fixed: `d2b28ea` (loopback default), `4c09a58` (no sessions; one library on disk, decision 3).
 
 ---
 
@@ -153,7 +153,7 @@ What was not done: no live traffic was sent to the Render backend or the Vercel 
 
 **Fix.** Port isq-agent's `MaxBodySizeMiddleware` (rejects by `Content-Length` before reading a byte, meters chunked bodies), stream the upload to `data/tmp` (mode 0700 directory) inside `try/finally` unlink, `pypdf>=6`, `MAX_PDF_PAGES`, `MAX_TEXT_CHARS`, `python-multipart` and `starlette` upgraded, a test that proves the handler never runs for an oversized body and that `data/tmp` is empty after each failure mode.
 
-**Status.** Open. Resolved by migration steps 2 and 3.
+**Status.** Fixed: `ec8b551` (pypdf 6, page and character caps), `4c09a58` (ASGI body cap, `try/finally` temp cleanup).
 
 ---
 
@@ -176,7 +176,7 @@ What was not done: no live traffic was sent to the Render backend or the Vercel 
 
 **Fix.** Odysseus's pattern, reimplemented (licence note in `docs/audit/02`): a policy preamble in the system prompt stating that document content is data and overrides the persona; all sources in one guarded block with fixed open/close markers; marker literals escaped inside document text and filenames; numbered sources; no string-replace templating (build the prompt by concatenation of already-escaped parts). Then the citation validator (F2) makes any successful steering at least visible as an uncited or oddly-cited answer. Injection cannot be made impossible with a language model in the loop; the honest statement for the README is "documents are treated as data, and every claim's source is verifiable", not "immune".
 
-**Status.** Open. Resolved by migration step 4.
+**Status.** Mitigated: `98a4881`: guarded escaped block, policy above persona, citation validation; immunity is not claimed anywhere.
 
 ---
 
@@ -198,7 +198,7 @@ What was not done: no live traffic was sent to the Render backend or the Vercel 
 
 **Fix.** Both routes are deleted by the migration (there is no BFF; the browser talks to the local FastAPI over SSE). Until then: do not set the server-side keys on Vercel.
 
-**Status.** Open. Resolved by frontend step 7 and demo retirement.
+**Status.** Retired: `7ec96c3`: both routes deleted with the BFF; the hosted deployments are retired.
 
 ---
 
@@ -216,7 +216,7 @@ What was not done: no live traffic was sent to the Render backend or the Vercel 
 
 **Fix.** Port isq-agent's `rag-service/app/core/rate_limit.py` (per-IP `slowapi`, limits as settings, 429 handler registered in `main.py`). On a loopback-only app this is belt and braces against a runaway local script, which is still worth having and costs 15 lines.
 
-**Status.** Open. Resolved by migration step 3.
+**Status.** Fixed: `4c09a58`: per-IP limits on upload and chat.
 
 ---
 
@@ -234,7 +234,7 @@ What was not done: no live traffic was sent to the Render backend or the Vercel 
 
 **Fix.** Fixed generic messages to clients, `logger.exception` server-side (isq-agent's `answer.py`/`extract.py` pattern: transient vs permanent mapping to 503/502). SSE `error` events carry a short code, not the exception text.
 
-**Status.** Open. Resolved by migration steps 3 and 4.
+**Status.** Fixed: `d2b28ea`, `4c09a58`, `98a4881`: fixed messages, generic 500 handler, error events carry a code.
 
 ---
 
@@ -250,7 +250,7 @@ What was not done: no live traffic was sent to the Render backend or the Vercel 
 
 **Fix.** With the on-disk library decision, the claim changes rather than the mechanism: documents stay until the user deletes them, on their disk. `docs/audit/04-honesty-pass.md` has the wording.
 
-**Status.** Open. Resolved by decision 3 and honesty pass.
+**Status.** Fixed: decision 3 plus the step 10 honesty pass: documents persist until deleted and every claim now says so.
 
 ---
 
@@ -266,7 +266,7 @@ What was not done: no live traffic was sent to the Render backend or the Vercel 
 
 **Fix.** Delete both imports and the `next/font/google` use; `geist` (already a local npm dependency, `package.json:23`) plus a system monospace stack. Zero font egress, even at build.
 
-**Status.** Open. Resolved by frontend step 7.
+**Status.** Fixed: `7ec96c3`: Google Fonts imports removed, Geist local.
 
 ---
 
@@ -282,7 +282,7 @@ What was not done: no live traffic was sent to the Render backend or the Vercel 
 
 **Fix.** Remove `pinecone-text`, `nltk`, `wget`, `mmh3`, all `langchain*` packages. BM25 comes from LanceDB's built-in full-text index; the chunker becomes a 25-line function. `test_no_cloud_imports.py` and the network-namespace test in CI keep it that way.
 
-**Status.** Open. Resolved by migration steps 2 and 6.
+**Status.** Fixed: `ec8b551`, `c67c8d3`: pinecone-text, NLTK and the langchain tree removed; static guard.
 
 ---
 
@@ -302,7 +302,7 @@ What was not done: no live traffic was sent to the Render backend or the Vercel 
 
 **Fix.** Log counts, durations, hashed identifiers, and error codes only. Remove the chunk-level `console.log` calls. A logging policy paragraph in `THREAT_MODEL.md`.
 
-**Status.** Open. Resolved by migration steps 3, 4, 7.
+**Status.** Fixed: `d2b28ea`, `4c09a58`, `3f23fda`, `7ec96c3`: counts only, filename out of the access log, console logging removed.
 
 ---
 
@@ -318,7 +318,7 @@ What was not done: no live traffic was sent to the Render backend or the Vercel 
 
 **Fix.** The migration replaces the dependency set outright; `pip-audit` and `npm audit` run in CI; unused packages are removed rather than upgraded.
 
-**Status.** Open. Resolved by migration step 6 and CI step 9.
+**Status.** Fixed with one accepted residual: `c67c8d3`: pip-audit clean (5.9). `npm audit fix` in `da5d213`; `npm audit` still reports postcss advisories inside next 15.5's bundled copy, whose fix is next 16, a major; accepted for 2.0.0 and left to Dependabot.
 
 ---
 
@@ -334,7 +334,7 @@ What was not done: no live traffic was sent to the Render backend or the Vercel 
 
 **Fix.** `sha256(source, chunk_index, text)[:16]` IDs (Odysseus and isq-agent both do this); re-upload of the same filename replaces the previous document; one worker (single user, local).
 
-**Status.** Open. Resolved by migration step 2.
+**Status.** Fixed: `ec8b551`: sha256 ids, replace on re-upload; one worker.
 
 ---
 
@@ -350,7 +350,7 @@ What was not done: no live traffic was sent to the Render backend or the Vercel 
 
 **Fix.** No secrets in CI. The suite runs with Ollama mocked, inside a Linux network namespace with only loopback (see `docs/audit/05`). Codecov dropped.
 
-**Status.** Open. Resolved by CI step 9.
+**Status.** Fixed: `87a3002`: no secrets, no Codecov, suite runs in a network namespace.
 
 ---
 
@@ -364,7 +364,7 @@ What was not done: no live traffic was sent to the Render backend or the Vercel 
 
 **Fix.** Delete the manual `OPTIONS` handler and manual headers; origins `http://localhost:3000` and `http://127.0.0.1:3000`, methods `GET, POST, DELETE`.
 
-**Status.** Open. Resolved by migration step 1.
+**Status.** Fixed: `d2b28ea`: explicit origins, no manual OPTIONS handler, credentials off.
 
 ---
 
@@ -378,7 +378,7 @@ What was not done: no live traffic was sent to the Render backend or the Vercel 
 
 **Fix.** Pydantic models for every body; a single `ChatRequest` with `message: str` (max length) and `mode`; filename defaulted and sanitised.
 
-**Status.** Open. Resolved by migration steps 3 and 4.
+**Status.** Fixed: `4c09a58`, `98a4881`: Pydantic bodies everywhere, `extra="forbid"` on chat.
 
 ---
 
@@ -392,7 +392,7 @@ What was not done: no live traffic was sent to the Render backend or the Vercel 
 
 **Fix.** With the Vercel deployment retired this becomes a Next.js `headers()` concern for `next start`. A CSP of `default-src 'self'; connect-src 'self' http://127.0.0.1:8000 http://localhost:8000; img-src 'self' data:; style-src 'self' 'unsafe-inline'` is enough once fonts are local. The changelog line is corrected in the honesty pass.
 
-**Status.** Open. Resolved by frontend step 7 and honesty pass.
+**Status.** Fixed: `7ec96c3` (CSP in next.config); the step 10 CHANGELOG entry corrects the 1.0 claim.
 
 ---
 
@@ -406,7 +406,7 @@ What was not done: no live traffic was sent to the Render backend or the Vercel 
 
 **Fix.** Module deleted (decision 2). The replacement pipeline uses httpx timeouts on every Ollama call.
 
-**Status.** Open. Retired by migration step 6.
+**Status.** Retired: `d2b28ea`: module deleted; httpx timeouts on every Ollama call.
 
 ---
 
@@ -418,7 +418,7 @@ What was not done: no live traffic was sent to the Render backend or the Vercel 
 
 **Fix.** Local-only app: `/docs` stays on (it is the user's own machine). `create_index` is gone with Pinecone.
 
-**Status.** Open. Retired by migration step 6.
+**Status.** Retired: `d2b28ea`: no runtime index creation; `/docs` stays on, loopback only.
 
 ---
 
@@ -430,7 +430,7 @@ What was not done: no live traffic was sent to the Render backend or the Vercel 
 
 **Fix.** No keys exist after the migration. The Settings modal keeps only theme, mode and model choice.
 
-**Status.** Open. Retired by frontend step 7.
+**Status.** Retired: `7ec96c3`: no keys exist; the settings hook purges the old blob.
 
 ---
 
@@ -444,7 +444,7 @@ What was not done: no live traffic was sent to the Render backend or the Vercel 
 
 **Fix.** Pass the sanitised original filename as `source` explicitly; never derive identity from the temp path.
 
-**Status.** Open. Resolved by migration step 3.
+**Status.** Fixed: `4c09a58`: sanitised original filename stored as `source`.
 
 ---
 
@@ -456,7 +456,7 @@ What was not done: no live traffic was sent to the Render backend or the Vercel 
 
 **Fix.** Remove both ignore lines; `DEPLOYMENT.md` is rewritten for local install; the dangling link goes.
 
-**Status.** Open. Resolved by honesty pass.
+**Status.** Fixed: step 10 commit: `.gitignore` tidied, dangling `CLAUDE.md` link gone.
 
 ---
 
@@ -641,6 +641,17 @@ SKIPPED tests/test_no_egress.py:126: Ollama with qwen3.5:0.8b not available on 1
 The GitHub Actions job (`.github/workflows/backend-test.yml`) runs the same suite inside
 `sudo unshare -n` with only `lo` up, on Python 3.11, 3.12 and 3.13, after `ruff` and `pip-audit`.
 
+### 5.11 Live UI verification, and the bug it found (2026-08-26)
+
+Capturing the README screenshot from the running stack (`frontend/scripts/screenshot.mjs`, real
+Ollama, real handbook) showed the assistant bubble stuck on "Thinking" while the backend logged a
+completed `POST /api/chat 200`. Instrumenting the page's stream reader showed every byte of the
+stream being read and none of it parsed: sse-starlette frames events with `\r\n\r\n`, and the
+frontend parser (and the jest mock that had "verified" it) only recognised `\n\n`. Fixed in
+`0ff0394`; a jest case now feeds CRLF frames split across chunks. Recorded because it is the
+cleanest example in this whole exercise of a unit test agreeing with its own mock rather than with
+the world: the citation panel was wired, tested and, until a live run, still empty.
+
 ---
 
 ## 6. Answers to the brief's specific questions
@@ -667,31 +678,31 @@ The GitHub Actions job (`.github/workflows/backend-test.yml`) runs the same suit
 
 | # | Finding | Severity | Resolved by | Status |
 |---|---|---|---|---|
-| F1 | Documents leave the machine | High | Migration steps 1, 2, 4, 6 | Open |
-| F2 | Citations not delivered or verified | High | Step 4, frontend step 7 | Open |
-| F3 | Unauthenticated cross-session access | High | Steps 1, 3, 6; decision 3 | Open |
-| F4 | Upload limits after read; temp leaks; EOL parser | High | Steps 2, 3 | Open |
-| F5 | Prompt injection undefended | High | Step 4 | Open |
-| F6 | BFF open proxy / key oracle | High | Step 7; demo retirement | Open |
-| F7 | No rate limiting | Medium | Step 3 | Open |
-| F8 | Exception text to clients | Medium | Steps 3, 4 | Open |
-| F9 | "Deleted at session end" is false | Medium | Decision 3; honesty pass | Open |
-| F10 | Google Fonts runtime egress | Medium | Step 7 | Open |
-| F11 | Request-time dependency downloads | Medium | Steps 2, 6 | Open |
-| F12 | Sensitive identifiers in logs and console | Medium | Steps 3, 4, 7 | Open |
-| F13 | Known-vulnerable dependencies | Medium | Step 6, CI step 9 | Open |
-| F14 | Non-deterministic IDs; shared state across workers | Medium | Step 2 | Open |
-| F15 | CI needs live keys; Codecov upload | Medium | CI step 9 | Open |
-| F16 | CORS wildcard next to credentials | Low | Step 1 | Open |
-| F17 | Unvalidated bodies | Low | Steps 3, 4 | Open |
-| F18 | No CSP; changelog claims one | Low | Step 7; honesty pass | Open |
-| F19 | Agentic timeout not applied; fake streaming | Low | Step 6 (retired) | Open |
-| F20 | Public docs; runtime create_index | Low | Step 6 (retired) | Open |
-| F21 | Keys in request bodies and localStorage | Low | Step 7 (retired) | Open |
-| F22 | Citation source is the temp filename | Low | Step 3 | Open |
-| F23 | .gitignore / CLAUDE.md inconsistencies | Low | Honesty pass | Open |
-| F24 | A third of the backend unreachable, still advertised | Info | Step 6 | Open |
-| F25 | Documented setup cannot start the app | Info | Step 1 | Open |
-| F26 | Virtualenv architecture mismatch | Info | Step 0 | Open |
-| F27 | ESLint ignored during builds | Info | Step 7 | Open |
-| F28 | README badges | Info | None needed | Closed (not egress from the product) |
+| F1 | Documents leave the machine | High | Migration steps 1, 2, 4, 6 | Fixed |
+| F2 | Citations not delivered or verified | High | Step 4, frontend step 7 | Fixed |
+| F3 | Unauthenticated cross-session access | High | Steps 1, 3, 6; decision 3 | Fixed |
+| F4 | Upload limits after read; temp leaks; EOL parser | High | Steps 2, 3 | Fixed |
+| F5 | Prompt injection undefended | High | Step 4 | Mitigated |
+| F6 | BFF open proxy / key oracle | High | Step 7; demo retirement | Retired |
+| F7 | No rate limiting | Medium | Step 3 | Fixed |
+| F8 | Exception text to clients | Medium | Steps 3, 4 | Fixed |
+| F9 | "Deleted at session end" is false | Medium | Decision 3; honesty pass | Fixed |
+| F10 | Google Fonts runtime egress | Medium | Step 7 | Fixed |
+| F11 | Request-time dependency downloads | Medium | Steps 2, 6 | Fixed |
+| F12 | Sensitive identifiers in logs and console | Medium | Steps 3, 4, 7 | Fixed |
+| F13 | Known-vulnerable dependencies | Medium | Step 6, CI step 9 | Fixed with one accepted residual |
+| F14 | Non-deterministic IDs; shared state across workers | Medium | Step 2 | Fixed |
+| F15 | CI needs live keys; Codecov upload | Medium | CI step 9 | Fixed |
+| F16 | CORS wildcard next to credentials | Low | Step 1 | Fixed |
+| F17 | Unvalidated bodies | Low | Steps 3, 4 | Fixed |
+| F18 | No CSP; changelog claims one | Low | Step 7; honesty pass | Fixed |
+| F19 | Agentic timeout not applied; fake streaming | Low | Step 6 (retired) | Retired |
+| F20 | Public docs; runtime create_index | Low | Step 6 (retired) | Retired |
+| F21 | Keys in request bodies and localStorage | Low | Step 7 (retired) | Retired |
+| F22 | Citation source is the temp filename | Low | Step 3 | Fixed |
+| F23 | .gitignore / CLAUDE.md inconsistencies | Low | Honesty pass | Fixed |
+| F24 | A third of the backend unreachable, still advertised | Info | Step 6 | Retired (`d2b28ea`) |
+| F25 | Documented setup cannot start the app | Info | Step 1 | Fixed (`d2b28ea`, `test_config`) |
+| F26 | Virtualenv architecture mismatch | Info | Step 0 | Fixed (step 0, native venv) |
+| F27 | ESLint ignored during builds | Info | Step 7 | Fixed (`7ec96c3`) |
+| F28 | README badges | Info | None needed | Closed (not egress) |

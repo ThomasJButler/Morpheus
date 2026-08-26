@@ -1,51 +1,75 @@
 # Morpheus
 
-An intelligent document reasoning system with a Matrix-themed interface.
+Ask questions about your own documents and get answers where every claim points at a real passage. Runs entirely on your machine: Ollama for the models, LanceDB for the index, nothing sent anywhere.
 
-[Live Demo](https://morpheusrag.vercel.app) | [API Docs](https://morpheus-backend-4c0h.onrender.com/docs)
+![Morpheus answering a question from an uploaded handbook, with a verified citation and the grounded chip](docs/images/morpheus-local.png)
 
-<img width="1266" height="891" alt="image" src="https://github.com/user-attachments/assets/5bd64eb7-97a5-409f-b970-926d2929a986" />
+## What it does
 
-## Overview
+- **Upload** PDF, DOCX, TXT or Markdown. Each file is chunked, embedded with `nomic-embed-text` and indexed on disk.
+- **Ask** in plain English. Retrieval is hybrid (vector search plus BM25 keyword search, fused) and a local model answers with `[n]` markers pointing at the passages it used. The default model is `qwen3.5:9b`; any chat model installed in Ollama can be picked in Settings.
+- **Trust the markers.** Every `[n]` is checked, while the answer streams, against the passages retrieved for that question. A marker the model made up never reaches the screen. If the documents do not contain the answer, Morpheus says exactly that instead of guessing, and any answer that cites nothing is flagged "not grounded".
+- **Deep mode** asks the model for up to three sub-questions, searches each, and fuses the results before answering.
 
-Upload your private documents and ask questions in natural language. Morpheus learns from your documents and returns accurate answers with source citations.
+## What leaves your machine
 
-## Why Morpheus
+At inference time, nothing. Upload, indexing, retrieval and generation talk only to `127.0.0.1`: the backend on port 8000 and Ollama on port 11434. Documents, embeddings and the search index live in `backend/data/` and stay there until you delete them, and deleting a document removes its bytes from disk, not just from search results.
 
-- **Private by design** - Each session creates a fresh Pinecone vector namespace. When your session ends, your documents and conversation are deleted. Nothing is stored permanently.
-- **Cost effective** - Pay only for the tokens you use instead of $20/month for AI Pro subscriptions.
-- **Unique insights** - Get answers derived specifically from your documents, not generic web results.
+That is a claim, so it comes with the tests that would fail if it stopped being true:
 
-## How It Works
+- `backend/tests/test_no_egress.py` runs the whole upload-and-answer flow with the socket layer patched to refuse anything that is not loopback.
+- `backend/scripts/prove_local.sh` runs the backend under a macOS kernel sandbox that denies all non-loopback network, drives a real ingest-and-query cycle against Ollama, and samples `lsof` throughout. Its output is recorded in `SECURITY_REVIEW.md`.
+- CI runs the backend suite inside a Linux network namespace that has only the loopback interface, and a Playwright test fails if the browser makes a request to any host but localhost.
+- A static test fails if a cloud SDK, a telemetry client or a non-loopback URL ever appears in the backend.
 
-1. Documents are chunked and embedded into vectors
-2. Stored in Pinecone under your session namespace
-3. Retrieved via semantic search when you ask questions
-4. Claude (or your chosen model) generates answers from the retrieved context
-5. New session = fresh start, no data carried over
+Network activity does happen at install time and nowhere else: `ollama pull` for the two models, `pip` and `npm` for dependencies. The Ollama desktop app checks for updates on its own; run `ollama serve` from a terminal if you want none of that.
 
-## Privacy & API keys
+Documents are treated as data, never as instructions. A document that tells the model to ignore its rules gets quoted, not obeyed, and the citation check makes any steering visible. That is mitigation, not immunity; no system with a language model in it can promise the latter.
 
-Morpheus is built so your data stays yours.
+## Run it
 
-- **API keys live in your browser.** When you paste your Anthropic or OpenAI key into Settings it's saved to `localStorage` (or only `sessionStorage` if you turn off "Remember settings"). It never lands in a database we own.
-- **Where the key goes when you chat.** The browser POSTs your message to this app's own server route (a Next.js BFF), which then calls Anthropic or OpenAI on your behalf with the key you supplied. We don't log it, persist it, or share it with any third party. The server route is a thin pass-through — it exists so the key isn't exposed to other origins via CORS, not so we can collect it.
-- **Conversations aren't saved.** Chat history lives in your browser for the current session. When you click "Clear" or close the tab, it's gone. Nothing is persisted server-side.
-- **Documents are session-scoped.** Uploaded documents go into a per-session Pinecone namespace and are deleted when the session ends.
+You need Ollama, Python 3.11 or newer, and Node 20 or newer. No accounts, no API keys, no `.env` file.
 
-In short: no analytics on your queries, no transcripts written to disk, no key telemetry. The only third parties involved are the ones you explicitly choose (Anthropic, OpenAI, Pinecone), called with credentials you supply.
+```bash
+ollama pull nomic-embed-text      # 274 MB, embeddings
+ollama pull qwen3.5:9b            # 6.6 GB, answers
 
-## Tech Stack
+cd backend
+python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
+.venv/bin/uvicorn app.main:app    # http://127.0.0.1:8000
 
-![Next.js](https://img.shields.io/badge/Next.js-000000?style=for-the-badge&logo=next.js&logoColor=white)
-![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white)
-![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-06B6D4?style=for-the-badge&logo=tailwindcss&logoColor=white)
-![Python](https://img.shields.io/badge/Python-3776AB?style=for-the-badge&logo=python&logoColor=white)
-![FastAPI](https://img.shields.io/badge/FastAPI-009688?style=for-the-badge&logo=fastapi&logoColor=white)
-![Anthropic](https://img.shields.io/badge/Claude-CC785C?style=for-the-badge&logo=anthropic&logoColor=white)
-![OpenAI](https://img.shields.io/badge/OpenAI-412991?style=for-the-badge&logo=openai&logoColor=white)
-![Pinecone](https://img.shields.io/badge/Pinecone-000000?style=for-the-badge&logo=pinecone&logoColor=white)
+cd ../frontend
+npm install && npm run dev        # http://localhost:3000
+```
+
+Or, with Ollama running on the host, `docker compose up` brings up both services with their ports published on `127.0.0.1` only. `DEPLOYMENT.md` has the details, the configuration table, and a warning about what exposing the app beyond your own machine would mean.
+
+## Honest limits
+
+- A 9B model is not a hosted frontier model. Answers are shorter and plainer, and the citation check exists partly because a small model sometimes skips a marker; that shows up as "not grounded" rather than as a silently wrong answer. `qwen3.5:27b` is the quality option if you have the memory.
+- `nomic-embed-text` is English-focused. `bge-m3` is the multilingual alternative; switching embedding models means re-indexing, and the store refuses to mix them.
+- The first answer after a restart loads the model into memory, which takes a few seconds; every answer after that is quick.
+- One user at a time. It is a tool on your machine, not a service.
+- Scanned-image PDFs have no text to extract; there is no OCR.
+
+## Verify it yourself
+
+```bash
+cd backend
+.venv/bin/pytest                  # 100+ tests, offline
+scripts/prove_local.sh            # macOS: kernel sandbox + lsof sampling, needs Ollama running
+```
+
+Or turn Wi-Fi off, upload `backend/test-documents/techcorp-employee-handbook.md`, ask the questions in `backend/test-documents/DEMO-QUERIES.md`, and ask one it cannot answer.
+
+## Security
+
+The full review is in `SECURITY_REVIEW.md` (28 findings against the previous cloud-backed version, each tracked to the commit that resolved it), the trust boundary in `THREAT_MODEL.md`, and the audit that drove the rebuild in `docs/audit/`.
+
+## Built with
+
+Next.js 15, TypeScript and Tailwind on the front; FastAPI, LanceDB, pypdf and python-docx on the back; Ollama for the models.
 
 ## Licence
 
-MIT - see [LICENSE](LICENSE)
+MIT, see [LICENSE](LICENSE).

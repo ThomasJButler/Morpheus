@@ -89,3 +89,12 @@ Whole file describes Railway/Render/Vercel/Pinecone setup, cost tables, and list
 - "Private" only when paired with the mechanism ("private because it never leaves the machine"), never on its own.
 - Prompt injection: "mitigated" and "made visible", never "prevented".
 - No em dashes.
+
+## Outcome (2026-08-26)
+
+Every row above was actioned in the step 10 commit: `README.md`, `DEPLOYMENT.md`, `CONTRIBUTING.md`,
+`CHANGELOG.md` (2.0.0 entry, honest "Unreleased"), `backend/README.md`, `backend/TESTING.md`,
+`frontend/README.md`, `THREAT_MODEL.md` (present tense), `.gitignore`, `DEMO-QUERIES.md` headings,
+the redesign notes, and the UI copy that shipped with step 7 (`Settings.tsx`, `QuickStartGuide.tsx`,
+`useBackendHealth.ts`, `ColdStart.tsx`, `layout.tsx`, `page.tsx`). The 1.0.0 changelog block is
+left as dated history; its claims are corrected in the 2.0.0 entry rather than rewritten.
