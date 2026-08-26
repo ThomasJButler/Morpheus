@@ -23,6 +23,7 @@ from __future__ import annotations
 import hashlib
 import json
 import logging
+import threading
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
@@ -62,6 +63,11 @@ class Store:
         self.embed_model = embed_model
         self._meta_path = self.path / "meta.json"
         self.dim: int | None = None
+        # ponytail: one process-wide write lock. Writes are delete + add +
+        # index rebuild + compaction, four commits that must not interleave
+        # across request threads. Per-table locks if this ever serves more
+        # than one user, which it is not built to.
+        self._write_lock = threading.Lock()
         if self._meta_path.exists():
             meta = json.loads(self._meta_path.read_text())
             if meta.get("embed_model") != embed_model:
@@ -109,6 +115,10 @@ class Store:
             raise StoreModelMismatch(
                 f"Vector dimension {dim} does not match this index ({self.dim})."
             )
+        with self._write_lock:
+            return self._add_locked(source, chunks, vectors)
+
+    def _add_locked(self, source: str, chunks: list[dict], vectors: list[list[float]]) -> dict:
         replaced = source in self.sources()
         now = datetime.now(UTC).isoformat()
         rows = [
@@ -143,21 +153,28 @@ class Store:
         # Full FTS rebuild on every write: the index is static, so new rows
         # would otherwise be invisible to BM25. Milliseconds at library scale.
         self._table.create_index("text", config=FTS(), replace=True)
+        if replaced:
+            # A replace is a delete in the user's eyes: compact so the old
+            # text leaves the disk, not just the query results (second-pass
+            # review F29; the delete path always did this).
+            self._purge()
         return {"chunks": len(rows), "replaced": replaced}
 
     def delete_source(self, source: str) -> bool:
-        if self._table is None or source not in self.sources():
-            return False
-        self._table.delete(f"source = '{_escape(source)}'")
-        if self._table.count_rows() > 0:
-            self._table.create_index("text", config=FTS(), replace=True)
-        self._purge()
-        return True
+        with self._write_lock:
+            if self._table is None or source not in self.sources():
+                return False
+            self._table.delete(f"source = '{_escape(source)}'")
+            if self._table.count_rows() > 0:
+                self._table.create_index("text", config=FTS(), replace=True)
+            self._purge()
+            return True
 
     def clear(self) -> None:
-        if self.TABLE in self._db.table_names():
-            self._db.drop_table(self.TABLE)
-        self._table = None
+        with self._write_lock:
+            if self.TABLE in self._db.table_names():
+                self._db.drop_table(self.TABLE)
+            self._table = None
 
     def _purge(self) -> None:
         """Compact away old table versions so deleted text leaves the disk."""

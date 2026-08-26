@@ -177,3 +177,24 @@ def test_health_reports_store_mismatch(tmp_path, fake_ollama):
     assert body["status"] == "degraded"
     assert "bge-m3" in body["store"]["error"]
     assert any("Re-index" in h for h in body["hints"])
+
+
+def test_reupload_purges_old_text_from_disk(store, tmp_path):
+    old_nonce, new_nonce = "NONCEOLD7431", "NONCENEW9925"
+    store.add_document("n.md", [{"text": f"first {old_nonce}", "page": None}], [fake_embed(old_nonce)])
+    store.add_document("n.md", [{"text": f"second {new_nonce}", "page": None}], [fake_embed(new_nonce)])
+    result = subprocess.run(["grep", "-rl", old_nonce, str(tmp_path)], capture_output=True, text=True, check=False)
+    assert result.stdout.strip() == "", f"replaced text still on disk in: {result.stdout}"
+    assert subprocess.run(["grep", "-rl", new_nonce, str(tmp_path)], capture_output=True, text=True, check=False).stdout
+
+
+def test_concurrent_adds_all_land(store):
+    from concurrent.futures import ThreadPoolExecutor
+
+    def add(i):
+        return store.add_document(f"doc{i}.md", [{"text": f"text {i}", "page": None}], [fake_embed(f"text {i}")])
+
+    with ThreadPoolExecutor(4) as pool:
+        list(pool.map(add, range(8)))
+    assert store.stats()["documents"] == 8
+    assert store.stats()["chunks"] == 8
