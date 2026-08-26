@@ -1,16 +1,23 @@
 /** @type {import('next').NextConfig} */
 
 // Everything the browser is allowed to reach: itself, and the local backend.
-// 'unsafe-eval' is required by Next.js dev tooling; 'unsafe-inline' by the
-// theme bootstrap script and Tailwind's inline styles. ws: keeps dev HMR
-// working. There are no external hosts, which is the point.
+// Development builds need 'unsafe-eval' (Next.js dev tooling) and ws: (HMR);
+// production builds get neither (second-pass review F33). 'unsafe-inline'
+// stays: the theme bootstrap script and Tailwind's inline styles need it.
+// connect-src follows NEXT_PUBLIC_API_URL, so a custom backend address is
+// not blocked by the policy that exists to protect it.
+const isDev = process.env.NODE_ENV !== 'production';
+const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000';
+const connectSources = Array.from(
+  new Set(["'self'", apiUrl, 'http://127.0.0.1:8000', 'http://localhost:8000']),
+);
 const CSP = [
   "default-src 'self'",
-  "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+  `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ''}`,
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: blob:",
   "font-src 'self' data:",
-  "connect-src 'self' http://127.0.0.1:8000 http://localhost:8000 ws: wss:",
+  `connect-src ${connectSources.join(' ')}${isDev ? ' ws: wss:' : ''}`,
   "frame-ancestors 'none'",
 ].join('; ');
 
