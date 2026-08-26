@@ -37,13 +37,16 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/documents", tags=["documents"])
 
-_DISALLOWED = re.compile(r"[^A-Za-z0-9._ -]")
+# \w is Unicode-aware in Python: letters and digits in any script survive,
+# path separators, quotes, brackets and the like do not.
+_DISALLOWED = re.compile(r"[^\w.\- ]")
 
 
 def sanitise_filename(name: str | None) -> str:
     """The filename is client input with three audiences: the filesystem
     (suffix only), citations in the UI, and the prompt. None of them get it
-    raw. Keep [A-Za-z0-9._ -], drop any path, cap the length, never empty."""
+    raw. Keep word characters, dot, dash and space; drop any path; cap the
+    length; never empty."""
     name = Path(name or "upload").name
     name = _DISALLOWED.sub("_", name).strip(" .")
     if not name or set(name) <= {"_", ".", " ", "-"}:

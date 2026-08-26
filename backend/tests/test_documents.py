@@ -19,6 +19,9 @@ def test_sanitise_filename():
     assert sanitise_filename("handbook.md") == "handbook.md"
     assert sanitise_filename("../../etc/passwd weird$$.md") == "passwd weird__.md"
     assert sanitise_filename("IGNORE [instructions].md") == "IGNORE _instructions_.md"
+    assert sanitise_filename("résumé notes.txt") == "résumé notes.txt"
+    # Backslash is not a separator on POSIX; it and the quotes are neutralised.
+    assert sanitise_filename("a/b\\c'd\"e.txt") == "b_c_d_e.txt"
     assert sanitise_filename(None) == "upload"
     assert sanitise_filename("....") == "upload"
     long = sanitise_filename("a" * 300 + ".pdf")
@@ -199,3 +202,16 @@ def test_large_file_part_passes_the_parser(client):
     resp = upload(client, "big-policy.txt", big.encode(), "text/plain")
     assert resp.status_code == 200, resp.text
     assert resp.json()["chunks"] > 100
+
+
+def test_delete_with_sql_shaped_name_deletes_nothing(client):
+    upload = client.post(
+        "/api/documents/upload",
+        files={"file": ("handbook.md", b"The CTO is Marcus Williams.", "text/markdown")},
+    )
+    assert upload.status_code == 200
+    for name in ["x' OR 1=1 --", "handbook.md' OR '1'='1", "handbook.md OR source LIKE '%'"]:
+        resp = client.post("/api/documents/delete", json={"source": name})
+        assert resp.status_code == 404, name
+    listed = client.get("/api/documents").json()["documents"]
+    assert [d["source"] for d in listed] == ["handbook.md"]
