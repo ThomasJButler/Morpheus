@@ -55,6 +55,7 @@ There are no accounts, no API keys, and no operator-side secrets. There is nothi
 2. **No local reranker.** Ollama does not serve cross-encoders. Retrieval quality relies on hybrid vector + BM25 fusion.
 3. **Parser timeouts.** Page and character caps bound the work; there is no wall-clock timeout on `pypdf` because a Python thread cannot be killed. A pathological PDF within the caps could still be slow.
 4. **Agentic tool use** is not implemented. "Deep" mode is multi-query retrieval, which is what the docs say it is.
+- **The Docker container can reach the network.** Under `docker-compose.yml` the backend sits on the default bridge. An `internal` network was tried and breaks both host Ollama and the published port, so it stays. The code has no egress path, `test_no_cloud_imports` fails if one appears, and the native run is the one proven under a kernel sandbox (second-pass review F36).
 
 ## Logging policy
 

@@ -44,6 +44,7 @@ with 28 findings against 1.0 and the commit that resolved each, is in `SECURITY_
 - Codecov uploads and API secrets in CI
 
 ### Security
+- Second-pass review of the rebuilt code (`docs/audit/06-second-pass.md`): replacing a document now compacts the store so the old text leaves the disk; store writes are serialised; a DOCX declaring more than 200 MB uncompressed is refused before it inflates; Ollama's error text stays in the log; production builds get a CSP without `unsafe-eval`; answers never render images.
 - 43 known dependency vulnerabilities in the 1.0 tree; 0 in the 2.0 tree (`pip-audit`)
 - The 1.0 changelog's "CSP headers" and "input validation on all endpoints" claims were not true of 1.0; both are true of 2.0
 

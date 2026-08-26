@@ -706,3 +706,29 @@ the world: the citation panel was wired, tested and, until a live run, still emp
 | F26 | Virtualenv architecture mismatch | Info | Step 0 | Fixed (step 0, native venv) |
 | F27 | ESLint ignored during builds | Info | Step 7 | Fixed (`7ec96c3`) |
 | F28 | README badges | Info | None needed | Closed (not egress) |
+| F29 | Replace leaves old text on disk | Medium | Second pass | Fixed (`9f71422`) |
+| F30 | Store writes unsynchronised | Low | Second pass | Fixed (`9f71422`) |
+| F31 | Ollama error text relayed to clients | Low | Second pass | Fixed (`db4d755`) |
+| F32 | DOCX inflate unbounded before parsing | Low | Second pass | Fixed (`709603c`) |
+| F33 | Dev-only CSP allowances in production | Low | Second pass | Fixed (`a43f61e`) |
+| F34 | Markdown images fetched from answers | Low | Second pass | Fixed (`52c44fc`) |
+| F35 | Non-ASCII filenames mangled | Info | Second pass | Fixed (`0f048aa`) |
+| F36 | Container has network reach | Low | Second pass | Accepted (an internal network breaks the app) |
+
+---
+
+## 8. Second pass over the rebuilt code (2026-08-26)
+
+`docs/audit/06-second-pass.md` reviews the code that replaced the code above, by reading it
+and then probing a running copy with a scratch data directory: SQL-shaped delete names,
+re-upload then grep the disk, parallel uploads, a hostile origin, path and marker games in
+filenames, a contract with an injection planted in it, seventy uploads in a row. Eight
+findings, F29 to F36, numbered on from this file and tracked in the table above.
+
+The one that mattered: replacing a document left its old text in a stale Lance fragment,
+because only the delete path compacted (F29, fixed in `9f71422`). The rest are second locks on
+locked doors, fixed in `db4d755`, `709603c`, `0f048aa`, `a43f61e` and `52c44fc`, plus one
+accepted gap: the Docker container can reach the network, and an `internal` network turned out
+to break both host Ollama and the published port, so it stays, with the code-level controls
+as the guard (F36). The injection document built for the pass was reported as content, not
+obeyed, in one live run of qwen3.5:9b; that is evidence, not immunity.

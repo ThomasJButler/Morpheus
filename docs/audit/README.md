@@ -10,6 +10,7 @@ Written 2026-08-26 against commit `3397d0b` on `feat/localai`, before any code w
 | [`03-migration-plan.md`](03-migration-plan.md) | Target architecture, decisions with justification (LanceDB, nomic-embed-text, qwen3.5, no sessions, no hosted demo, multi-query deep mode), where local is worse, file-by-file changes, ten implementation steps each with its verification, and the API contract after. |
 | [`04-honesty-pass.md`](04-honesty-pass.md) | Every claim about privacy, locality, citations or capability, with its file and line, whether it is true today, and what it becomes. |
 | [`05-proof-of-locality.md`](05-proof-of-locality.md) | The seven checks that fail if the app ever stops being local: socket guard, macOS sandbox, Linux network namespace, lsof sampler, browser assertions, static import guard, and the manual Wi-Fi-off procedure. |
+| [`06-second-pass.md`](06-second-pass.md) | The review of the code that replaced the code reviewed above: what was run, the hostile probes and what they showed, findings F29 to F36 with their fixes, and what is accepted. |
 
 Reading order for a first pass: the summary of the review, then 01, then 03. The rest is reference.
 
