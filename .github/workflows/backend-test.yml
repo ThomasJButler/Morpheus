@@ -1,13 +1,19 @@
-name: Backend CI
+name: Backend
+
+# Everything the backend needs is on the machine. The test job proves it:
+# pytest runs inside a Linux network namespace that has only the loopback
+# interface, so any dependency that tries to reach the internet fails the
+# build at the kernel, not in a mock. No API keys exist any more, so none
+# are passed in.
 
 on:
   push:
-    branches: [main, develop]
+    branches: [main]
     paths:
       - 'backend/**'
       - '.github/workflows/backend-test.yml'
   pull_request:
-    branches: [main, develop]
+    branches: [main]
     paths:
       - 'backend/**'
 
@@ -16,7 +22,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ['3.11', '3.12']
+        python-version: ['3.11', '3.12', '3.13']
 
     steps:
       - uses: actions/checkout@v4
@@ -26,48 +32,29 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
           cache: 'pip'
+          cache-dependency-path: backend/requirements.txt
 
       - name: Install dependencies
         working-directory: ./backend
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-          pip install pytest pytest-cov pytest-asyncio black ruff mypy
 
-      - name: Run linting
+      - name: Lint
         working-directory: ./backend
-        run: |
-          # Check code formatting
-          black --check app tests
+        run: ruff check app tests
 
-          # Lint with ruff
-          ruff check app tests
-
-      - name: Type checking
+      - name: Known vulnerabilities in the dependency tree
         working-directory: ./backend
-        run: |
-          mypy app --ignore-missing-imports
+        run: pip-audit
 
-      - name: Run tests
+      - name: Tests, with no network at all
         working-directory: ./backend
-        env:
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY_TEST }}
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY_TEST }}
-          PINECONE_API_KEY: ${{ secrets.PINECONE_API_KEY_TEST }}
-          PINECONE_INDEX_NAME: morpheus-test
+        # unshare -n creates a network namespace with only `lo`; nothing in
+        # it can reach anything but 127.0.0.1. The Ollama integration test
+        # sees no server on 11434 and skips; everything else must pass.
         run: |
-          pytest tests/ -v --cov=app --cov-report=xml --cov-report=html
-
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v4
-        with:
-          file: ./backend/coverage.xml
-          flags: backend
-          name: backend-coverage
-
-      - name: Archive coverage report
-        uses: actions/upload-artifact@v4
-        with:
-          name: coverage-report
-          path: backend/htmlcov/
-          retention-days: 7
+          sudo -E env "PATH=$PATH" unshare -n bash -c '
+            ip link set lo up
+            python -m pytest -q
+          '

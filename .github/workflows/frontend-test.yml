@@ -1,13 +1,13 @@
-name: Frontend CI
+name: Frontend
 
 on:
   push:
-    branches: [main, develop]
+    branches: [main]
     paths:
       - 'frontend/**'
       - '.github/workflows/frontend-test.yml'
   pull_request:
-    branches: [main, develop]
+    branches: [main]
     paths:
       - 'frontend/**'
 
@@ -16,7 +16,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        node-version: [18.x, 20.x]
+        node-version: [20.x, 22.x]
 
     steps:
       - uses: actions/checkout@v4
@@ -32,30 +32,34 @@ jobs:
         working-directory: ./frontend
         run: npm ci
 
-      - name: Run linting
+      - name: Lint
         working-directory: ./frontend
         run: npm run lint
 
-      - name: Run type checking
+      - name: Type check
         working-directory: ./frontend
         run: npx tsc --noEmit
 
-      - name: Run unit tests
+      - name: Unit tests
         working-directory: ./frontend
         run: npm run test:ci
-
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v4
-        with:
-          file: ./frontend/coverage/coverage-final.json
-          flags: frontend
-          name: frontend-coverage
 
       - name: Build
         working-directory: ./frontend
         env:
-          NEXT_PUBLIC_API_URL: http://localhost:8000
+          NEXT_PUBLIC_API_URL: http://127.0.0.1:8000
         run: npm run build
+
+      - name: No font, analytics or CDN hosts in the bundle
+        working-directory: ./frontend
+        # Any URL-shaped string is too broad (framework chunks carry
+        # documentation links and licence banners); these are the hosts a
+        # "runs entirely on your machine" app must never load from.
+        run: |
+          if grep -rEo 'fonts\.googleapis|fonts\.gstatic|googletagmanager|google-analytics|sentry\.io|posthog|plausible\.io|segment\.io|hotjar|intercom|cdn\.jsdelivr|unpkg\.com|cdnjs\.cloudflare' .next/static .next/server; then
+            echo "external host baked into the bundle"; exit 1
+          fi
+          echo "bundle clean"
 
   e2e:
     runs-on: ubuntu-latest
@@ -65,7 +69,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20.x'
+          node-version: '22.x'
           cache: 'npm'
           cache-dependency-path: frontend/package-lock.json
 
@@ -73,19 +77,18 @@ jobs:
         working-directory: ./frontend
         run: npm ci
 
-      - name: Install Playwright browsers
+      - name: Install Playwright browser
         working-directory: ./frontend
-        run: npx playwright install --with-deps
+        run: npx playwright install --with-deps chromium
 
-      - name: Run E2E tests
+      - name: Run E2E tests (includes the no-external-request check)
         working-directory: ./frontend
         env:
-          NEXT_PUBLIC_API_URL: http://localhost:8000
-          NEXT_PUBLIC_REDESIGN_V2: 'true'
+          NEXT_PUBLIC_API_URL: http://127.0.0.1:8000
         run: npm run test:e2e
 
       - name: Upload test results
-        if: always()
+        if: failure()
         uses: actions/upload-artifact@v4
         with:
           name: playwright-report

@@ -5,9 +5,11 @@ from app.core.config import Settings
 BACKEND = Path(__file__).resolve().parents[1]
 
 
-def test_env_example_loads_cleanly():
+def test_env_example_loads_cleanly(monkeypatch):
     # The old .env.example crashed Settings with extra_forbidden (F25).
     # This test keeps the shipped example loadable forever.
+    monkeypatch.delenv("API_HOST", raising=False)
+    assert (BACKEND / ".env.example").exists()
     settings = Settings(_env_file=BACKEND / ".env.example")
     assert settings.api_host == "127.0.0.1"
 
@@ -25,8 +27,10 @@ def test_unknown_keys_are_ignored(tmp_path):
 
 
 def test_defaults_are_loopback_and_local(monkeypatch):
-    monkeypatch.delenv("DATA_DIR", raising=False)
-    monkeypatch.delenv("RATE_LIMIT", raising=False)
+    # Defaults, so nothing from the ambient environment (a container sets
+    # API_HOST=0.0.0.0 on purpose) may leak in.
+    for name in ("DATA_DIR", "RATE_LIMIT", "API_HOST", "OLLAMA_BASE_URL"):
+        monkeypatch.delenv(name, raising=False)
     settings = Settings(_env_file=None)
     assert settings.api_host == "127.0.0.1"
     assert settings.ollama_base_url == "http://127.0.0.1:11434"

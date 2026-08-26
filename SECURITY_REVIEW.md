@@ -625,6 +625,22 @@ No known vulnerabilities found
 Compare section 5.4: the tree this replaced carried 43 known vulnerabilities across 14 packages.
 Most of the delta came from deleting dependencies rather than upgrading them.
 
+### 5.10 Backend suite with no network at all, Linux (2026-08-26)
+
+Rehearsal of the CI job before trusting a runner with it: the full backend test suite inside the
+project's own `python:3.13-slim` image on Docker Desktop 29 (Linux aarch64), container started with
+`--network none`, so the kernel refuses every socket except loopback. This covers native code the
+Python socket guard cannot see (LanceDB's Rust core, pyarrow).
+
+```
+docker run --rm --network none ... morpheus-backend python -m pytest -q -rs
+100 passed, 1 skipped
+SKIPPED tests/test_no_egress.py:126: Ollama with qwen3.5:0.8b not available on 127.0.0.1:11434
+```
+
+The GitHub Actions job (`.github/workflows/backend-test.yml`) runs the same suite inside
+`sudo unshare -n` with only `lo` up, on Python 3.11, 3.12 and 3.13, after `ruff` and `pip-audit`.
+
 ---
 
 ## 6. Answers to the brief's specific questions
