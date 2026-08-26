@@ -21,8 +21,21 @@ class DocumentTooLarge(DocumentProcessingError):
 
 SUPPORTED_SUFFIXES = {".pdf", ".txt", ".md", ".docx"}
 
+# A DOCX is a zip; deflate manages about 1000:1 on repetitive XML, so the
+# 25 MB body cap alone would let a hostile file ask for gigabytes of RAM
+# before the character cap is checked (second-pass review F32). 200 MB
+# declared is far above any real document: images, the usual bulk, hardly
+# compress at all.
+MAX_DOCX_UNCOMPRESSED = 200 * 1024 * 1024
 
-def extract(path: Path, *, max_pdf_pages: int, max_text_chars: int) -> list[dict]:
+
+def extract(
+    path: Path,
+    *,
+    max_pdf_pages: int,
+    max_text_chars: int,
+    max_docx_uncompressed: int = MAX_DOCX_UNCOMPRESSED,
+) -> list[dict]:
     """Return [{"text": str, "page": int | None}]: one entry per PDF page,
     one for the whole file otherwise."""
     suffix = path.suffix.lower()
@@ -31,7 +44,7 @@ def extract(path: Path, *, max_pdf_pages: int, max_text_chars: int) -> list[dict
     if suffix in (".txt", ".md"):
         return _extract_plain(path, max_text_chars)
     if suffix == ".docx":
-        return _extract_docx(path, max_text_chars)
+        return _extract_docx(path, max_text_chars, max_docx_uncompressed)
     raise DocumentProcessingError(f"Unsupported file type: {suffix or 'no extension'}")
 
 
@@ -94,8 +107,24 @@ def _extract_plain(path: Path, max_chars: int) -> list[dict]:
     return [{"text": text, "page": None}]
 
 
-def _extract_docx(path: Path, max_chars: int) -> list[dict]:
+def _extract_docx(path: Path, max_chars: int, max_uncompressed: int) -> list[dict]:
+    import zipfile
+
     import docx
+
+    # Refuse on the zip directory before anything inflates. Declared sizes
+    # are attacker-controlled, but zipfile refuses to inflate past them, so
+    # understating buys nothing.
+    try:
+        with zipfile.ZipFile(path) as package:
+            declared = sum(info.file_size for info in package.infolist())
+    except zipfile.BadZipFile as exc:
+        raise DocumentProcessingError("Could not read this DOCX.") from exc
+    if declared > max_uncompressed:
+        raise DocumentTooLarge(
+            f"DOCX expands to {declared // (1024 * 1024)} MB; "
+            f"the limit is {max_uncompressed // (1024 * 1024)} MB."
+        )
 
     try:
         document = docx.Document(str(path))

@@ -91,3 +91,17 @@ def test_docx_paragraphs_and_tables(tmp_path):
     text = out[0]["text"]
     assert "full disk encryption" in text
     assert "Region | Leeds" in text
+
+
+def test_docx_uncompressed_cap(tmp_path):
+    import docx
+
+    document = docx.Document()
+    document.add_paragraph("small")
+    path = tmp_path / "small.docx"
+    document.save(str(path))
+    # A fresh python-docx package declares tens of KB uncompressed; a 1 KB
+    # cap must refuse it before anything is inflated.
+    with pytest.raises(DocumentTooLarge):
+        extract(path, **CAPS, max_docx_uncompressed=1024)
+    assert extract(path, **CAPS)[0]["text"] == "small"
