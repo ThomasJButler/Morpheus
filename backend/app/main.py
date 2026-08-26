@@ -19,6 +19,7 @@ from fastapi.responses import JSONResponse
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 
+from app.api.chat import router as chat_router
 from app.api.documents import router as documents_router
 from app.api.system import router as system_router
 from app.core.body_limit import MaxBodySizeMiddleware
@@ -146,6 +147,7 @@ async def unhandled_error_handler(request: Request, exc: Exception):
 
 app.include_router(system_router)
 app.include_router(documents_router)
+app.include_router(chat_router)
 
 
 @app.get("/")

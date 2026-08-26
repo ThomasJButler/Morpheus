@@ -34,6 +34,9 @@ class FakeOllama:
     ):
         self.models = list(models)
         self.answer = answer
+        # Optional queue of answers, consumed one per chat call (deep mode
+        # makes two calls with different expected responses).
+        self.script: list[str] = []
         self.unavailable = unavailable
         self.dim = dim
         self._version = version
@@ -87,7 +90,7 @@ class FakeOllama:
         self._check()
         self._require(model)
         self.chat_calls.append({"messages": messages, "model": model, **kw})
-        text = self.answer
+        text = self.script.pop(0) if self.script else self.answer
         for i in range(0, len(text), 4):
             yield {"type": "token", "content": text[i : i + 4]}
         yield {
