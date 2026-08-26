@@ -612,6 +612,19 @@ integration variant against real Ollama with qwen3.5:0.8b. One tooling note: the
 seatbelt profile also allowed unix sockets, which over-matched and allowed everything; the
 sanity check at the top of the script caught it. That check stays.
 
+### 5.9 pip-audit on the rebuilt dependency tree (2026-08-26)
+
+`.venv/bin/pip-audit` against the installed environment: the new requirements.txt tree, 73
+packages including transitives (fastapi 0.141, starlette 1.6, python-multipart 0.0.32, lancedb
+0.37.1, pypdf 6.16.2, httpx 0.28, uvicorn 0.52).
+
+```
+No known vulnerabilities found
+```
+
+Compare section 5.4: the tree this replaced carried 43 known vulnerabilities across 14 packages.
+Most of the delta came from deleting dependencies rather than upgrading them.
+
 ---
 
 ## 6. Answers to the brief's specific questions
