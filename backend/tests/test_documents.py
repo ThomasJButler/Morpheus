@@ -164,8 +164,9 @@ def test_page_cap_maps_to_413(client, monkeypatch):
 
 def test_delete_one_and_404(client):
     upload(client, "handbook.md", HANDBOOK.encode())
-    assert client.delete("/api/documents/handbook.md").status_code == 200
-    assert client.delete("/api/documents/handbook.md").status_code == 404
+    delete = {"source": "handbook.md"}
+    assert client.post("/api/documents/delete", json=delete).status_code == 200
+    assert client.post("/api/documents/delete", json=delete).status_code == 404
     assert client.get("/api/documents/stats").json()["documents"] == 0
 
 

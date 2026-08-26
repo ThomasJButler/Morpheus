@@ -56,7 +56,7 @@ text, done = ask("What is the laptop security policy when working in public plac
 print("Q2 grounded:", done["grounded"], "| cited:", done["cited"], "|", text[:80].replace("\n", " "))
 assert done["retrieved"] > 0
 
-deleted = client.delete(base + "/api/documents/techcorp-employee-handbook.md")
+deleted = client.post(base + "/api/documents/delete", json={"source": "techcorp-employee-handbook.md"})
 assert deleted.status_code == 200
 print("smoke: PASS")
 PYEOF

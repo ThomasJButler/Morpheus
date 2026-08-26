@@ -20,6 +20,7 @@ from pathlib import Path
 from typing import Annotated
 
 from fastapi import APIRouter, File, HTTPException, Request, UploadFile
+from pydantic import BaseModel, Field
 
 from app.core.config import get_settings
 from app.core.rate_limit import limiter
@@ -170,11 +171,18 @@ async def clear_documents(request: Request):
     return {"cleared": True}
 
 
-@router.delete("/{source}")
-async def delete_document(source: str, request: Request):
+class DeleteRequest(BaseModel):
+    source: str = Field(..., min_length=1, max_length=120)
+
+
+@router.post("/delete")
+async def delete_document(body: DeleteRequest, request: Request):
+    """POST with the name in the body rather than DELETE /{source}: uvicorn's
+    access log prints request paths, and the logging policy keeps filenames
+    out of the logs."""
     store = _get_store(request)
-    deleted = await asyncio.to_thread(store.delete_source, source)
+    deleted = await asyncio.to_thread(store.delete_source, body.source)
     if not deleted:
         raise HTTPException(status_code=404, detail="No such document.")
     logger.info("Deleted one document")
-    return {"deleted": source}
+    return {"deleted": body.source}

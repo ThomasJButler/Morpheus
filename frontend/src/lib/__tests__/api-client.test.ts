@@ -52,12 +52,13 @@ describe('APIClient', () => {
       await expect(apiClient.uploadDocument(file)).rejects.toThrow('Unsupported file type .exe.');
     });
 
-    it('URL-encodes the source when deleting', async () => {
+    it('sends the source in the body when deleting, never in the path', async () => {
       mockFetch.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({}) });
       await apiClient.deleteDocument('weird name & things.md');
       const [url, options] = mockFetch.mock.calls[0];
-      expect(url).toContain('/api/documents/weird%20name%20%26%20things.md');
-      expect(options.method).toBe('DELETE');
+      expect(url).toMatch(/\/api\/documents\/delete$/);
+      expect(options.method).toBe('POST');
+      expect(JSON.parse(options.body)).toEqual({ source: 'weird name & things.md' });
     });
   });
 

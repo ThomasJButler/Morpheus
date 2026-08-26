@@ -78,9 +78,13 @@ class APIClient {
   }
 
   async deleteDocument(source: string): Promise<void> {
+    // The name travels in the body, not the path, so the backend's access
+    // log never records which document you deleted.
     await ensureOk(
-      await fetch(`${this.baseURL}/api/documents/${encodeURIComponent(source)}`, {
-        method: 'DELETE',
+      await fetch(`${this.baseURL}/api/documents/delete`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ source }),
       }),
       'Failed to delete the document',
     );

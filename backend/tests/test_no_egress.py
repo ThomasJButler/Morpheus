@@ -106,7 +106,7 @@ def test_full_flow_no_egress_unit(egress_guard, client, fake_ollama):
     assert client.get("/api/documents").status_code == 200
     assert client.get("/api/documents/stats").status_code == 200
     assert client.get("/api/health").status_code == 200
-    assert client.delete("/api/documents/secret.md").status_code == 200
+    assert client.post("/api/documents/delete", json={"source": "secret.md"}).status_code == 200
     # egress_guard asserts attempts == [] on teardown
 
 

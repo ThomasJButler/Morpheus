@@ -19,7 +19,7 @@ FastAPI  (127.0.0.1:8000, one uvicorn worker)
    │                                   ─► chunk (own splitter) ─► Ollama /api/embed (batched)
    │                                   ─► LanceDB table (data/lancedb/), replace-on-same-name
    ├─ GET    /api/documents            list {source, chunks, pages, added_at}
-   ├─ DELETE /api/documents/{source}   delete chunks + purge old versions
+   ├─ POST   /api/documents/delete     {source}: delete chunks + purge old versions
    ├─ DELETE /api/documents            clear all
    ├─ GET    /api/documents/stats      counts, on-disk size, model names
    ├─ POST   /api/chat  (SSE)          embed query ─► LanceDB hybrid (vector + BM25, RRF) ─► floor
@@ -236,4 +236,4 @@ Error: `{"type":"error","code":"ollama_unavailable","message":"Ollama is not rea
 
 **`GET /api/health`** `{ "status": "ready" | "degraded", "ollama": {"reachable": true, "version": "..."}, "models": {"chat": {"name": "...", "installed": true}, "embed": {...}}, "store": {"path": "...", "documents": 3, "chunks": 412, "size_bytes": 1234567}, "hints": ["ollama pull qwen3.5:9b"] }`.
 
-**Documents.** `POST /api/documents/upload` (multipart `file`) → `{ "source": "...", "chunks": 57, "pages": 12, "replaced": false }`; `GET /api/documents` → `{ "documents": [{"source","chunks","pages","added_at"}] }`; `DELETE /api/documents/{source}`; `DELETE /api/documents`; `GET /api/documents/stats`.
+**Documents.** `POST /api/documents/upload` (multipart `file`) → `{ "source": "...", "chunks": 57, "pages": 12, "replaced": false }`; `GET /api/documents` → `{ "documents": [{"source","chunks","pages","added_at"}] }`; `POST /api/documents/delete` with `{"source"}` (the name stays out of the access log); `DELETE /api/documents`; `GET /api/documents/stats`.
