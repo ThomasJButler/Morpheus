@@ -161,7 +161,12 @@ export default function ChatMessage({ message, index = 0 }: ChatMessageProps) {
         `}
       >
         {message.content ? (
+          // Answers are text. A markdown image would make the browser fetch
+          // whatever URL a document (via the model) put there; the CSP blocks
+          // that and so does this (second-pass review F34).
           <ReactMarkdown
+            disallowedElements={['img']}
+            unwrapDisallowed
             components={{
               p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
               strong: ({ children }) => <strong className="font-semibold text-fg-primary">{children}</strong>,
