@@ -575,6 +575,43 @@ Of these, `langchain`, `langchain-community`, `langchain-openai`, `langchain-ant
 
 Apple M1 Max, 32 GB, arm64. Ollama 0.32.6 running on `127.0.0.1:11434`, one model installed (`qwen3.5:0.8b`). `backend/.venv` Python 3.13.7 **x86_64**. Native arm64 Pythons available: `/opt/homebrew/bin/python3.11`, `/Library/Frameworks/Python.framework/Versions/3.13/bin/python3.13` (universal).
 
+### 5.8 Proof-of-locality run (2026-08-26)
+
+`backend/scripts/prove_local.sh` on the dev machine (macOS 26.5, Apple M1 Max), backend under a
+seatbelt profile that denies all non-loopback network, real Ollama (qwen3.5:9b + nomic-embed-text),
+full ingest-and-query cycle over the TechCorp handbook, `lsof` sampled every 0.5 s for the backend
+and Ollama processes:
+
+```
+== sanity: the sandbox actually blocks egress ==
+outbound request blocked (good)
+== starting the backend under the sandbox ==
+2026-08-26 12:06:24,645 INFO app.main: Morpheus backend: chat=qwen3.5:9b embed=nomic-embed-text data=/Users/tombutler/Repos/Morpheus/backend/data ollama=http://127.0.0.1:11434 bind=127.0.0.1:8000
+2026-08-26 12:06:24,661 INFO app.main: Ollama 0.32.6 reachable
+2026-08-26 12:06:25,953 INFO app.api.documents: Indexed document: 20 chunks, - pages, 1174 ms, replaced=True
+2026-08-26 12:06:32,915 INFO app.api.documents: Deleted one document
+uploaded: 20 chunks
+Q1 grounded: True | cited: 2 | The Chief Technology Officer at TechCorp Inc. is Marcus Williams, who has held t
+Q2 grounded: True | cited: 2 | When working in public spaces or leaving your device unattended, you must use pr
+smoke: PASS
+== remote endpoints observed (backend + ollama, sampled every 0.5s) ==
+./scripts/prove_local.sh: line 47: 42764 Terminated: 15          ( while kill -0 "$BACKEND_PID" 2> /dev/null; do
+    lsof -a -i -n -P -p "$PIDS" 2> /dev/null | awk 'NR>1 {print $9}' >> "$ENDPOINTS"; sleep 0.5;
+done )
+127.0.0.1:11434
+127.0.0.1:64537
+127.0.0.1:64694
+127.0.0.1:65161
+127.0.0.1:65162
+127.0.0.1:65233
+PASS: full ingest-and-query cycle, loopback only, under a kernel sandbox
+```
+
+The in-process guard (`tests/test_no_egress.py`) passed in the same session, including the
+integration variant against real Ollama with qwen3.5:0.8b. One tooling note: the first draft of the
+seatbelt profile also allowed unix sockets, which over-matched and allowed everything; the
+sanity check at the top of the script caught it. That check stays.
+
 ---
 
 ## 6. Answers to the brief's specific questions
