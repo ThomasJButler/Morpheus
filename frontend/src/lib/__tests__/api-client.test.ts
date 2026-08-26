@@ -113,6 +113,27 @@ describe('APIClient', () => {
       expect(onError).not.toHaveBeenCalled();
     });
 
+    it('parses CRLF-framed events, which is what sse-starlette actually sends', async () => {
+      const onEvent = jest.fn();
+      const onComplete = jest.fn();
+      const encoder = new TextEncoder();
+      const stream = new ReadableStream({
+        start(controller) {
+          // Split across chunks mid-frame on purpose, with a CR/LF pair
+          // straddling the boundary.
+          controller.enqueue(encoder.encode('data: {"type":"token","content":"Hel"}\r'));
+          controller.enqueue(encoder.encode('\n\r\ndata: {"type":"token","content":"lo"}\r\n\r\ndata: [DONE]\r\n\r\n'));
+          controller.close();
+        },
+      });
+      mockFetch.mockResolvedValueOnce({ ok: true, body: stream });
+      apiClient.streamChat({ message: 'x', mode: 'hybrid', deep: false }, onEvent, jest.fn(), onComplete);
+      await new Promise((resolve) => setTimeout(resolve, 100));
+      expect(onEvent).toHaveBeenCalledWith({ type: 'token', content: 'Hel' });
+      expect(onEvent).toHaveBeenCalledWith({ type: 'token', content: 'lo' });
+      expect(onComplete).toHaveBeenCalledTimes(1);
+    });
+
     it('reports a non-OK response through onError with the backend detail', async () => {
       const onError = jest.fn();
       mockFetch.mockResolvedValueOnce({

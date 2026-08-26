@@ -137,7 +137,9 @@ class APIClient {
             onComplete();
             return;
           }
-          buffer += decoder.decode(value, { stream: true });
+          // SSE allows CRLF framing and sse-starlette uses it; normalise
+          // once here so the boundary and line logic below only sees LF.
+          buffer = (buffer + decoder.decode(value, { stream: true })).replace(/\r\n/g, '\n');
 
           let boundary = buffer.indexOf('\n\n');
           while (boundary !== -1) {
