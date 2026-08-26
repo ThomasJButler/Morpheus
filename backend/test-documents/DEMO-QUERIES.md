@@ -148,10 +148,10 @@ Use these queries to try retrieval against the sample handbook:
 
 ---
 
-## Tips for Demo
+## Tips for a demo
 
-1. **Start simple**: "Who is the CEO?" (Factual → Simple RAG)
-2. **Show procedural**: "How do I submit expenses?" (Procedural → Hybrid)
-3. **Demo comparison**: "Compare health plans" (Comparative → Hybrid/Agentic)
-4. **Complex query**: "Security requirements for remote work" (Multi-part → Agentic)
-5. **Watch RAG mode selection**: The system should auto-select appropriate modes!
+1. Start simple: "Who is the CTO?" (one passage, one citation, the grounded chip)
+2. Show procedural: "How do I submit an expense report?" (hybrid retrieval pulls the steps together)
+3. Compare: "Compare the health insurance plans" with Deep on (three sub-queries, one answer)
+4. Multi-part: "What are all the security requirements for working remotely?" with Deep on
+5. Show the refusal: ask about something the handbook does not cover and watch the amber chip
