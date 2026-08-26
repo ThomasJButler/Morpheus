@@ -1,16 +1,20 @@
 """ASGI middleware that caps the request body size before anything buffers it.
 
-Ported from isq-agent (rag-service/app/core/body_limit.py, MIT, same author).
+Ported from isq-agent (rag-service/app/core/body_limit.py, MIT, same author),
+with one change for current FastAPI: the mid-stream overflow raises
+starlette's HTTPException(413) instead of a private exception. FastAPI wraps
+any other exception raised during body parsing into a 400 "There was an
+error parsing the body" (fastapi/routing.py), and HTTPException is the one
+thing its wrapper re-raises, so 413 survives to the client.
 
-Why this isn't done in the endpoint: Starlette's multipart parser writes an
-uploaded file part to a SpooledTemporaryFile with no size limit of its own,
-and FastAPI fully parses the body before the handler runs. A size check inside
-the upload route therefore executes only after the whole upload has been
-buffered. Enforcing the cap here, on the raw ASGI receive stream, rejects an
-oversized body before the parser touches it:
+Why this isn't done in the endpoint: Starlette's multipart parser spools file
+parts with no size cap of its own (max_part_size only guards non-file
+parts), and FastAPI fully parses the body before the handler runs. A size
+check inside the upload route would execute after the whole upload was
+buffered. Enforcing it here, on the raw ASGI receive stream:
   - an honest Content-Length over the cap is refused before reading a byte;
-  - a body without Content-Length (chunked transfer) is metered as it streams
-    and cut off with 413 the moment the running total crosses the limit.
+  - a body without Content-Length (chunked transfer) is metered as it
+    streams and refused the moment the running total crosses the limit.
 
 The limit is read live from settings on each request, so tests can vary it
 without a restart.
@@ -18,13 +22,14 @@ without a restart.
 
 import json
 
+from starlette.exceptions import HTTPException
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
 from app.core.config import get_settings
 
 
-class _BodyTooLarge(Exception):
-    """Internal signal: the streamed body crossed the cap mid-read."""
+def _detail() -> str:
+    return f"Request body too large; the limit is {get_settings().max_upload_mb} MB."
 
 
 def _content_length(scope: Scope) -> int | None:
@@ -38,8 +43,7 @@ def _content_length(scope: Scope) -> int | None:
 
 
 async def _send_413(send: Send) -> None:
-    detail = f"Request body too large; the limit is {get_settings().max_upload_mb} MB."
-    body = json.dumps({"detail": detail}).encode()
+    body = json.dumps({"detail": _detail()}).encode()
     await send(
         {
             "type": "http.response.start",
@@ -57,8 +61,7 @@ class MaxBodySizeMiddleware:
     """Reject any HTTP request whose body exceeds settings.max_upload_mb.
 
     Sits inside CORS (so the 413 still carries CORS headers) and outside the
-    exception middleware (so the streamed-overflow signal is caught here, not
-    turned into a 500)."""
+    exception middleware (which renders the mid-stream HTTPException)."""
 
     def __init__(self, app: ASGIApp) -> None:
         self.app = app
@@ -70,13 +73,14 @@ class MaxBodySizeMiddleware:
 
         max_bytes = get_settings().max_upload_bytes
 
+        # Fast path: an honest oversized Content-Length is refused before the
+        # app is ever invoked, so the response is sent directly from here.
         declared = _content_length(scope)
         if declared is not None and declared > max_bytes:
             await _send_413(send)
             return
 
         received = 0
-        response_started = False
 
         async def limited_receive() -> Message:
             nonlocal received
@@ -84,18 +88,7 @@ class MaxBodySizeMiddleware:
             if message["type"] == "http.request":
                 received += len(message.get("body", b""))
                 if received > max_bytes:
-                    raise _BodyTooLarge
+                    raise HTTPException(status_code=413, detail=_detail())
             return message
 
-        async def guarded_send(message: Message) -> None:
-            nonlocal response_started
-            if message["type"] == "http.response.start":
-                response_started = True
-            await send(message)
-
-        try:
-            await self.app(scope, limited_receive, guarded_send)
-        except _BodyTooLarge:
-            if response_started:
-                raise
-            await _send_413(send)
+        await self.app(scope, limited_receive, send)
