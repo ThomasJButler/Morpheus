@@ -1,8 +1,5 @@
-# ==============================================================================
-# MORPHEUS RAG CHATBOT - FRONTEND DEVELOPMENT DOCKERFILE
-# ==============================================================================
-# Development image with hot-reload for Next.js frontend
-# For production, Vercel handles building and deployment
+# Morpheus frontend, development image with hot-reload. Used by
+# docker-compose.yml; the port is published on 127.0.0.1 there.
 
 FROM node:20-alpine
 
@@ -27,21 +24,3 @@ EXPOSE 3000
 
 # Start development server with hot-reload
 CMD ["npm", "run", "dev"]
-
-# ==============================================================================
-# NOTES
-# ==============================================================================
-# This Dockerfile is for LOCAL DEVELOPMENT ONLY (used in docker-compose.yml)
-#
-# For production deployment to Vercel:
-# - Vercel handles the build process automatically
-# - No Docker image needed
-# - Uses vercel.json configuration
-#
-# To run standalone (without docker-compose):
-#   docker build -f Dockerfile.dev -t morpheus-frontend-dev .
-#   docker run -p 3000:3000 \
-#     -e NEXT_PUBLIC_API_URL=http://localhost:8000 \
-#     -v $(pwd)/src:/app/src:ro \
-#     morpheus-frontend-dev
-# ==============================================================================

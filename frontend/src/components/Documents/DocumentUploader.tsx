@@ -22,7 +22,8 @@ const SUPPORTED_TYPES = [
 ];
 
 const SUPPORTED_EXTENSIONS = ['.pdf', '.txt', '.md', '.docx'];
-const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+// Mirrors the backend's MAX_UPLOAD_MB; the ASGI cap is the real gate.
+const MAX_FILE_SIZE = 25 * 1024 * 1024; // 25MB
 
 const validateFile = (file: File): string | null => {
   if (!SUPPORTED_TYPES.includes(file.type) &&
@@ -30,7 +31,7 @@ const validateFile = (file: File): string | null => {
     return 'Unsupported file type. Please upload PDF, TXT, MD, or DOCX files.';
   }
   if (file.size > MAX_FILE_SIZE) {
-    return 'File is too large. Maximum size is 10MB.';
+    return 'File is too large. Maximum size is 25MB.';
   }
   return null;
 };
@@ -42,7 +43,6 @@ export default function DocumentUploader({
 }: DocumentUploaderProps) {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
-  const [isIndexing, setIsIndexing] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<DocumentUploadResponse | null>(null);
@@ -106,11 +106,6 @@ export default function DocumentUploader({
       clearInterval(progressInterval);
       setUploadProgress(100);
       setSuccess(response);
-
-      // Show indexing state while Pinecone propagates vectors
-      setIsIndexing(true);
-      await new Promise(resolve => setTimeout(resolve, 2000)); // 2 second delay for Pinecone propagation
-      setIsIndexing(false);
 
       // Broadcast so v2 consumers (DocsSidebar, future System panel Sources
       // tab) refetch without lifting state. Listeners use addEventListener
@@ -209,7 +204,7 @@ export default function DocumentUploader({
                 </Button>
               </div>
               <p className="text-xs text-matrix-white/40">
-                Supported: PDF, TXT, MD, DOCX (max 10MB)
+                Supported: PDF, TXT, MD, DOCX (max 25MB)
               </p>
             </div>
           ) : (
@@ -254,19 +249,15 @@ export default function DocumentUploader({
         {success && (
           <div className="mt-4 p-4 bg-matrix-green/10 border border-matrix-green/50 rounded-md">
             <div className="flex items-center space-x-2 text-matrix-green mb-2">
-              <span className="text-xl">{isIndexing ? '⏳' : '✓'}</span>
+              <span className="text-xl">✓</span>
               <span className="font-mono">
-                {isIndexing ? 'Indexing document...' : 'Upload Successful!'}
+                {success.replaced ? 'Replaced in the library' : 'Added to the library'}
               </span>
             </div>
             <div className="text-sm text-matrix-white/80 space-y-1">
-              <p>Document ID: {success.document_id}</p>
-              <p>Chunks created: {success.chunks_created}</p>
-              {isIndexing ? (
-                <p className="text-matrix-cyan animate-pulse">Making document searchable...</p>
-              ) : (
-                <p className="text-matrix-green">Ready to use in chat!</p>
-              )}
+              <p>{success.source}</p>
+              <p>{success.chunks} chunks indexed{success.pages ? ` · ${success.pages} pages` : ''}</p>
+              <p className="text-matrix-green">Ready to use in chat.</p>
             </div>
           </div>
         )}

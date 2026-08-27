@@ -1,4 +1,5 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap');
+/* No remote fonts: Geist ships in node_modules, monospace comes from the
+   system. Zero font egress, even at build time (SECURITY_REVIEW F10). */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;

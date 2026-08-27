@@ -1,0 +1,14 @@
+;; Deny all network except loopback. Used by prove_local.sh to run the
+;; backend under a kernel-enforced version of the README's claim.
+;;
+;; Verified on macOS 26.5: with this profile, curl to an external host
+;; fails at DNS (exit 6) and loopback traffic works. An earlier draft also
+;; allowed unix sockets and that over-matched, allowing everything; if you
+;; edit this file, re-run the sanity check at the top of prove_local.sh,
+;; which exists precisely because a sandbox that silently allows is worse
+;; than no sandbox.
+(version 1)
+(allow default)
+(deny network*)
+(allow network* (remote ip "localhost:*"))
+(allow network* (local ip "localhost:*"))

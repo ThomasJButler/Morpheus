@@ -180,7 +180,7 @@ export default function Home() {
         {/* Footer - Hidden on mobile */}
         <footer className="hidden sm:block mt-2 text-center">
           <div className="inline-flex items-center gap-4 text-matrix-white/30 text-xs font-mono">
-            <span>Powered by Claude &amp; Pinecone</span>
+            <span>Runs locally · Ollama + LanceDB</span>
             <span className="text-matrix-green/30">•</span>
             <span className="text-matrix-white/20">
               <kbd className="px-1.5 py-0.5 bg-matrix-green/10 rounded text-[10px]">⌘K</kbd> to focus

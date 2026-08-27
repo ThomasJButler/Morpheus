@@ -88,41 +88,40 @@ export default function ChatMessage({ message, index = 0 }: ChatMessageProps) {
           {isUser ? 'You' : 'Morpheus'}
         </span>
 
-        {/* Metric chips */}
+        {/* Metric chips — everything here is measured, not estimated */}
         <div className="flex items-center gap-1.5 ml-auto text-[10px] font-mono text-fg-muted">
-          {!isUser && message.metadata?.mode && (
+          {!isUser && message.done && (
             <span
               className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full border border-mode-cyan/30 bg-mode-cyan/5 text-mode-cyan uppercase tracking-wider"
-              title="RAG mode"
+              title="Retrieval mode"
             >
-              {message.metadata.mode}
+              {message.done.mode}{message.done.deep ? ' · deep' : ''}
             </span>
           )}
-          {message.confidence != null && (
+          {!isUser && message.done && (
             <span
-              className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full border border-edge-subtle bg-surface-card"
-              title="Confidence score"
+              className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full border ${
+                message.done.grounded
+                  ? 'border-accent/40 bg-accent/5 text-accent'
+                  : 'border-mode-amber/40 bg-mode-amber/5 text-mode-amber'
+              }`}
+              title={
+                message.done.grounded
+                  ? `Every [n] marker maps to a retrieved passage (${message.done.cited}/${message.done.retrieved} cited)`
+                  : 'This answer cites no passage from your documents'
+              }
             >
-              <span className="w-1 h-1 rounded-full bg-accent" aria-hidden />
-              {Math.round(message.confidence * 100)}%
+              {message.done.grounded ? 'grounded' : 'not grounded'}
             </span>
           )}
-          {message.metadata?.processingTime != null && (
+          {!isUser && message.done?.generation_ms != null && (
             <span
               className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full border border-edge-subtle bg-surface-card"
-              title="Processing time"
+              title="Generation time"
             >
-              {message.metadata.processingTime}ms
+              {Math.round(message.done.generation_ms)}ms
             </span>
           )}
-          {!isUser && (message.metadata?.chunksRetrieved != null || message.citations?.length) ? (
-            <span
-              className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full border border-edge-subtle bg-surface-card"
-              title="Retrieved chunks"
-            >
-              {message.metadata?.chunksRetrieved ?? message.citations?.length} chunks
-            </span>
-          ) : null}
           {message.timestamp && (
             <time
               className="hidden sm:inline tabular-nums text-fg-faint"
@@ -162,7 +161,12 @@ export default function ChatMessage({ message, index = 0 }: ChatMessageProps) {
         `}
       >
         {message.content ? (
+          // Answers are text. A markdown image would make the browser fetch
+          // whatever URL a document (via the model) put there; the CSP blocks
+          // that and so does this (second-pass review F34).
           <ReactMarkdown
+            disallowedElements={['img']}
+            unwrapDisallowed
             components={{
               p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
               strong: ({ children }) => <strong className="font-semibold text-fg-primary">{children}</strong>,
@@ -253,8 +257,8 @@ export default function ChatMessage({ message, index = 0 }: ChatMessageProps) {
           >
             <div className="border-l-2 border-mode-cyan/60 mx-3 mb-3 px-3 space-y-2">
               {message.citations.map((citation, idx) => (
-                <div key={idx} className="animate-fade-in" style={{ animationDelay: `${idx * 40}ms` }}>
-                  <CitationHighlight citation={citation} index={idx + 1} />
+                <div key={citation.chunk_id ?? idx} className="animate-fade-in" style={{ animationDelay: `${idx * 40}ms` }}>
+                  <CitationHighlight citation={citation} />
                 </div>
               ))}
             </div>

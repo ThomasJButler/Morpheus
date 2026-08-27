@@ -1,221 +1,217 @@
-"""
-Tests for document upload and processing endpoints.
-Tests /api/documents/* endpoints including upload, stats, and deletion.
-"""
+from pathlib import Path
 
-from io import BytesIO
-from unittest.mock import AsyncMock, MagicMock, patch
+from app.api.documents import sanitise_filename
+from tests.pdf_fixtures import make_pdf
 
-import pytest
-from fastapi.testclient import TestClient
+HANDBOOK = (
+    "Remote work is allowed three days a week with manager approval. "
+    "Laptops must use full disk encryption and a privacy screen in public. "
+) * 20
 
 
-class TestDocumentUpload:
-    """Tests for POST /api/documents/upload endpoint."""
+def upload(client, name, payload, content_type="text/markdown"):
+    return client.post(
+        "/api/documents/upload", files={"file": (name, payload, content_type)}
+    )
 
-    @patch("app.api.documents.get_pinecone_client")
-    @patch("app.api.documents.openai_client")
-    def test_upload_text_file_success(
-        self,
-        mock_openai,
-        mock_pinecone,
-        test_client: TestClient,
-        sample_text_file: str,
-        mock_openai_embeddings,
-        mock_pinecone_index,
-    ):
-        """Test successful text file upload."""
-        # Setup mocks
-        mock_openai.embeddings.create = AsyncMock(return_value=mock_openai_embeddings)
-        mock_pinecone.return_value.get_both_indexes.return_value = (
-            mock_pinecone_index,
-            None,
+
+def test_sanitise_filename():
+    assert sanitise_filename("handbook.md") == "handbook.md"
+    assert sanitise_filename("../../etc/passwd weird$$.md") == "passwd weird__.md"
+    assert sanitise_filename("IGNORE [instructions].md") == "IGNORE _instructions_.md"
+    assert sanitise_filename("résumé notes.txt") == "résumé notes.txt"
+    # Backslash is not a separator on POSIX; it and the quotes are neutralised.
+    assert sanitise_filename("a/b\\c'd\"e.txt") == "b_c_d_e.txt"
+    assert sanitise_filename(None) == "upload"
+    assert sanitise_filename("....") == "upload"
+    long = sanitise_filename("a" * 300 + ".pdf")
+    assert len(long) <= 120 and long.endswith(".pdf")
+
+
+def test_upload_list_stats_roundtrip(client, fake_ollama):
+    resp = upload(client, "handbook.md", HANDBOOK.encode())
+    assert resp.status_code == 200, resp.text
+    body = resp.json()
+    assert body["source"] == "handbook.md"
+    assert body["chunks"] >= 1
+    assert body["replaced"] is False
+
+    listed = client.get("/api/documents").json()["documents"]
+    assert [d["source"] for d in listed] == ["handbook.md"]
+
+    stats = client.get("/api/documents/stats").json()
+    assert stats["documents"] == 1
+    assert stats["chunks"] == body["chunks"]
+
+    # nomic's asymmetric-retrieval prefix must be on every embedded chunk.
+    assert fake_ollama.embed_calls
+    assert all(
+        text.startswith("search_document: ") for text in fake_ollama.embed_calls[0]
+    )
+
+
+def test_reupload_replaces(client):
+    assert upload(client, "handbook.md", HANDBOOK.encode()).status_code == 200
+    second = upload(client, "handbook.md", b"Much shorter handbook now.")
+    assert second.status_code == 200
+    assert second.json()["replaced"] is True
+    assert client.get("/api/documents/stats").json()["documents"] == 1
+
+
+def test_pdf_upload_has_pages(client):
+    resp = upload(
+        client,
+        "report.pdf",
+        make_pdf(["Budget is 42000 pounds", "Second page content"]),
+        "application/pdf",
+    )
+    assert resp.status_code == 200, resp.text
+    assert resp.json()["pages"] == 2
+
+
+def test_unsupported_type_rejected(client):
+    resp = upload(client, "malware.exe", b"MZ\x90\x00", "application/octet-stream")
+    assert resp.status_code == 400
+    assert ".exe" in resp.json()["detail"]
+
+
+def test_oversized_body_refused_before_handler(client, monkeypatch):
+    from app.core.config import get_settings
+
+    monkeypatch.setenv("MAX_UPLOAD_MB", "1")
+    get_settings.cache_clear()
+
+    ran = []
+
+    def spy(*args, **kwargs):
+        ran.append(True)
+        raise AssertionError("extract must not run for an oversized body")
+
+    monkeypatch.setattr("app.api.documents.extract", spy)
+    resp = upload(client, "big.md", b"x" * (2 * 1024 * 1024))
+    assert resp.status_code == 413
+    assert "1 MB" in resp.json()["detail"]
+    assert ran == []
+
+
+def test_chunked_oversized_body_cut_off(client, monkeypatch):
+    from app.core.config import get_settings
+
+    monkeypatch.setenv("MAX_UPLOAD_MB", "1")
+    get_settings.cache_clear()
+
+    def stream():
+        # A well-formed multipart preamble so the parser keeps consuming the
+        # file part; the meter has to be the thing that stops it, not a
+        # parse error.
+        yield (
+            b"--deadbeef\r\n"
+            b'Content-Disposition: form-data; name="file"; filename="big.md"\r\n'
+            b"Content-Type: text/markdown\r\n\r\n"
         )
+        for _ in range(4):
+            yield b"y" * (512 * 1024)
+        yield b"\r\n--deadbeef--\r\n"
 
-        # Upload file
-        with open(sample_text_file, "rb") as f:
-            response = test_client.post(
-                "/api/documents/upload", files={"file": ("test.txt", f, "text/plain")}
-            )
-
-        # Assertions
-        assert response.status_code == 200
-        data = response.json()
-        assert data["success"] is True
-        assert data["file_type"] == "txt"
-        assert data["chunks_created"] > 0
-        assert data["vectors_indexed"] > 0
-
-    @patch("app.api.documents.get_pinecone_client")
-    @patch("app.api.documents.openai_client")
-    def test_upload_markdown_file_success(
-        self,
-        mock_openai,
-        mock_pinecone,
-        test_client: TestClient,
-        sample_markdown_file: str,
-        mock_openai_embeddings,
-        mock_pinecone_index,
-    ):
-        """Test successful markdown file upload."""
-        # Setup mocks
-        mock_openai.embeddings.create = AsyncMock(return_value=mock_openai_embeddings)
-        mock_pinecone.return_value.get_both_indexes.return_value = (
-            mock_pinecone_index,
-            None,
-        )
-
-        # Upload file
-        with open(sample_markdown_file, "rb") as f:
-            response = test_client.post(
-                "/api/documents/upload", files={"file": ("test.md", f, "text/markdown")}
-            )
-
-        # Assertions
-        assert response.status_code == 200
-        data = response.json()
-        assert data["success"] is True
-        assert data["file_type"] == "md"
-
-    def test_upload_unsupported_file_type(self, test_client: TestClient):
-        """Test upload with unsupported file type."""
-        # Create fake file with unsupported extension
-        fake_file = BytesIO(b"fake content")
-
-        response = test_client.post(
-            "/api/documents/upload",
-            files={"file": ("test.xyz", fake_file, "application/octet-stream")},
-        )
-
-        # Should return 400 Bad Request
-        assert response.status_code == 400
-        assert "Unsupported file type" in response.json()["detail"]
-
-    def test_upload_no_file(self, test_client: TestClient):
-        """Test upload without providing a file."""
-        response = test_client.post("/api/documents/upload")
-
-        # Should return 422 Unprocessable Entity
-        assert response.status_code == 422
-
-    @patch("app.api.documents.get_pinecone_client")
-    @patch("app.api.documents.openai_client")
-    def test_upload_with_processing_error(
-        self, mock_openai, mock_pinecone, test_client: TestClient, sample_text_file: str
-    ):
-        """Test upload when processing fails."""
-        # Mock processing to fail
-        with patch("app.api.documents.document_processor.process_file") as mock_process:
-            mock_process.return_value = {"success": False, "error": "Processing failed"}
-
-            with open(sample_text_file, "rb") as f:
-                response = test_client.post(
-                    "/api/documents/upload",
-                    files={"file": ("test.txt", f, "text/plain")},
-                )
-
-            # Should return 422
-            assert response.status_code == 422
-            assert "Processing failed" in response.json()["detail"]
+    # No Content-Length (chunked): the middleware meters the stream and cuts
+    # it off mid-part; the handler never runs.
+    resp = client.post(
+        "/api/documents/upload",
+        content=stream(),
+        headers={"Content-Type": "multipart/form-data; boundary=deadbeef"},
+    )
+    assert resp.status_code == 413
 
 
-class TestDocumentStats:
-    """Tests for GET /api/documents/stats endpoint."""
+def tmp_dir_contents():
+    from app.core.config import get_settings
 
-    @patch("app.api.documents.get_pinecone_client")
-    def test_get_stats_success(
-        self, mock_pinecone, test_client: TestClient, mock_pinecone_index
-    ):
-        """Test successful retrieval of document stats."""
-        # Setup mock
-        mock_client = MagicMock()
-        mock_client.index_stats.return_value = {
-            "dense": {"total_vector_count": 42, "dimension": 512}
-        }
-        mock_pinecone.return_value = mock_client
-
-        response = test_client.get("/api/documents/stats")
-
-        assert response.status_code == 200
-        data = response.json()
-        assert data["success"] is True
-        assert "stats" in data
-
-    @patch("app.api.documents.get_pinecone_client")
-    def test_get_stats_error(self, mock_pinecone, test_client: TestClient):
-        """Test stats retrieval when Pinecone fails."""
-        # Mock to raise exception
-        mock_pinecone.return_value.index_stats.side_effect = Exception(
-            "Connection error"
-        )
-
-        response = test_client.get("/api/documents/stats")
-
-        assert response.status_code == 500
-        assert "Error" in response.json()["detail"]
+    tmp = get_settings().data_dir / "tmp"
+    return list(tmp.iterdir()) if tmp.exists() else []
 
 
-class TestDeleteDocuments:
-    """Tests for DELETE /api/documents/all endpoint."""
-
-    @patch("app.api.documents.get_pinecone_client")
-    def test_delete_all_success(self, mock_pinecone, test_client: TestClient):
-        """Test successful deletion of all documents."""
-        # Setup mock
-        mock_client = MagicMock()
-        mock_client.delete_all_vectors.return_value = True
-        mock_pinecone.return_value = mock_client
-
-        response = test_client.delete("/api/documents/all")
-
-        assert response.status_code == 200
-        data = response.json()
-        assert data["success"] is True
-        assert "deleted" in data["message"].lower()
-
-    @patch("app.api.documents.get_pinecone_client")
-    def test_delete_all_failure(self, mock_pinecone, test_client: TestClient):
-        """Test deletion failure."""
-        # Setup mock to return failure
-        mock_client = MagicMock()
-        mock_client.delete_all_vectors.return_value = False
-        mock_pinecone.return_value = mock_client
-
-        response = test_client.delete("/api/documents/all")
-
-        assert response.status_code == 500
-        assert "failed" in response.json()["detail"].lower()
-
-    @patch("app.api.documents.get_pinecone_client")
-    def test_delete_all_error(self, mock_pinecone, test_client: TestClient):
-        """Test deletion when exception occurs."""
-        # Mock to raise exception
-        mock_client = MagicMock()
-        mock_client.delete_all_vectors.side_effect = Exception("Delete error")
-        mock_pinecone.return_value = mock_client
-
-        response = test_client.delete("/api/documents/all")
-
-        assert response.status_code == 500
-        assert "Error" in response.json()["detail"]
+def test_malformed_pdf_gives_422_and_no_temp_residue(client):
+    resp = upload(client, "broken.pdf", b"%PDF-1.4\nnot a pdf", "application/pdf")
+    assert resp.status_code == 422
+    assert resp.json()["detail"] == "Could not read this PDF."
+    assert tmp_dir_contents() == []
 
 
-@pytest.mark.integration
-class TestDocumentUploadIntegration:
-    """Integration tests requiring actual external services."""
+def test_empty_file_gives_422_and_no_temp_residue(client):
+    resp = upload(client, "empty.txt", b"   ", "text/plain")
+    assert resp.status_code == 422
+    assert tmp_dir_contents() == []
 
-    def test_upload_real_file(self, test_client: TestClient, sample_text_file: str):
-        """
-        Integration test with real services.
-        Skipped by default - requires ANTHROPIC_API_KEY, OPENAI_API_KEY, PINECONE_API_KEY.
-        """
-        pytest.skip("Integration test - requires API keys")
 
-        with open(sample_text_file, "rb") as f:
-            response = test_client.post(
-                "/api/documents/upload", files={"file": ("test.txt", f, "text/plain")}
-            )
+def test_embed_failure_gives_503_and_no_temp_residue(client, fake_ollama):
+    fake_ollama.models = ["qwen3.5:9b"]  # embedding model gone
+    resp = upload(client, "handbook.md", HANDBOOK.encode())
+    assert resp.status_code == 503
+    assert resp.json()["detail"]["code"] == "model_missing"
+    assert "ollama pull nomic-embed-text" in resp.json()["detail"]["hint"]
+    assert tmp_dir_contents() == []
 
-        assert response.status_code == 200
-        data = response.json()
-        assert data["success"] is True
+
+def test_page_cap_maps_to_413(client, monkeypatch):
+    from app.core.config import get_settings
+
+    monkeypatch.setenv("MAX_PDF_PAGES", "2")
+    get_settings.cache_clear()
+    resp = upload(
+        client, "long.pdf", make_pdf(["a", "b", "c"]), "application/pdf"
+    )
+    assert resp.status_code == 413
+    assert "limit is 2" in resp.json()["detail"]
+    assert tmp_dir_contents() == []
+
+
+def test_delete_one_and_404(client):
+    upload(client, "handbook.md", HANDBOOK.encode())
+    delete = {"source": "handbook.md"}
+    assert client.post("/api/documents/delete", json=delete).status_code == 200
+    assert client.post("/api/documents/delete", json=delete).status_code == 404
+    assert client.get("/api/documents/stats").json()["documents"] == 0
+
+
+def test_clear_all(client):
+    upload(client, "one.md", b"First document with plenty of text in it.")
+    upload(client, "two.md", b"Second document, also with text inside it.")
+    assert client.get("/api/documents/stats").json()["documents"] == 2
+    assert client.delete("/api/documents").json() == {"cleared": True}
+    assert client.get("/api/documents/stats").json()["documents"] == 0
+
+
+def test_uploaded_filename_never_hits_disk_raw(client):
+    # The temp file uses only the sanitised suffix; the store records the
+    # sanitised name. Nothing on disk carries the raw client filename.
+    resp = upload(client, "weird $(rm -rf).md", b"Some content for the index.")
+    assert resp.status_code == 200
+    assert resp.json()["source"] == "weird __rm -rf_.md"
+    from app.core.config import get_settings
+
+    data_dir = get_settings().data_dir
+    assert not any("$(" in str(p) for p in Path(data_dir).rglob("*"))
+
+
+def test_large_file_part_passes_the_parser(client):
+    # Starlette caps non-file multipart parts at 1MB; file parts are only
+    # bounded by our own cap. This guards against a future Starlette change
+    # quietly capping file uploads at 1MB.
+    big = ("A sentence about office policy number %d. " * 40000) % tuple(range(40000))
+    assert len(big.encode()) > 1_500_000
+    resp = upload(client, "big-policy.txt", big.encode(), "text/plain")
+    assert resp.status_code == 200, resp.text
+    assert resp.json()["chunks"] > 100
+
+
+def test_delete_with_sql_shaped_name_deletes_nothing(client):
+    upload = client.post(
+        "/api/documents/upload",
+        files={"file": ("handbook.md", b"The CTO is Marcus Williams.", "text/markdown")},
+    )
+    assert upload.status_code == 200
+    for name in ["x' OR 1=1 --", "handbook.md' OR '1'='1", "handbook.md OR source LIKE '%'"]:
+        resp = client.post("/api/documents/delete", json={"source": name})
+        assert resp.status_code == 404, name
+    listed = client.get("/api/documents").json()["documents"]
+    assert [d["source"] for d in listed] == ["handbook.md"]

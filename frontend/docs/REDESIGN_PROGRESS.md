@@ -11,7 +11,7 @@ Update this file when each phase ships.
   PR: [#13](https://github.com/ThomasJButler/Morpheus/pull/13) (`redesign/v2-tokens` → `redesign/v2`)
 - [ ] **Phase 1 — Layout shell ⚡.** Three-pane `AppShell`, scroll-bug fix via the `min-height: 0` chain. Branch: `redesign/v2-layout-shell`.
 - [ ] **Phase 2 — Chat polish.** `Composer`, `EmptyState`, restyled `ChatMessage`. Branch: `redesign/v2-chat-polish`.
-- [ ] **Phase 3 — Cold-start UX.** Multi-stage progress strip driven by real `/api/health` telemetry. Branch: `redesign/v2-cold-start`.
+- [ ] **Phase 3 — Cold-start UX.** Multi-stage progress strip driven by real `/api/health` responses. Branch: `redesign/v2-cold-start`.
 - [ ] **Phase 4 — Docs sidebar.** Left rail, collapsible. Branch: `redesign/v2-docs-sidebar`.
 - [ ] **Phase 5 — System panel.** Right rail with Status / Sources / System tabs. Branch: `redesign/v2-system-panel`.
 - [ ] **Phase 6 — Modals.** Shared `Modal` shell, restyled Settings / Upload / Guide. Branch: `redesign/v2-modals`.

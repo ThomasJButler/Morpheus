@@ -1,11 +1,11 @@
 # Morpheus Demo Queries
 ## Test Queries for TechCorp Employee Handbook
 
-Use these queries to demonstrate different RAG modes:
+Use these queries to try retrieval against the sample handbook:
 
 ---
 
-## Factual Queries (Simple RAG)
+## Factual queries (direct lookups)
 
 ### Query 1: "Who is the CTO?"
 **Expected Answer:**
@@ -21,7 +21,7 @@ Use these queries to demonstrate different RAG modes:
 
 ---
 
-## Procedural Queries (Hybrid RAG)
+## Procedural queries (hybrid retrieval shines here)
 
 ### Query 4: "How do I submit an expense report?"
 **Expected Answer:**
@@ -55,7 +55,7 @@ Use these queries to demonstrate different RAG modes:
 
 ---
 
-## Comparative Queries (Hybrid/Agentic RAG)
+## Comparative queries (try Deep mode)
 
 ### Query 7: "Compare the health insurance plans"
 **Expected Answer:**
@@ -83,7 +83,7 @@ Use these queries to demonstrate different RAG modes:
 
 ---
 
-## Complex/Multi-Part Queries (Agentic RAG)
+## Multi-part queries (try Deep mode)
 
 ### Query 9: "What are all the security requirements for working remotely?"
 **Expected Answer:**
@@ -148,10 +148,10 @@ Use these queries to demonstrate different RAG modes:
 
 ---
 
-## Tips for Demo
+## Tips for a demo
 
-1. **Start simple**: "Who is the CEO?" (Factual → Simple RAG)
-2. **Show procedural**: "How do I submit expenses?" (Procedural → Hybrid)
-3. **Demo comparison**: "Compare health plans" (Comparative → Hybrid/Agentic)
-4. **Complex query**: "Security requirements for remote work" (Multi-part → Agentic)
-5. **Watch RAG mode selection**: The system should auto-select appropriate modes!
+1. Start simple: "Who is the CTO?" (one passage, one citation, the grounded chip)
+2. Show procedural: "How do I submit an expense report?" (hybrid retrieval pulls the steps together)
+3. Compare: "Compare the health insurance plans" with Deep on (three sub-queries, one answer)
+4. Multi-part: "What are all the security requirements for working remotely?" with Deep on
+5. Show the refusal: ask about something the handbook does not cover and watch the amber chip

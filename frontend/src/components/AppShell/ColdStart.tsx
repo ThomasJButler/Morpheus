@@ -8,10 +8,10 @@ const APPEAR_DELAY_MS = 1500;  // don't show if backend is already warm
 const FADE_OUT_MS = 600;       // brief "Ready" display before dismissing
 
 /**
- * Cold-start progress strip — overlays the AppShell while the backend
- * warms (~60s on Render free tier). Time-based stage progression is the
- * client-side illusion; the flip to `ready` is gated on a real
- * `/api/health` 200 (or a 60s defensive timeout).
+ * Start-up progress strip — overlays the AppShell while the local backend
+ * comes up (seconds, not the old Render minute). Time-based stage
+ * progression is the client-side illusion; the flip to `ready` is gated on
+ * a real `/api/health` response (or a 30s defensive timeout).
  *
  * Behavior:
  * - First visit + warming: full strip appears after 1.5s, collapsible to
@@ -201,12 +201,10 @@ export default function ColdStart() {
             })}
           </ol>
           <p className="mt-3 text-[11px] leading-relaxed text-fg-muted">
-            Backend is warming on a free Render instance. Keep configuring — your first message will send once the construct is online.
-            {seenBefore && (
-              <span className="block mt-1 text-fg-faint">
-                You&apos;ve been here before · cold-start should be shorter next session.
-              </span>
-            )}
+            The backend runs on this machine. If this hangs, check that
+            `uvicorn app.main:app` is running in backend/ and that Ollama is
+            up (`ollama serve`). Your first message sends the moment it is.
+            {seenBefore && <span className="hidden" aria-hidden />}
           </p>
         </div>
       )}

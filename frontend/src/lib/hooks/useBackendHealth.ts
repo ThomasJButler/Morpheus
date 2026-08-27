@@ -3,12 +3,10 @@
 import { useEffect, useState } from 'react';
 
 /**
- * Backend cold-start stages. Drives the ColdStart progress strip.
- * Durations match the prototype design (`morpheus/data.jsx`) and are
- * calibrated for Render's free-tier cold-start (~60s total). The current
- * stage is computed from elapsed time client-side; the moment `/api/health`
- * returns 200 we jump to `ready`, so honest "ready" is gated on real
- * backend telemetry even though intermediate stages are time-based.
+ * Backend start-up stages. Drives the ColdStart progress strip. Everything
+ * is local, so these are seconds rather than the old Render minute: the
+ * stage labels are a client-side illusion computed from elapsed time, and
+ * the flip to `ready` is gated on a real `/api/health` response.
  */
 export interface ColdStartStage {
   id: 'wake' | 'model' | 'vectors' | 'warm' | 'ready';
@@ -18,17 +16,17 @@ export interface ColdStartStage {
 }
 
 export const COLD_START_STAGES: ColdStartStage[] = [
-  { id: 'wake',    label: 'Initialising',             hint: 'Backend cold start, ~60s on free tier',     durMs: 18_000 },
-  { id: 'model',   label: 'Loading model weights',    hint: 'Claude Sonnet 4.6 · Anthropic',             durMs: 14_000 },
-  { id: 'vectors', label: 'Connecting Pinecone index', hint: 'Vector DB · embedding dimension 1536',     durMs: 16_000 },
-  { id: 'warm',    label: 'Warming retrieval cache',  hint: 'Hybrid retrieval · BM25 + dense',           durMs:  8_000 },
-  { id: 'ready',   label: 'The Matrix has you',       hint: 'Ready — follow the white rabbit',           durMs:  4_000 },
+  { id: 'wake',    label: 'Reaching the backend', hint: 'FastAPI on 127.0.0.1:8000',                  durMs: 4_000 },
+  { id: 'model',   label: 'Checking Ollama',      hint: 'ollama serve on 127.0.0.1:11434',            durMs: 4_000 },
+  { id: 'vectors', label: 'Opening the library',  hint: 'LanceDB index in backend/data',              durMs: 4_000 },
+  { id: 'warm',    label: 'Nearly there',         hint: 'First answer loads the model into memory',   durMs: 8_000 },
+  { id: 'ready',   label: 'The Matrix has you',   hint: 'Ready, and everything stayed on this machine', durMs: 2_000 },
 ];
 
 const TOTAL_DURATION_MS = COLD_START_STAGES.reduce((sum, s) => sum + s.durMs, 0);
 const POLL_INTERVAL_MS = 1_500;
 const FETCH_TIMEOUT_MS = 1_200;
-const DEFENSIVE_TIMEOUT_MS = 60_000;
+const DEFENSIVE_TIMEOUT_MS = 30_000;
 
 export interface BackendHealthState {
   status: 'unknown' | 'warming' | 'ready';
@@ -90,10 +88,10 @@ async function probe(): Promise<boolean> {
   try {
     const res = await fetch('/api/health', { signal: controller.signal, cache: 'no-store' });
     if (!res.ok) return false;
-    // Validate body shape — when the backend is actually up, /api/health
-    // returns `{ status: "healthy" | "unhealthy", pinecone_connected, ... }`.
-    // A Next.js dev fallback or empty-body response from a dead rewrite
-    // target won't match this contract, so we treat it as still warming.
+    // Validate body shape — the backend's /api/health returns
+    // `{ status: "ready" | "degraded", ... }`. A degraded backend (missing
+    // model, store mismatch) still counts as reachable: the UI comes up and
+    // surfaces the backend's own hints instead of spinning forever.
     const body = await res.json().catch(() => null);
     return typeof body === 'object' && body !== null && typeof (body as { status?: unknown }).status === 'string';
   } catch {
@@ -112,7 +110,7 @@ function transitionToReady(reason: 'probe' | 'timeout') {
   if (current.status === 'ready') return;
   if (reason === 'timeout') {
     // eslint-disable-next-line no-console
-    console.warn('[useBackendHealth] stage timeout (60s) — assuming ready');
+    console.warn('[useBackendHealth] stage timeout (30s) — assuming ready');
   }
   current = {
     status: 'ready',

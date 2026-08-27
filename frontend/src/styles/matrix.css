@@ -24,10 +24,9 @@
 }
 
 /* Typography */
-@import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap');
 
 .matrix-font {
-  font-family: 'Share Tech Mono', 'Courier New', monospace;
+  font-family: 'Courier New', monospace;
   letter-spacing: 0.05em;
 }
 
@@ -156,7 +155,7 @@
 .matrix-column {
   position: absolute;
   top: -100%;
-  font-family: 'Share Tech Mono', monospace;
+  font-family: monospace;
   font-size: 14px;
   color: var(--matrix-green);
   animation: matrix-fall linear infinite;
@@ -254,7 +253,7 @@
   border-radius: 4px;
   cursor: pointer;
   transition: all var(--transition-normal) ease;
-  font-family: 'Share Tech Mono', monospace;
+  font-family: monospace;
 }
 
 .mode-button:hover {
@@ -317,7 +316,7 @@
   border-left: 3px solid var(--matrix-green);
   border-radius: 8px;
   color: var(--matrix-white);
-  font-family: 'Share Tech Mono', monospace;
+  font-family: monospace;
   line-height: 1.6;
 }
 
@@ -419,7 +418,7 @@
   background: var(--matrix-green);
 }
 
-/* Message Animations (from pinecone-vercel-starter demo) */
+/* Message Animations */
 @keyframes slideInFromBottom {
   0% {
     transform: translateY(100%);

@@ -1,153 +1,108 @@
-// Types matching the backend models
+// Types matching backend/app/models/chat.py. Everything is local: two
+// retrieval modes, citations verified against retrieved chunks, and a
+// grounded flag the UI shows instead of pretending.
 
-/**
- * RAG processing modes for tiered retrieval.
- * - simple: Fast semantic search only (~800ms, lowest cost)
- * - hybrid: Dense + Sparse (BM25) retrieval with fusion (~1200ms)
- * - agentic: Claude as autonomous agent with tool use (~2600ms, highest accuracy)
- * - auto: Intelligent routing based on query analysis
- */
-export type RAGMode = 'simple' | 'hybrid' | 'agentic' | 'auto';
-
-/**
- * Query classification for intelligent routing.
- */
-export type QueryType =
-  | 'factual'       // Direct fact lookup → SimpleRAG
-  | 'conceptual'    // Understanding concepts → HybridRAG
-  | 'comparative'   // Compare/contrast → HybridRAG or Agentic
-  | 'procedural'    // How-to questions → HybridRAG
-  | 'exploratory'   // Open-ended → AgenticRAG
-  | 'multi_part';   // Multiple questions → AgenticRAG
-
-/**
- * Analysis result from query analyzer.
- * Used for intelligent mode routing in AUTO mode.
- */
-export interface QueryAnalysis {
-  complexity_score: number;  // 0-1, higher = more complex
-  query_type: QueryType;
-  suggested_mode: RAGMode;
-  keywords: string[];
-  is_ambiguous: boolean;
-  needs_rewriting: boolean;
-  reasoning?: string;
-}
-
-export interface ChatMessage {
-  id: string;
-  role: 'user' | 'assistant' | 'system' | 'data';  // 'data' added for AI SDK compatibility
-  content: string;
-  citations?: Citation[];
-  confidence?: number;
-  timestamp?: Date;  // Optional to support AI SDK UIMessage type
-  metadata?: {
-    processingTime?: number;
-    tokensUsed?: number;
-    mode?: RAGMode;
-    chunksRetrieved?: number;
-  };
-}
+export type RetrievalMode = 'hybrid' | 'vector';
 
 export interface Citation {
+  /** The [n] marker used in the answer text. */
+  index: number;
+  /** The retrieved chunk this marker maps to (validated server-side). */
+  chunk_id: string;
   source: string;
-  page?: number;
-  chunk_id?: string;
-  relevance_score: number;
+  page?: number | null;
   text_preview: string;
-  metadata?: Record<string, unknown>;
+  /** Relative relevance, 1.0 = top hit. */
+  score: number;
+}
+
+export interface DoneInfo {
+  retrieved: number;
+  cited: number;
+  grounded: boolean;
+  model: string;
+  mode: RetrievalMode;
+  deep?: boolean;
+  retrieval_ms?: number;
+  generation_ms?: number;
+  prompt_tokens?: number | null;
+  completion_tokens?: number | null;
+}
+
+export interface StreamEvent {
+  type: 'mode' | 'token' | 'citation' | 'done' | 'error';
+  content?: string;
+  citation?: Citation;
+  done?: DoneInfo;
+  mode?: RetrievalMode;
+  deep?: boolean;
+  model?: string;
+  code?: string;
+  message?: string;
 }
 
 export interface ChatRequest {
   message: string;
-  session_id?: string;
-  stream?: boolean;
-  history?: ChatMessage[];
-  openai_api_key?: string;
-  openai_model?: string;
-  // RAG Mode Configuration
-  rag_mode?: RAGMode;
-  deep_mode?: boolean;
-  return_analysis?: boolean;
+  mode: RetrievalMode;
+  deep: boolean;
+  model?: string | null;
 }
 
-export interface ChatResponse {
-  message: string;
-  citations: Citation[];
-  confidence?: number;
-  metrics?: RetrievalMetrics;
-  session_id?: string;
+export interface ChatMessage {
+  id: string;
+  role: 'user' | 'assistant';
+  content: string;
+  citations?: Citation[];
+  done?: DoneInfo;
   timestamp?: Date;
-  // Enhanced RAG fields
-  query_analysis?: QueryAnalysis;
-  rag_mode_used?: RAGMode;
 }
 
-export interface RetrievalMetrics {
-  query_time_ms: number;
-  num_results: number;
-  reranked: boolean;
-  top_score?: number;
-  average_score?: number;
-}
-
-/**
- * Extended metrics for tiered RAG system.
- * Includes mode information and escalation details.
- */
-export interface EnhancedRetrievalMetrics extends RetrievalMetrics {
-  mode_used: RAGMode;
-  mode_confidence: number;
-  query_rewritten: boolean;
-  original_query?: string;
-  escalated_from?: RAGMode;
-  escalation_reason?: string;
-  tool_calls_made: number;
-  dense_score?: number;
-  sparse_score?: number;
+export interface DocumentInfo {
+  source: string;
+  chunks: number;
+  pages?: number | null;
+  added_at: string;
 }
 
 export interface DocumentUploadResponse {
-  document_id: string;  // This is the filename
-  chunks_created: number;
-  status?: 'success' | 'error';
-  success?: boolean;
-  message?: string;
-  file_type?: string;
-  vectors_indexed?: number;
+  source: string;
+  chunks: number;
+  pages?: number | null;
+  replaced: boolean;
 }
 
 export interface DocumentStats {
-  total_documents: number;
-  total_chunks: number;
-  total_embeddings: number;
-  index_size: string;
-  last_updated: Date;
+  documents: number;
+  chunks: number;
+  size_bytes: number;
 }
 
-export interface MetricResult {
-  mode: string;
-  relevance_score: number;
-  response_time: number;
-  tokens_used: number;
-  citations_count: number;
-  confidence: number;
+export interface ModelEntry {
+  name: string;
+  size?: number;
+  parameter_size?: string | null;
+  configured: boolean;
 }
 
-/**
- * Individual chunk in a streaming response.
- * Sent via Server-Sent Events (SSE).
- */
-export interface StreamChunk {
-  type: 'token' | 'citation' | 'mode' | 'analysis' | 'tool_call' | 'done' | 'error';
-  content?: string;
-  citation?: Citation;
-  metrics?: RetrievalMetrics;
-  error?: string;
-  metadata?: Record<string, unknown>;
-  // Enhanced RAG fields
-  mode?: RAGMode;
-  analysis?: QueryAnalysis;
-  tool_name?: string;
-  tool_input?: Record<string, unknown>;
+export interface ModelsResponse {
+  chat: ModelEntry[];
+  embed: ModelEntry[];
+  ollama_version: string;
+}
+
+export interface HealthResponse {
+  status: 'ready' | 'degraded';
+  ollama: { base_url: string; reachable: boolean; version: string | null };
+  models: {
+    chat: { name: string; installed: boolean };
+    embed: { name: string; installed: boolean };
+  };
+  store: {
+    path: string;
+    documents: number | null;
+    chunks: number | null;
+    size_bytes: number | null;
+    error?: string;
+  };
+  hints: string[];
 }

@@ -42,10 +42,10 @@ assignees: ''
 - Next.js version: [e.g., 15.0.1]
 - OS: [e.g., macOS, Windows 11]
 
-**APIs:**
-- Anthropic API: [version/model]
-- OpenAI API: [version/model]
-- Pinecone: [index type, environment]
+**Local stack:**
+- Ollama version: [e.g., 0.32.6]
+- Chat model: [e.g., qwen3.5:9b]
+- Embedding model: [e.g., nomic-embed-text]
 
 ## Error Messages/Logs
 

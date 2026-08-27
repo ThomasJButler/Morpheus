@@ -5,7 +5,9 @@ import { apiClient } from '@/lib/api-client';
 import { useBackendHealth } from '@/lib/hooks/useBackendHealth';
 import { useSwipeToClose } from '@/lib/hooks/useSwipeToClose';
 import DocumentUploader from '../Documents/DocumentUploader';
+import ConfirmDialog from '../UI/ConfirmDialog';
 import DocItem from './DocItem';
+import type { DocumentInfo } from '@/lib/types';
 
 interface DocsSidebarProps {
   /** Mobile drawer open state (only meaningful below 920px). */
@@ -34,12 +36,13 @@ export default function DocsSidebar({
   onMobileClose,
 }: DocsSidebarProps = {}) {
   const health = useBackendHealth();
-  const [docs, setDocs] = useState<string[]>([]);
-  const [count, setCount] = useState(0);
-  const [totalChunks, setTotalChunks] = useState(0);
+  const [docs, setDocs] = useState<DocumentInfo[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isUploaderOpen, setIsUploaderOpen] = useState(false);
+  const [pendingDelete, setPendingDelete] = useState<string | null>(null);
+  const count = docs.length;
+  const totalChunks = docs.reduce((sum, d) => sum + d.chunks, 0);
 
   // Docs rail is on the left, so swiping LEFT closes it.
   const swipe = useSwipeToClose({
@@ -53,12 +56,8 @@ export default function DocsSidebar({
     try {
       const res = await apiClient.listDocuments();
       setDocs(res.documents ?? []);
-      setCount(res.count ?? 0);
-      setTotalChunks(res.total_chunks ?? 0);
     } catch (err) {
       setDocs([]);
-      setCount(0);
-      setTotalChunks(0);
       // Only surface errors once the backend reports ready. While warming,
       // `apiClient.listDocuments` will throw `'Failed to fetch document list'`
       // (or similar) and the ColdStart strip already explains why — showing
@@ -79,6 +78,22 @@ export default function DocsSidebar({
     window.addEventListener(REFRESH_EVENT, handler);
     return () => window.removeEventListener(REFRESH_EVENT, handler);
   }, [fetchDocs]);
+
+  const confirmDelete = useCallback(async () => {
+    if (!pendingDelete) return;
+    try {
+      if (pendingDelete === '*') {
+        await apiClient.clearDocuments();
+      } else {
+        await apiClient.deleteDocument(pendingDelete);
+      }
+      window.dispatchEvent(new CustomEvent(REFRESH_EVENT));
+    } catch (err) {
+      if (err instanceof Error) setError(err.message);
+    } finally {
+      setPendingDelete(null);
+    }
+  }, [pendingDelete]);
 
   return (
     <aside
@@ -181,18 +196,48 @@ export default function DocsSidebar({
 
         {!isLoading && !error && docs.length > 0 && (
           <ul className="space-y-1">
-            {docs.map((name, i) => (
-              <DocItem key={name} filename={name} index={i + 1} />
+            {docs.map((doc, i) => (
+              <DocItem
+                key={doc.source}
+                doc={doc}
+                index={i + 1}
+                onDelete={(source) => setPendingDelete(source)}
+              />
             ))}
           </ul>
         )}
       </div>
 
-      <footer className="px-3 py-2.5 border-t border-edge-subtle">
+      <footer className="px-3 py-2.5 border-t border-edge-subtle flex items-center justify-between gap-2">
         <div className="font-mono text-[10px] uppercase tracking-[0.12em] text-fg-faint">
           INDEX · {totalChunks} CHUNKS · {count} DOCS
         </div>
+        {count > 0 && (
+          <button
+            type="button"
+            onClick={() => setPendingDelete('*')}
+            className="font-mono text-[10px] uppercase tracking-[0.12em] text-fg-faint hover:text-mode-red transition-colors"
+            title="Delete every document and its index"
+          >
+            Clear all
+          </button>
+        )}
       </footer>
+
+      <ConfirmDialog
+        isOpen={pendingDelete !== null}
+        title={pendingDelete === '*' ? 'Clear the library?' : 'Delete this document?'}
+        message={
+          pendingDelete === '*'
+            ? 'Every document and its index will be removed from disk.'
+            : `"${pendingDelete ?? ''}" and its chunks will be removed from disk.`
+        }
+        confirmText="Delete"
+        cancelText="Cancel"
+        confirmVariant="danger"
+        onConfirm={confirmDelete}
+        onCancel={() => setPendingDelete(null)}
+      />
 
       {/* DocumentUploader is now Modal-shell wrapped (Phase 6). It self-renders
           based on isOpen — no conditional mount needed. The

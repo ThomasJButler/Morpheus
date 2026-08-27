@@ -1,7 +1,7 @@
 'use client';
 
 import { forwardRef, useEffect, useRef, ChangeEventHandler, FormEvent } from 'react';
-import type { RAGMode } from '@/lib/types';
+import type { RetrievalMode } from '@/lib/types';
 
 export interface ComposerProps {
   input: string;
@@ -10,7 +10,8 @@ export interface ComposerProps {
   isLoading: boolean;
   maxLength?: number;
   placeholder?: string;
-  mode?: RAGMode;
+  mode?: RetrievalMode;
+  deep?: boolean;
   onOpenSettings?: () => void;
 }
 
@@ -18,11 +19,9 @@ const MAX_LENGTH_DEFAULT = 2000;
 const WARN_AT = 1800;
 const ERROR_AT = 1950;
 
-const MODE_LABEL: Record<RAGMode, { label: string; tone: string }> = {
-  simple:  { label: 'Simple',  tone: 'text-accent' },
-  hybrid:  { label: 'Hybrid',  tone: 'text-mode-amber' },
-  agentic: { label: 'Agentic', tone: 'text-mode-cyan' },
-  auto:    { label: 'Auto',    tone: 'text-mode-purple' },
+const MODE_LABEL: Record<RetrievalMode, { label: string; tone: string }> = {
+  hybrid: { label: 'Hybrid', tone: 'text-mode-amber' },
+  vector: { label: 'Vector', tone: 'text-mode-cyan' },
 };
 
 const Composer = forwardRef<HTMLTextAreaElement, ComposerProps>(function Composer(
@@ -34,6 +33,7 @@ const Composer = forwardRef<HTMLTextAreaElement, ComposerProps>(function Compose
     maxLength = MAX_LENGTH_DEFAULT,
     placeholder = 'Ask about your documents…',
     mode,
+    deep = false,
     onOpenSettings,
   },
   ref,
@@ -144,7 +144,7 @@ const Composer = forwardRef<HTMLTextAreaElement, ComposerProps>(function Compose
               aria-label={`Retrieval mode: ${modeMeta.label}. Click to open Settings.`}
             >
               <span className="w-1.5 h-1.5 rounded-full bg-current" aria-hidden />
-              {modeMeta.label}
+              {modeMeta.label}{deep ? ' · Deep' : ''}
             </button>
           )}
           <span className="hidden sm:inline-flex items-center gap-1.5">

@@ -1,163 +1,63 @@
-"""
-Tests for document chunking utilities.
-"""
+from itertools import pairwise
 
-from app.utils.chunking import DocumentChunker, chunk_text
+import pytest
 
-
-class TestDocumentChunker:
-    """Tests for the DocumentChunker class."""
-
-    def test_chunker_initialization_default_values(self):
-        """Test chunker initializes with default config values."""
-        chunker = DocumentChunker()
-        assert chunker.chunk_size > 0
-        assert chunker.chunk_overlap >= 0
-        assert chunker.chunk_overlap < chunker.chunk_size
-
-    def test_chunker_initialization_custom_values(self):
-        """Test chunker initializes with custom values."""
-        chunker = DocumentChunker(chunk_size=500, chunk_overlap=50)
-        assert chunker.chunk_size == 500
-        assert chunker.chunk_overlap == 50
-
-    def test_chunk_text_returns_list(self):
-        """Test chunk_text returns a list of chunks."""
-        chunker = DocumentChunker(chunk_size=100, chunk_overlap=20)
-        text = "This is a test document. " * 50
-        chunks = chunker.chunk_text(text)
-
-        assert isinstance(chunks, list)
-        assert len(chunks) > 0
-
-    def test_chunk_text_empty_string_returns_empty_list(self):
-        """Test empty text returns empty list."""
-        chunker = DocumentChunker()
-        chunks = chunker.chunk_text("")
-
-        assert chunks == []
-
-    def test_chunk_text_whitespace_only_returns_empty_list(self):
-        """Test whitespace-only text returns empty list."""
-        chunker = DocumentChunker()
-        chunks = chunker.chunk_text("   \n\t  ")
-
-        assert chunks == []
-
-    def test_chunk_text_respects_size_limit(self):
-        """Test chunks don't exceed chunk size."""
-        chunk_size = 200
-        chunker = DocumentChunker(chunk_size=chunk_size, chunk_overlap=20)
-        text = "This is a test sentence. " * 100
-        chunks = chunker.chunk_text(text)
-
-        for chunk in chunks:
-            # Allow some flexibility for word boundaries
-            assert len(chunk["text"]) <= chunk_size + 50
-
-    def test_chunk_text_includes_chunk_index(self):
-        """Test chunks include correct index."""
-        chunker = DocumentChunker(chunk_size=100, chunk_overlap=20)
-        text = "This is a test document. " * 50
-        chunks = chunker.chunk_text(text)
-
-        for i, chunk in enumerate(chunks):
-            assert chunk["chunk_index"] == i
-
-    def test_chunk_text_includes_total_chunks(self):
-        """Test chunks include total count."""
-        chunker = DocumentChunker(chunk_size=100, chunk_overlap=20)
-        text = "This is a test document. " * 50
-        chunks = chunker.chunk_text(text)
-
-        total = len(chunks)
-        for chunk in chunks:
-            assert chunk["total_chunks"] == total
-
-    def test_chunk_text_preserves_metadata(self):
-        """Test metadata is preserved in chunks."""
-        chunker = DocumentChunker(chunk_size=100, chunk_overlap=20)
-        text = "This is a test document. " * 50
-        metadata = {"source": "test.pdf", "page": 1, "author": "Test Author"}
-
-        chunks = chunker.chunk_text(text, metadata)
-
-        for chunk in chunks:
-            assert chunk["source"] == "test.pdf"
-            assert chunk["page"] == 1
-            assert chunk["author"] == "Test Author"
-
-    def test_chunk_overlap_preserved(self):
-        """Test that chunks have overlapping content."""
-        chunk_size = 100
-        overlap = 30
-        chunker = DocumentChunker(chunk_size=chunk_size, chunk_overlap=overlap)
-        text = "Word " * 200  # Long enough to create multiple chunks
-        chunks = chunker.chunk_text(text)
-
-        if len(chunks) > 1:
-            # Check that consecutive chunks have some overlap
-            for i in range(len(chunks) - 1):
-                # The end of chunk i should share content with start of chunk i+1
-                chunk1_end = chunks[i]["text"][-overlap:]
-                chunk2_start = chunks[i + 1]["text"][:overlap]
-                # They should share some common words
-                words1 = set(chunk1_end.split())
-                words2 = set(chunk2_start.split())
-                assert len(words1 & words2) > 0
-
-    def test_chunk_documents_multiple_docs(self):
-        """Test chunking multiple documents."""
-        chunker = DocumentChunker(chunk_size=100, chunk_overlap=20)
-        documents = [
-            {"text": "First document content. " * 20, "source": "doc1.txt"},
-            {"text": "Second document content. " * 20, "source": "doc2.txt"},
-        ]
-
-        chunks = chunker.chunk_documents(documents)
-
-        assert len(chunks) > 2  # Should create multiple chunks
-        # Check document_index is set
-        doc0_chunks = [c for c in chunks if c.get("document_index") == 0]
-        doc1_chunks = [c for c in chunks if c.get("document_index") == 1]
-        assert len(doc0_chunks) > 0
-        assert len(doc1_chunks) > 0
-
-    def test_get_chunk_preview_short_text(self):
-        """Test preview returns full text if under limit."""
-        chunker = DocumentChunker()
-        chunk = {"text": "Short text"}
-        preview = chunker.get_chunk_preview(chunk, max_length=100)
-
-        assert preview == "Short text"
-
-    def test_get_chunk_preview_truncates_long_text(self):
-        """Test preview truncates long text."""
-        chunker = DocumentChunker()
-        long_text = "A" * 200
-        chunk = {"text": long_text}
-        preview = chunker.get_chunk_preview(chunk, max_length=50)
-
-        assert len(preview) == 53  # 50 chars + "..."
-        assert preview.endswith("...")
+from app.utils.chunking import chunk_text
 
 
-class TestChunkTextFunction:
-    """Tests for the convenience chunk_text function."""
+def test_empty_and_whitespace():
+    assert chunk_text("") == []
+    assert chunk_text("   \n\t  ") == []
 
-    def test_chunk_text_function_works(self):
-        """Test the convenience function works."""
-        text = "This is a test. " * 100
-        chunks = chunk_text(text, chunk_size=200, chunk_overlap=20)
 
-        assert isinstance(chunks, list)
-        assert len(chunks) > 0
+def test_short_text_is_one_chunk():
+    assert chunk_text("hello world", chunk_size=100) == ["hello world"]
 
-    def test_chunk_text_function_with_metadata(self):
-        """Test convenience function preserves metadata."""
-        text = "This is a test. " * 100
-        metadata = {"source": "test.txt"}
-        chunks = chunk_text(text, metadata=metadata)
 
-        for chunk in chunks:
-            assert chunk["source"] == "test.txt"
+def test_invalid_chunk_size():
+    with pytest.raises(ValueError):
+        chunk_text("x", chunk_size=0)
+
+
+def test_chunks_never_exceed_size():
+    text = " ".join(f"word{i}" for i in range(600))
+    chunks = chunk_text(text, chunk_size=200, overlap=40)
+    assert len(chunks) > 5
+    assert all(len(c) <= 200 for c in chunks)
+
+
+def test_every_word_survives():
+    words = [f"word{i}" for i in range(400)]
+    text = " ".join(words)
+    joined = " ".join(chunk_text(text, chunk_size=150, overlap=30))
+    for word in words:
+        assert word in joined
+
+
+def test_exact_overlap_without_separators():
+    # No separators anywhere, so every cut is exactly at chunk_size and the
+    # overlap is byte-exact.
+    text = "abcdefghij" * 50  # 500 chars
+    chunks = chunk_text(text, chunk_size=100, overlap=20)
+    for left, right in pairwise(chunks):
+        assert right[:20] == left[-20:]
+
+
+def test_prefers_sentence_boundaries():
+    text = ("First sentence here. " * 20).strip()
+    chunks = chunk_text(text, chunk_size=100, overlap=10)
+    # Cuts should land after ". ", so chunks end with a full stop.
+    assert all(c.endswith(".") for c in chunks[:-1])
+
+
+def test_deterministic():
+    text = "\n\n".join(f"Paragraph {i} with a bit of text." for i in range(50))
+    assert chunk_text(text, chunk_size=120, overlap=25) == chunk_text(
+        text, chunk_size=120, overlap=25
+    )
+
+
+def test_rare_token_at_the_end_is_kept():
+    text = " ".join(f"filler{i}" for i in range(300)) + " flibbertigibbet"
+    chunks = chunk_text(text, chunk_size=180, overlap=30)
+    assert "flibbertigibbet" in chunks[-1]
