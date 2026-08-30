@@ -24,7 +24,7 @@ python-docx==1.2.0
 # Development and CI
 pytest==9.1.1
 pytest-asyncio==1.4.0
-ruff==0.16.4
+ruff==0.16.5
 pip-audit==2.10.1
 
 # starlette.testclient prefers httpx2 since Starlette 1.2; runtime code keeps
