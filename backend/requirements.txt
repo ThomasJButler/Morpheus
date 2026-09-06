@@ -6,16 +6,16 @@
 fastapi==0.141.1
 uvicorn[standard]==0.52.4
 python-multipart==0.0.32
-pydantic==2.13.4
+pydantic==2.13.5
 pydantic-settings==2.15.0
-sse-starlette==3.4.8
+sse-starlette==3.4.10
 slowapi==0.1.10
 
 # Ollama client (plain HTTP, no SDK)
 httpx==0.28.1
 
 # Vector store, embedded, on disk (brings pyarrow)
-lancedb==0.37.1
+lancedb==0.38.0
 
 # Document parsing
 pypdf==6.16.2
@@ -24,7 +24,7 @@ python-docx==1.2.0
 # Development and CI
 pytest==9.1.1
 pytest-asyncio==1.4.0
-ruff==0.16.4
+ruff==0.16.6
 pip-audit==2.10.1
 
 # starlette.testclient prefers httpx2 since Starlette 1.2; runtime code keeps
